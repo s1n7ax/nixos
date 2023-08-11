@@ -87,6 +87,7 @@
       hyprland
       wofi
       alacritty
+      neovim
     ];
   };
 
