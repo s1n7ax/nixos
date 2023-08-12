@@ -65,9 +65,6 @@
   # Enable the X11 windowing system.
   # services.xserver.enable = true;
 
-
-  
-
   # Configure keymap in X11
   # services.xserver.layout = "us";
   # services.xserver.xkbOptions = "eurosign:e,caps:escape";
@@ -92,6 +89,9 @@
     wireplumber.enable = true;
   };
 
+
+  xdg.portal.enable = true;
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.s1n7ax = {
     isNormalUser = true;
@@ -99,10 +99,11 @@
     packages = with pkgs; [
       firefox
       git
-      hyprland
       wofi
       alacritty
       neovim
+      qt6.qtwayland
+      obs-studio
     ];
   };
 
@@ -120,6 +121,12 @@
   #   enable = true;
   #   enableSSHSupport = true;
   # };
+
+  programs.hyprland = {
+    enable = true;
+    nvidiaPatches = true;
+    xwayland.enable = true;
+  };
 
   # List services that you want to enable:
 
@@ -144,6 +151,5 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
-
 }
 
