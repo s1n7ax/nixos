@@ -104,6 +104,7 @@
       neovim
       qt6.qtwayland
       obs-studio
+      flatpak
     ];
   };
 
@@ -132,6 +133,7 @@
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
+  services.flatpak.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
