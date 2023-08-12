@@ -106,6 +106,12 @@
       obs-studio
       flatpak
       pass-wayland
+
+      exa
+      fd
+      ripgrep
+      starship
+      skim
     ];
   };
 
