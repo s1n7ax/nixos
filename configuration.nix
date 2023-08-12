@@ -106,6 +106,7 @@
       obs-studio
       flatpak
       pass-wayland
+      swaybg
 
       exa
       fd
