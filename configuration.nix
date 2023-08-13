@@ -110,6 +110,8 @@
       swaybg
       difftastic
       lazygit
+      easyeffects
+      pavucontrol
 
       exa
       fd
