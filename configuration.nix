@@ -108,6 +108,8 @@
       flatpak
       pass-wayland
       swaybg
+      difftastic
+      lazygit
 
       exa
       fd
