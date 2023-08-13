@@ -79,6 +79,7 @@
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
+  # recommended for pipewire
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -89,7 +90,6 @@
     wireplumber.enable = true;
   };
 
-
   xdg.portal.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
@@ -99,35 +99,18 @@
     extraGroups = [ "wheel" "networkmanager" ];
     packages = with pkgs; [
       firefox
-      git
-      wofi
-      alacritty
-      neovim
       qt6.qtwayland
       obs-studio
-      flatpak
       pass-wayland
       swaybg
-      difftastic
-      lazygit
-      easyeffects
-      pavucontrol
       home-manager
-
-      # rust tools
-      exa
-      fd
-      sd
-      ripgrep
-      starship
-      skim
     ];
   };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-  environment.systemPackages = with pkgs; [
-  ];
+  # environment.systemPackages = with pkgs; [
+  # ];
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
