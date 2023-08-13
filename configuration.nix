@@ -94,6 +94,7 @@
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.s1n7ax = {
+    shell = pkgs.zsh;
     isNormalUser = true;
     extraGroups = [ "wheel" "networkmanager" ];
     packages = with pkgs; [
@@ -135,6 +136,14 @@
     enable = true;
     nvidiaPatches = true;
     xwayland.enable = true;
+  };
+
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    ohMyZsh.enable = true;
+    autosuggestions.enable = true;
+    syntaxHighlighting.enable = true;
   };
 
   # List services that you want to enable:
