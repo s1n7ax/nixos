@@ -91,12 +91,17 @@
   };
 
   xdg.portal.enable = true;
+  # xdg.portal = {
+  #   enable = true;
+  #   wlr.enable = true;
+  #   extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  # };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.s1n7ax = {
     shell = pkgs.zsh;
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" ];
+    extraGroups = [ "wheel" "networkmanager" "libvirtd" ];
     packages = with pkgs; [
       firefox
       qt6.qtwayland
@@ -104,6 +109,7 @@
       pass-wayland
       swaybg
       home-manager
+      virt-manager
     ];
   };
 
@@ -134,6 +140,9 @@
     autosuggestions.async = true;
     syntaxHighlighting.enable = true;
   };
+  programs.dconf.enable = true;
+
+  virtualisation.libvirtd.enable = true;
 
   # List services that you want to enable:
 
