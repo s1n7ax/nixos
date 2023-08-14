@@ -80,7 +80,18 @@
   # services.xserver.libinput.enable = true;
 
   # recommended for pipewire
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if ((action.id == "org.freedesktop.udisks2.filesystem-mount-system" ||
+        action.id == "org.freedesktop.udisks2.filesystem-mount") &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
+
   security.rtkit.enable = true;
+
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -148,6 +159,7 @@
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
   services.flatpak.enable = true;
+  services.udisks2.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
