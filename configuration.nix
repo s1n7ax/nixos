@@ -90,12 +90,11 @@
     wireplumber.enable = true;
   };
 
-  xdg.portal.enable = true;
-  # xdg.portal = {
-  #   enable = true;
-  #   wlr.enable = true;
-  #   extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-  # };
+  xdg.portal = {
+    enable = true;
+    wlr.enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.s1n7ax = {
