@@ -100,7 +100,12 @@
   # environment.systemPackages = with pkgs; [
   # ];
 
-  virtualisation.libvirtd.enable = true;
+  virtualisation = {
+    libvirtd.enable = true;
+    spiceUSBRedirection.enable = true;
+    # 
+    # useEFIBoot = true;
+  };
 
   # List services that you want to enable:
 
