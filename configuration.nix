@@ -6,36 +6,23 @@
 
 {
   imports =
-    [ # Include the results of the hardware scan.
+    [
       ./hardware-configuration.nix
+
+      ./hardware.nix
+      ./boot.nix
+      ./nvidia.nix
+      ./programs.nix
+      ./security.nix
+      ./pipewire.nix
+      ./services.nix
     ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.extraModulePackages = [ pkgs.linuxPackages.v4l2loopback ];
 
   nixpkgs.config.allowUnfree = true;
-
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
-  };
-
-  hardware.bluetooth = {
-    enable = true;
-    powerOnBoot = true;
-  };
-
-  services.xserver.videoDrivers = ["nvidia"];
-
-  hardware.nvidia = {
-    modesetting.enable = true;
-    open = false;
-    nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-  };
 
 
   fonts.fonts = with pkgs; [
@@ -81,26 +68,7 @@
   # services.xserver.libinput.enable = true;
 
   # recommended for pipewire
-  security.polkit.extraConfig = ''
-    polkit.addRule(function(action, subject) {
-      if ((action.id == "org.freedesktop.udisks2.filesystem-mount-system" ||
-        action.id == "org.freedesktop.udisks2.filesystem-mount") &&
-        subject.isInGroup("wheel")) {
-        return polkit.Result.YES;
-      }
-    });
-  '';
 
-  security.rtkit.enable = true;
-
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-    wireplumber.enable = true;
-  };
 
   xdg.portal = {
     enable = true;
@@ -132,38 +100,11 @@
   # environment.systemPackages = with pkgs; [
   # ];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  programs.gnupg.agent = {
-    enable = true;
-  #   enableSSHSupport = true;
-  };
-
-  programs.hyprland = {
-    enable = true;
-    nvidiaPatches = true;
-    xwayland.enable = true;
-  };
-
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-    # ohMyZsh.enable = true;
-    autosuggestions.enable = true;
-    autosuggestions.async = true;
-    syntaxHighlighting.enable = true;
-  };
-  programs.dconf.enable = true;
-
   virtualisation.libvirtd.enable = true;
 
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
-  services.flatpak.enable = true;
-  services.udisks2.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
