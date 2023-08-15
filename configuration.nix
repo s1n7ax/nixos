@@ -109,9 +109,11 @@
   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
+  users.groups."s1n7ax" = {};
   users.users.s1n7ax = {
     shell = pkgs.zsh;
     isNormalUser = true;
+    group = "s1n7ax";
     extraGroups = [ "wheel" "networkmanager" "libvirtd" ];
     packages = with pkgs; [
       firefox
@@ -123,6 +125,7 @@
       virt-manager
     ];
   };
+
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
