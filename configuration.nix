@@ -33,7 +33,8 @@
   networking.hostName = "s1n7ax";
   # Pick only one of the below networking options.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking.networkmanager.enable = true;
+  # networking.networkmanager.enable = true;
+  networking.wireless.iwd.enable = true;
 
   # Set your time zone.
   time.timeZone = "Asia/Colombo";
