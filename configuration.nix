@@ -80,7 +80,7 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.groups."s1n7ax" = {};
   users.users.s1n7ax = {
-    shell = pkgs.zsh;
+    shell = pkgs.nushell;
     isNormalUser = true;
     group = "s1n7ax";
     extraGroups = [ "wheel" "networkmanager" "libvirtd" "pipewire" ];
