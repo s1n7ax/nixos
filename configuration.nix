@@ -83,7 +83,7 @@
     shell = pkgs.zsh;
     isNormalUser = true;
     group = "s1n7ax";
-    extraGroups = [ "wheel" "networkmanager" "libvirtd" ];
+    extraGroups = [ "wheel" "networkmanager" "libvirtd" "pipewire" ];
     packages = with pkgs; [
       firefox
       qt6.qtwayland
