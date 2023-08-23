@@ -83,7 +83,7 @@
     shell = pkgs.nushell;
     isNormalUser = true;
     group = "s1n7ax";
-    extraGroups = [ "wheel" "networkmanager" "libvirtd" "pipewire" ];
+    extraGroups = [ "wheel" "networkmanager" "libvirtd" "pipewire" "docker"];
     packages = with pkgs; [
       firefox
       qt6.qtwayland
@@ -104,8 +104,7 @@
   virtualisation = {
     libvirtd.enable = true;
     spiceUSBRedirection.enable = true;
-    # 
-    # useEFIBoot = true;
+    docker.enable = true;
   };
 
   # List services that you want to enable:
