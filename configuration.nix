@@ -87,7 +87,6 @@
     packages = with pkgs; [
       firefox
       qt6.qtwayland
-      obs-studio
       pass-wayland
       swaybg
       home-manager
