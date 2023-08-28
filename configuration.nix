@@ -83,7 +83,7 @@
     shell = pkgs.nushell;
     isNormalUser = true;
     group = "s1n7ax";
-    extraGroups = [ "wheel" "networkmanager" "libvirt" "pipewire" "docker" "vboxusers"];
+    extraGroups = [ "wheel" "networkmanager" "libvirtd" "pipewire" "docker"];
     packages = with pkgs; [
       firefox
       qt6.qtwayland
