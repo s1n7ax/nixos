@@ -33,8 +33,23 @@
   networking.hostName = "s1n7ax";
   # Pick only one of the below networking options.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  # networking.networkmanager.enable = true;
-  networking.wireless.iwd.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    wifi.powersave = false;
+    wifi.backend = "iwd";
+    dhcp = "dhcpcd";
+    # plugins = [ pkgs.networkmanager-openvpn ];
+    logLevel = "DEBUG";
+  };
+
+  # networking.wireless.iwd.enable = true;
+  networking.dhcpcd = {
+    enable = true;
+    extraConfig = ''
+      noarp
+    '';
+  };
+
 
   # Set your time zone.
   time.timeZone = "Asia/Colombo";
