@@ -1,15 +1,14 @@
-{config, pkgs, ...}:
+{ config, pkgs, ... }:
 {
   programs.dconf.enable = true;
 
   programs.gnupg.agent = {
     enable = true;
-  #   enableSSHSupport = true;
   };
 
   programs.hyprland = {
     enable = true;
-    nvidiaPatches = true;
+    enableNvidiaPatches = true;
     xwayland.enable = true;
   };
 
