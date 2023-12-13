@@ -8,7 +8,6 @@
   imports =
     [
       ./hardware-configuration.nix
-
       ./hardware.nix
       ./boot.nix
       ./nvidia.nix
@@ -23,12 +22,6 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   nixpkgs.config.allowUnfree = true;
-
-
-  fonts.fonts = with pkgs; [
-    fira-code
-    fira-code-symbols
-  ];
 
   networking.hostName = "s1n7ax";
   # Pick only one of the below networking options.
@@ -99,13 +92,22 @@
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
+  xdg.autostart.enable = true;
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.groups."s1n7ax" = {};
+  users.groups."s1n7ax" = { };
   users.users.s1n7ax = {
     shell = pkgs.nushell;
     isNormalUser = true;
     group = "s1n7ax";
-    extraGroups = [ "wheel" "networkmanager" "libvirtd" "pipewire" "docker"];
+    extraGroups = [
+      "wheel"
+      "networkmanager"
+      "libvirtd"
+      "pipewire"
+      "docker"
+      "adbusers" # for android tools
+    ];
     packages = with pkgs; [
       firefox
       qt6.qtwayland
@@ -173,4 +175,3 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 }
-
