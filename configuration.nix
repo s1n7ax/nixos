@@ -5,17 +5,16 @@
 { config, pkgs, ... }:
 
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      ./hardware.nix
-      ./boot.nix
-      ./nvidia.nix
-      ./programs.nix
-      ./security.nix
-      ./pipewire.nix
-      ./services.nix
-    ];
+  imports = [
+    ./hardware-configuration.nix
+    ./hardware.nix
+    ./boot.nix
+    ./nvidia.nix
+    ./programs.nix
+    ./security.nix
+    ./pipewire.nix
+    ./services.nix
+  ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
