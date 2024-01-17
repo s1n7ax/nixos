@@ -1,5 +1,7 @@
 { config, pkgs, ... }:
 {
+  programs.zsh.enable = true;
+
   programs.dconf.enable = true;
 
   programs.gnupg.agent = {
