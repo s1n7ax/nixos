@@ -97,7 +97,7 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.groups."s1n7ax" = { };
   users.users.s1n7ax = {
-    shell = pkgs.nushell;
+    shell = pkgs.zsh;
     isNormalUser = true;
     group = "s1n7ax";
     extraGroups = [
