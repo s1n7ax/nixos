@@ -148,7 +148,10 @@
     virtualbox.host.enable = true;
     libvirtd.enable = true;
     spiceUSBRedirection.enable = true;
-    docker.enable = true;
+    docker = {
+      enable = true;
+      enableNvidia = true;
+    };
   };
 
   # List services that you want to enable:
