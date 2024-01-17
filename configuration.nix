@@ -109,7 +109,6 @@
       "adbusers" # for android tools
     ];
     packages = with pkgs; [
-      firefox
       qt6.qtwayland
       pass-wayland
       swaybg
