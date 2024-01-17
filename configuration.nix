@@ -25,30 +25,7 @@
   networking.hostName = "s1n7ax";
   # Pick only one of the below networking options.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking.networkmanager = {
-    enable = true;
-    wifi.powersave = false;
-    extraConfig = ''
-      [main]
-      autoconnect-retries-default=0
-    '';
-
-    # don't use iwd. when the router is restarted, this takes forever to connect back
-    # sometimes it will not connect at all
-    # wifi.backend = "iwd";
-    dhcp = "dhcpcd";
-    # plugins = [ pkgs.networkmanager-openvpn ];
-    logLevel = "DEBUG";
-  };
-
-  # networking.wireless.iwd.enable = true;
-  networking.dhcpcd = {
-    enable = true;
-    extraConfig = ''
-      noarp
-    '';
-  };
-
+  networking.networkmanager.enable = true;
 
   # Set your time zone.
   time.timeZone = "Asia/Colombo";
