@@ -9,4 +9,5 @@
     enable = true;
     allowSFTP = true;
   };
+  services.blueman.enable = true;
 }
