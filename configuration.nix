@@ -1,27 +1,108 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running `nixos-help`).
-
 { config, pkgs, ... }:
 
 {
-  imports = [
-    ./hardware-configuration.nix
-    ./hardware.nix
-    ./boot.nix
-    ./nvidia.nix
-    ./programs.nix
-    ./security.nix
-    ./pipewire.nix
-    ./services.nix
-  ];
-
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
   nixpkgs.config.allowUnfree = true;
 
+  imports = [ ./hardware-configuration.nix ];
+
+  #--------------------------------------------------------------------#
+  #                                BOOT                                #
+  #--------------------------------------------------------------------#
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.extraModulePackages = [ pkgs.linuxPackages.v4l2loopback ];
+  boot.supportedFilesystems = [ "ntfs" ];
+
+  #--------------------------------------------------------------------#
+  #                               NVIDIA                               #
+  #--------------------------------------------------------------------#
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
+  };
+
+  hardware.nvidia = {
+    modesetting.enable = true;
+    open = false;
+    nvidiaSettings = true;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
+
+  services.xserver.videoDrivers = [ "nvidia" ];
+
+  #--------------------------------------------------------------------#
+  #                              SECURITY                              #
+  #--------------------------------------------------------------------#
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if ((action.id == "org.freedesktop.udisks2.filesystem-mount-system" ||
+        action.id == "org.freedesktop.udisks2.filesystem-mount") &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
+
+  #--------------------------------------------------------------------#
+  #                              PROGRAMS                              #
+  #--------------------------------------------------------------------#
+
+  programs.zsh.enable = true;
+
+  programs.dconf.enable = true;
+
+  programs.gnupg.agent = { enable = true; };
+
+  programs.hyprland = {
+    enable = true;
+    xwayland.enable = true;
+  };
+
+  programs.kdeconnect.enable = true;
+
+  #--------------------------------------------------------------------#
+  #                              PIPEWIRE                              #
+  #--------------------------------------------------------------------#
+  security.rtkit.enable = true;
+
+  services.pipewire = {
+    enable = true;
+    audio.enable = true;
+    alsa.enable = true;
+    pulse.enable = true;
+    jack.enable = true;
+
+    wireplumber.enable = true;
+
+    alsa.support32Bit = true;
+  };
+
+  #--------------------------------------------------------------------#
+  #                              SERVICES                              #
+  #--------------------------------------------------------------------#
+  services.fwupd.enable = true;
+  services.flatpak.enable = true;
+  services.udisks2.enable = true;
+  services.vnstat.enable = true;
+  services.openssh = {
+    enable = true;
+    allowSFTP = true;
+  };
+  services.blueman.enable = true;
+  services.udev.packages = [ pkgs.android-udev-rules ];
+
+  #--------------------------------------------------------------------#
+  #                              HARDWARE                              #
+  #--------------------------------------------------------------------#
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+
+  #--------------------------------------------------------------------#
+  #                               OTHER                                #
+  #--------------------------------------------------------------------#
   networking.hostName = "s1n7ax";
   # Pick only one of the below networking options.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -134,7 +215,8 @@
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
   # accidentally delete configuration.nix.
-  system.copySystemConfiguration = true;
+  # This is not suppored with flakes
+  # system.copySystemConfiguration = true;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
@@ -143,4 +225,6 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
+
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 }
