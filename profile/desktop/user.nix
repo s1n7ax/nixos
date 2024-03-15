@@ -2,7 +2,7 @@
 let username = "s1n7ax";
 in {
 
-  networking.hostName = "s1n7ax";
+  networking.hostName = username;
   time.timeZone = settings.timezone;
 
   users.groups.${username} = { };
