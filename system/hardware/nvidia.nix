@@ -1,4 +1,5 @@
-{ config, ... }: {
+{ config, ... }:
+{
   hardware.opengl = {
     enable = true;
     driSupport = true;
@@ -13,4 +14,5 @@
   };
 
   services.xserver.videoDrivers = [ "nvidia" ];
+  boot.kernelParams = [ "nvidia_drm.fbdev=1" ];
 }
