@@ -1,6 +1,6 @@
 {
   pkgs,
-  enableNvidia ? false,
+  # enableNvidia ? false,
   ...
 }:
 {

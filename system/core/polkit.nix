@@ -1,4 +1,5 @@
-{ ... }: {
+{ ... }:
+{
   # allow users in wheel group to use udisks2 to mount device without root
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {

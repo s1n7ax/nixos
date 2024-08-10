@@ -1,14 +1,8 @@
 {
-  description = "My desktop system";
+  description = "My NixOS Configuration";
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      nixpkgs-unstable,
-      home-manager,
-      ...
-    }:
+    { nixpkgs, nixpkgs-unstable, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -26,22 +20,32 @@
       settings = {
         profile = "desktop";
         timezone = "Asia/Colombo";
-        shell = "zsh";
         locale = "en_US.UTF-8";
       };
     in
     {
       nixosConfigurations = {
         inherit system;
-        s1n7ax = nixpkgs.lib.nixosSystem {
-          modules = [ (./. + "/profile" + ("/" + settings.profile) + "/configuration.nix") ];
+
+        desktop = nixpkgs.lib.nixosSystem {
+          modules = [
+            ./profile/common/configuration.nix
+            ./profile/desktop/configuration.nix
+            ./profile/desktop/hardware-configuration.nix
+          ];
           specialArgs = {
-            inherit
-              pkgs
-              pkgs-unstable
-              home-manager
-              settings
-              ;
+            inherit pkgs pkgs-unstable settings;
+          };
+        };
+
+        work = nixpkgs.lib.nixosSystem {
+          modules = [
+            ./profile/common/configuration.nix
+            ./profile/work/configuration.nix
+            ./profile/work/hardware-configuration.nix
+          ];
+          specialArgs = {
+            inherit pkgs pkgs-unstable settings;
           };
         };
       };
@@ -50,7 +54,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    hardware.url = "github:nixos/nixos-hardware";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 }
