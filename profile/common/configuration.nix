@@ -7,6 +7,11 @@ in
   time.timeZone = settings.timezone;
   programs.zsh.enable = true;
 
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
+    supportedLocales = [ "si_LK/UTF-8" ];
+  };
+
   users.users.${username} = {
     shell = pkgs.zsh;
     isNormalUser = true;
