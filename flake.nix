@@ -13,15 +13,6 @@
         inherit system;
         config.allowUnfree = true;
       };
-
-      #--------------------------------------------------------------------#
-      #                              SETTINGS                              #
-      #--------------------------------------------------------------------#
-      settings = {
-        profile = "desktop";
-        timezone = "Asia/Colombo";
-        locale = "en_US.UTF-8";
-      };
     in
     {
       nixosConfigurations = {
@@ -34,7 +25,7 @@
             ./profile/desktop/hardware-configuration.nix
           ];
           specialArgs = {
-            inherit pkgs pkgs-unstable settings;
+            inherit pkgs pkgs-unstable;
           };
         };
 
@@ -45,7 +36,7 @@
             ./profile/work/hardware-configuration.nix
           ];
           specialArgs = {
-            inherit pkgs pkgs-unstable settings;
+            inherit pkgs pkgs-unstable;
           };
         };
       };

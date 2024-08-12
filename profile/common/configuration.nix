@@ -1,16 +1,11 @@
-{ pkgs, settings, ... }:
+{ pkgs, ... }:
 let
   username = "s1n7ax";
 in
 {
   networking.hostName = username;
-  time.timeZone = settings.timezone;
+  time.timeZone = "Asia/Colombo";
   programs.zsh.enable = true;
-
-  i18n = {
-    defaultLocale = "en_US.UTF-8";
-    supportedLocales = [ "si_LK/UTF-8" ];
-  };
 
   users.users.${username} = {
     shell = pkgs.zsh;
