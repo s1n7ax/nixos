@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, settings, ... }:
 let
-  username = "s1n7ax";
+  username = settings.username;
 in
 {
   networking.hostName = username;

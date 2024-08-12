@@ -13,6 +13,9 @@
         inherit system;
         config.allowUnfree = true;
       };
+      settings = {
+        username = "s1n7ax";
+      };
     in
     {
       nixosConfigurations = {
@@ -22,10 +25,12 @@
           modules = [
             ./profile/common/configuration.nix
             ./profile/desktop/configuration.nix
+            ./profile/desktop/filesystem.nix
             ./profile/desktop/hardware-configuration.nix
+
           ];
           specialArgs = {
-            inherit pkgs pkgs-unstable;
+            inherit pkgs pkgs-unstable settings;
           };
         };
 
@@ -36,7 +41,7 @@
             ./profile/work/hardware-configuration.nix
           ];
           specialArgs = {
-            inherit pkgs pkgs-unstable;
+            inherit pkgs pkgs-unstable settings;
           };
         };
       };
