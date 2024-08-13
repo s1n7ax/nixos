@@ -25,9 +25,6 @@
           modules = [
             ./profile/common/configuration.nix
             ./profile/desktop/configuration.nix
-            ./profile/desktop/filesystem.nix
-            ./profile/desktop/hardware-configuration.nix
-
           ];
           specialArgs = {
             inherit pkgs pkgs-unstable settings;
@@ -38,7 +35,6 @@
           modules = [
             ./profile/common/configuration.nix
             ./profile/work/configuration.nix
-            ./profile/work/hardware-configuration.nix
           ];
           specialArgs = {
             inherit pkgs pkgs-unstable settings;

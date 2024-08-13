@@ -1,6 +1,8 @@
 { ... }:
 {
   imports = [
+    ./hardware-configuration.nix
+
     ../../system/core/boot.nix
     ../../system/core/network-manager.nix
     ../../system/core/pipewire.nix
@@ -15,5 +17,8 @@
 
     ../../system/hardware/bluetooth.nix
     ../../system/hardware/nvidia.nix
+    ../../system/hardware/openrgb.nix
+
+    ../../system/mounts/cloud-storages.nix
   ];
 }

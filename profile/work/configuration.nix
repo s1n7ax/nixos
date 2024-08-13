@@ -1,6 +1,8 @@
 { ... }:
 {
   imports = [
+    ./hardware-configuration.nix
+
     ../../system/core/boot.nix
     ../../system/core/network-manager.nix
     ../../system/core/pipewire.nix
