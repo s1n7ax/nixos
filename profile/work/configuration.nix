@@ -11,6 +11,7 @@
     ../../system/utils/applications.nix
     ../../system/utils/docker.nix
     ../../system/utils/services.nix
+    ../../system/utils/xdg.nix
 
     ../../system/hardware/bluetooth.nix
   ];
