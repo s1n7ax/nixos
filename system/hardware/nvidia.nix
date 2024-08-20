@@ -6,9 +6,6 @@
     driSupport32Bit = true;
   };
 
-  # Following does not add nvidia-ctk for some reason
-  # hardware.nvidia-container-toolkit.enable = false;
-
   hardware.nvidia = {
     modesetting.enable = true;
     open = false;

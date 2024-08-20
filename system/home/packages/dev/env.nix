@@ -1,0 +1,4 @@
+{ ... }:
+{
+  imports = [ ../../applications/direnv.nix ];
+}
