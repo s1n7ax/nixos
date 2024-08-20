@@ -40,6 +40,14 @@
           package = pkgs.tela-circle-icon-theme;
         };
       };
+      extraSpecialArgs = {
+        inherit
+          inputs
+          pkgs-unstable
+          pkgs-devenv
+          settings
+          ;
+      };
     in
     {
       nixosConfigurations = {
@@ -50,6 +58,15 @@
           modules = [
             ./profile/common/configuration.nix
             ./profile/desktop/configuration.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                inherit extraSpecialArgs;
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.s1n7ax = import ./profile/desktop/home.nix;
+              };
+            }
           ];
           specialArgs = {
             inherit pkgs pkgs-unstable settings;
@@ -63,47 +80,18 @@
           modules = [
             ./profile/common/configuration.nix
             ./profile/work/configuration.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                inherit extraSpecialArgs;
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.s1n7ax = import ./profile/work/home.nix;
+              };
+            }
           ];
           specialArgs = {
             inherit pkgs pkgs-unstable settings;
-          };
-        };
-      };
-
-      homeConfigurations = {
-        desktop = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-
-          modules = [
-            ./profile/common/home.nix
-            ./profile/desktop/home.nix
-          ];
-
-          extraSpecialArgs = {
-            inherit
-              inputs
-              pkgs-unstable
-              pkgs-devenv
-              settings
-              ;
-          };
-        };
-
-        work = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-
-          modules = [
-            ./profile/common/home.nix
-            ./profile/work/home.nix
-          ];
-
-          extraSpecialArgs = {
-            inherit
-              inputs
-              pkgs-unstable
-              pkgs-devenv
-              settings
-              ;
           };
         };
       };

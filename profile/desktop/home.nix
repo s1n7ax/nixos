@@ -1,6 +1,7 @@
 { ... }:
 {
   imports = [
+    ../common/home.nix
     ./git.nix
     ../../system/home/packages/default.nix
   ];
