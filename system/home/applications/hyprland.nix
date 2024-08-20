@@ -10,8 +10,8 @@ in
       ipc = "on";
       splash = false;
       splash_offset = 2.0;
-      preload = [ "~/.wallpaper/2" ];
-      wallpaper = "HDMI-A-1,~/.wallpaper/2";
+      preload = [ "~/.wallpaper/wallpaper" ];
+      wallpaper = "HDMI-A-1,~/.wallpaper/wallpaper";
     };
   };
 
