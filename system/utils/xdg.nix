@@ -1,4 +1,4 @@
-{ pkgs, settings, ... }:
+{ pkgs, ... }:
 {
   # flatpak needs xdg.portal.enable = true
   xdg.portal = {
@@ -7,6 +7,5 @@
       xdg-desktop-portal-hyprland
       xdg-desktop-portal-gtk
     ];
-    configPackages = [ settings.wm.package ];
   };
 }
