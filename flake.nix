@@ -22,7 +22,10 @@
       settings = {
         username = "s1n7ax";
         shell = "zsh";
-        wm = "hyprland";
+        wm = {
+          name = "hyprland";
+          package = pkgs.hyprland;
+        };
         cursor = {
           name = "Bibata-Modern-Ice";
           package = pkgs.bibata-cursors;

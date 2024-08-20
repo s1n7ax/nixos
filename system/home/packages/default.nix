@@ -3,7 +3,7 @@
   imports = [
     ../applications/mpv.nix
     ../applications/${settings.shell}.nix
-    ../applications/${settings.wm}.nix
+    ../applications/${settings.wm.name}.nix
 
     ../packages/dev/c.nix
     ../packages/dev/container.nix

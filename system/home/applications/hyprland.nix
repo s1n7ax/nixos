@@ -17,6 +17,7 @@ in
 
   wayland.windowManager.hyprland = {
     enable = true;
+    package = settings.wm.package;
 
     xwayland.enable = true;
 
