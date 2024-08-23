@@ -1,6 +1,7 @@
 { ... }:
 {
   imports = [
+    ../common/configuration.nix
     ./hardware-configuration.nix
 
     ../../system/core/boot.nix

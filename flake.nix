@@ -52,11 +52,10 @@
     {
       nixosConfigurations = {
         desktop = nixpkgs.lib.nixosSystem {
-          inherit system;
           inherit pkgs;
+          inherit system;
 
           modules = [
-            ./profile/common/configuration.nix
             ./profile/desktop/configuration.nix
             home-manager.nixosModules.home-manager
             {
@@ -69,16 +68,15 @@
             }
           ];
           specialArgs = {
-            inherit pkgs pkgs-unstable settings;
+            inherit pkgs-unstable settings;
           };
         };
 
         work = nixpkgs.lib.nixosSystem {
-          inherit system;
           inherit pkgs;
+          inherit system;
 
           modules = [
-            ./profile/common/configuration.nix
             ./profile/work/configuration.nix
             home-manager.nixosModules.home-manager
             {
@@ -91,7 +89,7 @@
             }
           ];
           specialArgs = {
-            inherit pkgs pkgs-unstable settings;
+            inherit pkgs-unstable settings;
           };
         };
       };
