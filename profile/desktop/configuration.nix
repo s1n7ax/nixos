@@ -25,6 +25,6 @@
 
   package = {
     nvidia.enable = true;
-    docker.enable = true;
+    podman.enable = true;
   };
 }

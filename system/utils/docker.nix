@@ -5,7 +5,6 @@
   ...
 }:
 {
-
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   # environment.systemPackages = with pkgs; [
@@ -30,10 +29,8 @@
 
   options.package.docker.enable = lib.mkEnableOption "Docker";
 
-  config = lib.mkIf config.package.docker.enable {
-    virtualisation.docker = {
-      enable = true;
-      package = pkgs.docker_27;
-    };
+  config.virtualisation.docker = {
+    enable = config.package.docker.enable;
+    package = pkgs.docker_27;
   };
 }
