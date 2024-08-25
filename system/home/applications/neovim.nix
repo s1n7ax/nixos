@@ -8,6 +8,8 @@
     vimAlias = true;
   };
 
+  home.packages = with pkgs; [ gcc ];
+
   home.file.".config/luacheck/.luacheckrc".text = ''
     stds.nvim = {
       read_globals = { 'jit' },
