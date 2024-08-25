@@ -15,4 +15,8 @@
 
     ../../system/hardware/bluetooth.nix
   ];
+
+  package = {
+    docker.enable = true;
+  };
 }

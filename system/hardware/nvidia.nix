@@ -1,18 +1,24 @@
-{ config, ... }:
+{ lib, config, ... }:
 {
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
-  };
+  options.package.nvidia.enable = lib.mkEnableOption "Nvidia";
 
-  hardware.nvidia = {
-    modesetting.enable = true;
-    open = false;
-    nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-  };
+  config = lib.mkIf config.package.nvidia.enable {
+    hardware.opengl = {
+      enable = true;
+      driSupport = true;
+      driSupport32Bit = true;
+    };
 
-  services.xserver.videoDrivers = [ "nvidia" ];
-  boot.kernelParams = [ "nvidia_drm.fbdev=1" ];
+    hardware.nvidia = {
+      modesetting.enable = true;
+      open = false;
+      nvidiaSettings = true;
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
+    };
+
+    hardware.nvidia-container-toolkit.enable = true;
+
+    services.xserver.videoDrivers = [ "nvidia" ];
+    boot.kernelParams = [ "nvidia_drm.fbdev=1" ];
+  };
 }

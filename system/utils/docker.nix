@@ -1,6 +1,7 @@
 {
+  lib,
+  config,
   pkgs,
-  # enableNvidia ? false,
   ...
 }:
 {
@@ -27,9 +28,12 @@
   #   )
   # ];
 
-  virtualisation.docker = {
-    enable = true;
-    package = pkgs.docker_27;
-    # enableNvidia = enableNvidia;
+  options.package.docker.enable = lib.mkEnableOption "Docker";
+
+  config = lib.mkIf config.package.docker.enable {
+    virtualisation.docker = {
+      enable = true;
+      package = pkgs.docker_27;
+    };
   };
 }
