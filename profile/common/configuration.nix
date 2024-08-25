@@ -42,4 +42,10 @@ in
     "nix-command"
     "flakes"
   ];
+
+  imports = [
+    ../../system/hardware/nvidia.nix
+    ../../system/utils/docker.nix
+    ../../system/utils/podman.nix
+  ];
 }
