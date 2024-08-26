@@ -3,10 +3,9 @@
   options.package.nvidia.enable = lib.mkEnableOption "Nvidia";
 
   config = lib.mkIf config.package.nvidia.enable {
-    hardware.opengl = {
+    hardware.graphics = {
       enable = true;
-      driSupport = true;
-      driSupport32Bit = true;
+      enable32Bit = true;
     };
 
     hardware.nvidia = {

@@ -4,7 +4,7 @@
   outputs =
     {
       nixpkgs,
-      nixpkgs-unstable,
+      nixpkgs-stable,
       devenv,
       home-manager,
       neovim-nightly-overlay,
@@ -16,7 +16,7 @@
         inherit system;
         config.allowUnfree = true;
       };
-      pkgs-unstable = import nixpkgs-unstable { inherit system; };
+      pkgs-unstable = import nixpkgs-stable { inherit system; };
       pkgs-devenv = import devenv { inherit system; };
 
       settings = {
@@ -96,11 +96,11 @@
     };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.05";
     hardware.url = "github:nixos/nixos-hardware";
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.05";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs-my.url = "github:s1n7ax/nix-flakes";
