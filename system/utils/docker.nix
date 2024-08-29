@@ -1,7 +1,6 @@
 {
   lib,
   config,
-  pkgs,
   ...
 }:
 {
@@ -29,8 +28,5 @@
 
   options.package.docker.enable = lib.mkEnableOption "Docker";
 
-  config.virtualisation.docker = {
-    enable = config.package.docker.enable;
-    package = pkgs.docker_27;
-  };
+  config.virtualisation.docker.enable = config.package.docker.enable;
 }
