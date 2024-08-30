@@ -8,6 +8,7 @@
 
   package = {
     office.enable = true;
+    screen-capture.enable = true;
 
     dev = {
       container.enable = true;
