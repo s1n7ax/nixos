@@ -11,6 +11,7 @@
     screen-capture.enable = true;
     players.enable = true;
     multi-media.enable = true;
+    gaming.enable = true;
 
     dev = {
       c.enable = true;
