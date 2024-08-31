@@ -19,9 +19,12 @@
       # this disables the <c-s> terminal freeze
       stty -ixon
 
-      bindkey "^s" forward-char
+      bindkey "^n" vi-backward-word
+      bindkey "^e" vi-forward-word
+      bindkey "^w" vi-backward-kill-word
       bindkey "^a" beginning-of-line
-      bindkey "^r" end-of-line
+      bindkey "^o" end-of-line
+      bindkey "^l" clear-screen
     '';
     shellAliases = {
       n = "nvim";
