@@ -10,6 +10,7 @@
     ../applications/neovim.nix
     ../applications/cursor.nix
     ../applications/styles.nix
+    ../applications/htop.nix
   ];
 
   services.kdeconnect.enable = true;
