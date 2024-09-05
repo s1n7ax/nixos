@@ -16,7 +16,7 @@
         inherit system;
         config.allowUnfree = true;
       };
-      pkgs-unstable = import nixpkgs-stable { inherit system; };
+      pkgs-stable = import nixpkgs-stable { inherit system; };
       pkgs-devenv = import devenv { inherit system; };
 
       settings = {
@@ -43,7 +43,7 @@
       extraSpecialArgs = {
         inherit
           inputs
-          pkgs-unstable
+          pkgs-stable
           pkgs-devenv
           settings
           ;
@@ -68,7 +68,7 @@
             }
           ];
           specialArgs = {
-            inherit pkgs-unstable settings;
+            inherit pkgs-stable settings;
           };
         };
 
@@ -89,7 +89,7 @@
             }
           ];
           specialArgs = {
-            inherit pkgs-unstable settings;
+            inherit pkgs-stable settings;
           };
         };
       };
