@@ -50,10 +50,10 @@ in
       monitor = ",preferred,auto,1";
       exec-once = [
         "swaybg -i .wallpaper/*"
-        "xdg-open https://"
-        "blueman-manager"
-        "pavucontrol"
-        "alacritty"
+        "xdg-open 'https://' &"
+        "blueman-manager& "
+        "pavucontrol &"
+        "alacritty &"
       ];
 
       env = [
