@@ -34,15 +34,27 @@ in
         "workspace 2,class:(steam),float(0)"
         "workspace 3,class:(Tor Browser)"
         "workspace 3,class:(obsidian)"
+
         "workspace 4,class:(firefox)"
+        "workspace 4,class:(LibreWolf)"
+
         "workspace 5,class:(com.obsproject.Studio)"
+
         "workspace 8,class:(pavucontrol)"
+        "workspace 8,class:(org.pulseaudio.pavucontrol)"
+        "workspace 8,class:(.blueman-manager-wrapped)"
 
         "float,class:(steam),title:(Friends List)"
         "float,class:(Tor Browser)"
       ];
       monitor = ",preferred,auto,1";
-      exec-once = [ "swaybg -i .wallpaper/*" ];
+      exec-once = [
+        "swaybg -i .wallpaper/*"
+        "xdg-open https://"
+        "blueman-manager"
+        "pavucontrol"
+        "alacritty"
+      ];
 
       env = [
         "XCURSOR_THEME,${cursor_name}"

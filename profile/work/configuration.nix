@@ -10,6 +10,7 @@
     ../../system/core/polkit.nix
 
     ../../system/utils/applications.nix
+    ../../system/utils/services.nix
     ../../system/utils/xdg.nix
 
     ../../system/hardware/bluetooth.nix

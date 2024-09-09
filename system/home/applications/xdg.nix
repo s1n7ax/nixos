@@ -21,6 +21,7 @@
 
       associations.removed = {
         "image/png" = [
+          "io.gitlab.librewolf-community.desktop"
           "firefox.desktop"
           "org.mozilla.firefox.desktop"
           "com.microsoft.Edge.desktop"
@@ -33,8 +34,9 @@
             "org.kde.gwenview.desktop"
           ];
           web_content = [
-            "firefox.desktop"
+            "io.gitlab.librewolf-community.desktop"
             "org.mozilla.firefox.desktop"
+            "firefox.desktop"
           ];
           players = [ "vlc.desktop" ];
         in
