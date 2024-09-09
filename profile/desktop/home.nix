@@ -12,6 +12,7 @@
     players.enable = true;
     multi-media.enable = true;
     gaming.enable = true;
+    web.enable = true;
 
     dev = {
       c.enable = true;

@@ -9,6 +9,7 @@
   package = {
     office.enable = true;
     screen-capture.enable = true;
+    web.enable = true;
 
     dev = {
       container.enable = true;

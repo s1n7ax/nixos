@@ -1,0 +1,57 @@
+{
+  "keyMappings": "map e scrollUp\nmap E nextTab\n\nmap n scrollDown\nmap N previousTab\n\nmap k performFind\nmap K performBackwardsFind\n\nmap P openCopiedUrlInCurrentTab\nmap p openCopiedUrlInCurrentTab\n\nmap m goBack\nmap i goForward\n\nmap o Vomnibar.activateBookmarksInNewTab\nmap a Vomnibar.activateInNewTab\nmap t Vomnibar.activateTabSelection",
+  "linkHintCharacters": "tnseriao",
+  "searchEngines": "dd: https://duckduckgo.com/?q=%s DuckDuckGo\ngg: https://www.google.com/search?q=%s Google\ny: https://www.youtube.com/results?search_query=%s Youtube\nd: https://hub.docker.com/search?q=jupyter%s Docker Hub\ng: https://github.com/search?q=%s Github\nf: https://flathub.org/apps/search?q=%s Flathub\njs: https://developer.mozilla.org/en-US/search?q=%s JavaScript Doc\nr: https://www.reddit.com/search/?q=%s Reddit",
+  "searchUrl": "https://duckduckgo.com/?q=",
+  "settingsVersion": "2.1.2",
+  "exclusionRules": [
+    {
+      "passKeys": "",
+      "pattern": "https?://mail.google.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://keep.google.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://monkeytype.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://192.168.1.110:3001/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://colab.research.google.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://localhost:3001/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://192.168.1.111:3001/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://asciiflow.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://web.ascii-draw.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://nzscholarships.my.site.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://cloud.digitalocean.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://new.express.adobe.com/*"
+    }
+  ]
+}
