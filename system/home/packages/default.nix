@@ -32,6 +32,7 @@
     ../packages/multi-media.nix
     ../packages/office.nix
     ../packages/gaming.nix
+    ../packages/web.nix
   ];
 
 }

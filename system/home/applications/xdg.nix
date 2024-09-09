@@ -21,10 +21,7 @@
 
       associations.removed = {
         "image/png" = [
-          "io.gitlab.librewolf-community.desktop"
           "firefox.desktop"
-          "org.mozilla.firefox.desktop"
-          "com.microsoft.Edge.desktop"
         ];
       };
       defaultApplications =
@@ -34,8 +31,6 @@
             "org.kde.gwenview.desktop"
           ];
           web_content = [
-            "io.gitlab.librewolf-community.desktop"
-            "org.mozilla.firefox.desktop"
             "firefox.desktop"
           ];
           players = [ "vlc.desktop" ];

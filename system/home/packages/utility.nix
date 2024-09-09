@@ -27,9 +27,6 @@
     pavucontrol
     easyeffects
 
-    # browsers
-    firefox
-
     #bluetooth
     blueman
 
