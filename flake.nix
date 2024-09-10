@@ -4,10 +4,7 @@
   outputs =
     {
       nixpkgs,
-      nixpkgs-stable,
-      devenv,
       home-manager,
-      neovim-nightly-overlay,
       ...
     }@inputs:
     let
@@ -16,8 +13,6 @@
         inherit system;
         config.allowUnfree = true;
       };
-      pkgs-stable = import nixpkgs-stable { inherit system; };
-      pkgs-devenv = import devenv { inherit system; };
 
       settings = {
         username = "s1n7ax";
@@ -40,20 +35,21 @@
           package = pkgs.tela-circle-icon-theme;
         };
       };
-      extraSpecialArgs = {
+      args = {
         inherit
           inputs
-          pkgs-stable
-          pkgs-devenv
           settings
           ;
       };
+      specialArgs = args;
+      extraSpecialArgs = args;
     in
     {
       nixosConfigurations = {
         desktop = nixpkgs.lib.nixosSystem {
           inherit pkgs;
           inherit system;
+          inherit specialArgs;
 
           modules = [
             ./profile/desktop/configuration.nix
@@ -67,14 +63,12 @@
               };
             }
           ];
-          specialArgs = {
-            inherit pkgs-stable settings;
-          };
         };
 
         work = nixpkgs.lib.nixosSystem {
           inherit pkgs;
           inherit system;
+          inherit specialArgs;
 
           modules = [
             ./profile/work/configuration.nix
@@ -88,23 +82,16 @@
               };
             }
           ];
-          specialArgs = {
-            inherit pkgs-stable settings;
-          };
         };
       };
     };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     hardware.url = "github:nixos/nixos-hardware";
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixpkgs-my.url = "github:s1n7ax/nix-flakes";
-    devenv.url = "github:cachix/devenv";
-    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
   };
 }

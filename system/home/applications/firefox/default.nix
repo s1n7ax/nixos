@@ -28,9 +28,6 @@ in
   config = lib.mkIf config.package.web.enable {
     programs.firefox = {
       enable = true;
-      languagePacks = [
-        "en-US"
-      ];
 
       # ---- POLICIES ----
       # Check about:policies#documentation for options.

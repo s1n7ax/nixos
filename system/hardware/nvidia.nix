@@ -1,11 +1,16 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  ...
+}:
 {
   options.package.nvidia.enable = lib.mkEnableOption "Nvidia";
 
   config = lib.mkIf config.package.nvidia.enable {
-    hardware.graphics = {
+    hardware.opengl = {
       enable = true;
-      enable32Bit = true;
+      driSupport = true;
+      driSupport32Bit = true;
     };
 
     hardware.nvidia = {
