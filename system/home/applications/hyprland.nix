@@ -172,7 +172,7 @@ in
 
         # window layouts
         "$mod, H, togglefloating,"
-        "$mod, Q, fullscreenstate"
+        "$mod, Q, fakefullscreen"
         "$mod, W, fullscreen, 1"
         "$mod, F, fullscreen, 0"
         "$mod, G, killactive,"
