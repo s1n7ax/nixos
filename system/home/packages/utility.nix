@@ -24,7 +24,7 @@
     vifm
 
     # audio controls
-    pavucontrol
+    #pavucontrol
     easyeffects
 
     #bluetooth

@@ -40,6 +40,7 @@ in
 
         "workspace 5,class:(com.obsproject.Studio)"
 
+        "workspace 8,class:(com.github.wwmm.easyeffects)"
         "workspace 8,class:(pavucontrol)"
         "workspace 8,class:(org.pulseaudio.pavucontrol)"
         "workspace 8,class:(.blueman-manager-wrapped)"
@@ -52,7 +53,7 @@ in
         "swaybg -i .wallpaper/*"
         "xdg-open 'https://' &"
         "blueman-manager& "
-        "pavucontrol &"
+        "easyeffects &"
         "alacritty &"
       ];
 
@@ -172,7 +173,7 @@ in
 
         # window layouts
         "$mod, H, togglefloating,"
-        "$mod, Q, fakefullscreen"
+        "$mod, Q, fullscreenstate"
         "$mod, W, fullscreen, 1"
         "$mod, F, fullscreen, 0"
         "$mod, G, killactive,"
