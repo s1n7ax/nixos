@@ -32,14 +32,56 @@ in
       # ---- POLICIES ----
       # Check about:policies#documentation for options.
       policies = {
+        AutofillCreditCardEnabled = false;
+        BackgroundAppUpdate = false;
+        AppAutoUpdate = false;
+        DisableAppUpdate = false;
+        PasswordManagerEnabled = false;
+        OfferToSaveLogins = false;
+        OfferToSaveLoginsDefault = false;
+        SearchSuggestEnabled = false;
+        DisableMasterPasswordCreation = false;
+        DisablePasswordReveal = true;
         DisableTelemetry = true;
+        DNSOverHTTPS = {
+          Enabled = true;
+          ProviderURL = "mozilla.cloudflare-dns.com";
+        };
         DisableFirefoxStudies = true;
+        DisableSecurityBypass = {
+          InvalidCertificate = true;
+          SafeBrowsing = true;
+        };
         EnableTrackingProtection = {
           Value = true;
           Locked = true;
           Cryptomining = true;
           Fingerprinting = true;
+          EmailTracking = true;
         };
+        FirefoxHome = {
+          Search = false;
+          TopSites = false;
+          SponsoredTopSites = false;
+          Highlights = false;
+          Pocket = false;
+          SponsoredPocket = false;
+          Snippets = false;
+          Locked = true;
+        };
+        FirefoxSuggest = {
+          WebSuggestions = false;
+          SponsoredSuggestions = false;
+          ImproveSuggest = false;
+          Locked = false;
+        };
+        Homepage = {
+          Locked = true;
+          StartPage = "previous-session";
+        };
+        HttpAllowlist = [ "192.168.1.111" ];
+        HttpsOnlyMode = "force_enabled";
+        HardwareAcceleration = true;
         DisablePocket = true;
         DisableFirefoxAccounts = true;
         DisableAccounts = true;
