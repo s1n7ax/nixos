@@ -1,7 +1,7 @@
 { ... }:
 {
   programs.firefox.profiles.work = {
-    id = 0;
+    id = 1;
     name = "Work Profile";
     search = {
       force = true;

@@ -1,7 +1,7 @@
 { ... }:
 {
   programs.firefox.profiles.s1n7ax = {
-    id = 1;
+    id = 0;
     name = "Personal Profile";
     search = {
       force = true;
