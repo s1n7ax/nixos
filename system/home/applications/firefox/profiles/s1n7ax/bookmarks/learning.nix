@@ -14,6 +14,19 @@
           ];
         }
         {
+          name = "Learning Platforms";
+          bookmarks = [
+            {
+              name = "Edx";
+              url = "https://www.edx.org/";
+            }
+            {
+              name = "Udemy";
+              url = "https://www.udemy.com/";
+            }
+          ];
+        }
+        {
           name = "AI";
           bookmarks = [
             {
