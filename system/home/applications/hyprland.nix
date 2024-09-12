@@ -43,6 +43,7 @@ in
         "workspace 8,class:(com.github.wwmm.easyeffects)"
         "workspace 8,class:(pavucontrol)"
         "workspace 8,class:(org.pulseaudio.pavucontrol)"
+        "workspace 8,class:(com.saivert.pwvucontrol)"
         "workspace 8,class:(.blueman-manager-wrapped)"
 
         "float,class:(steam),title:(Friends List)"
