@@ -11,6 +11,14 @@
           url = "https://web.facebook.com/";
         }
         {
+          name = "WhatsApp";
+          tags = [
+            "social"
+            "chat"
+          ];
+          url = "https://web.whatsapp.com/";
+        }
+        {
           name = "YouTube";
           tags = [ "video" ];
           url = "https://www.youtube.com/";
