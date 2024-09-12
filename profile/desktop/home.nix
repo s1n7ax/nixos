@@ -6,6 +6,8 @@
     ../../system/home/packages/default.nix
   ];
 
+  programs.firefox.profiles.s1n7ax.isDefault = true;
+
   package = {
     camera.enable = true;
     screen-capture.enable = true;

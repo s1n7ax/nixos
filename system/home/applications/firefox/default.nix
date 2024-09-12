@@ -24,6 +24,9 @@ in
     ./profiles/s1n7ax/bookmarks/my-repos.nix
     ./profiles/s1n7ax/bookmarks/neovim.nix
     ./profiles/s1n7ax/bookmarks/github.nix
+
+    ./profiles/work
+    ./profiles/work/bookmarks/toolbar.nix
   ];
   config = lib.mkIf config.package.web.enable {
     programs.firefox = {

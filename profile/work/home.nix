@@ -6,6 +6,8 @@
     ../../system/home/packages/default.nix
   ];
 
+  programs.firefox.profiles.work.isDefault = true;
+
   package = {
     office.enable = true;
     screen-capture.enable = true;
