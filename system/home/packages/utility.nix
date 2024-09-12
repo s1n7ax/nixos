@@ -25,6 +25,7 @@
 
     # audio controls
     #pavucontrol
+    pwvucontrol
     easyeffects
 
     #bluetooth

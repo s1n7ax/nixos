@@ -53,7 +53,7 @@ in
         "swaybg -i .wallpaper/*"
         "xdg-open 'https://' &"
         "blueman-manager& "
-        "easyeffects &"
+        "pwvucontrol &"
         "alacritty &"
       ];
 
