@@ -73,6 +73,11 @@
           tags = [ "typing" ];
           url = "https://monkeytype.com/";
         }
+        {
+          name = "Drawing";
+          tags = [ "notes" ];
+          url = "https://excalidraw.com/";
+        }
       ];
     }
   ];

@@ -67,6 +67,11 @@
           ];
           url = "https://www.loggly.com/blog/http-status-code-diagram/";
         }
+        {
+          name = "Drawing";
+          tags = [ "notes" ];
+          url = "https://excalidraw.com/";
+        }
       ];
     }
   ];
