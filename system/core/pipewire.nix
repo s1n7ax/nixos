@@ -7,7 +7,7 @@
     audio.enable = true; # makes pipewire the default audio server
     alsa.enable = true;
     alsa.support32Bit = true;
-    pulse.enable = false;
+    pulse.enable = true;
     wireplumber.enable = true;
     wireplumber.extraConfig.bluetoothEnhancements = {
       "monitor.bluez.properties" = {
