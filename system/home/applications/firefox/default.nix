@@ -12,6 +12,10 @@ let
     Value = true;
     Status = "locked";
   };
+  lock-val = val: {
+    Value = val;
+    Status = "locked";
+  };
 in
 {
   imports = [
@@ -27,6 +31,9 @@ in
 
     ./profiles/work
     ./profiles/work/bookmarks/toolbar.nix
+
+    # about:config changes
+    ./librefox/config.nix
   ];
   config = lib.mkIf config.package.web.enable {
     programs.firefox = {
