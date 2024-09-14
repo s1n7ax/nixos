@@ -46,7 +46,7 @@
         {
           name = "ChatGPT";
           tags = [ "ai" ];
-          url = "https://chat.openai.com/";
+          url = "https://chatgpt.com/";
         }
         {
           name = "LeetCode";
