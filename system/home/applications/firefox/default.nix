@@ -19,7 +19,7 @@
     ./profiles/work/bookmarks/toolbar.nix
 
     # about:config changes
-    ./librefox/config.nix
+    ./librewolf/config.nix
   ];
   config = lib.mkIf config.package.web.enable {
     programs.firefox = {
