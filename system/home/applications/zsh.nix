@@ -77,7 +77,7 @@
 
       # docker compose
       dd = "docker compose";
-      ddu = "docker compose up";
+      ddu = "docker compose up -d";
       ddd = "docker compose down";
 
       # edit

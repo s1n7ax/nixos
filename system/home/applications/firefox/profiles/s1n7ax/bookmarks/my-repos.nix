@@ -6,7 +6,7 @@
       bookmarks = [
         {
           name = "s1n7ax/nixos";
-          url = "https://github.com/s1n7ax/home-server";
+          url = "https://github.com/s1n7ax/nixos";
         }
         {
           name = "s1n7ax/dotnvim";
