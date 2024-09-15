@@ -44,6 +44,7 @@ in
   ];
 
   imports = [
+    ./firewall.nix
     ../../system/hardware/nvidia.nix
     ../../system/utils/docker.nix
     ../../system/utils/podman.nix
