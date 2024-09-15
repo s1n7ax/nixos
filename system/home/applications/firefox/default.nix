@@ -1,5 +1,4 @@
 {
-  lib,
   config,
   ...
 }:
@@ -18,110 +17,80 @@
     ./profiles/work
     ./profiles/work/bookmarks/toolbar.nix
 
+    ./extensions.nix
     # about:config changes
     ./librewolf/config.nix
   ];
-  config = lib.mkIf config.package.web.enable {
-    programs.firefox = {
-      enable = true;
 
-      # ---- POLICIES ----
-      # Check about:policies#documentation for options.
-      policies = {
-        AutofillCreditCardEnabled = false;
-        BackgroundAppUpdate = false;
-        AppAutoUpdate = false;
-        DisableAppUpdate = false;
-        PasswordManagerEnabled = false;
-        OfferToSaveLogins = false;
-        OfferToSaveLoginsDefault = false;
-        SearchSuggestEnabled = false;
-        DisableMasterPasswordCreation = false;
-        DisablePasswordReveal = true;
-        DisableTelemetry = true;
-        DNSOverHTTPS = {
-          Enabled = true;
-          ProviderURL = "mozilla.cloudflare-dns.com";
-        };
-        DisableFirefoxStudies = true;
-        DisableSecurityBypass = {
-          InvalidCertificate = true;
-          SafeBrowsing = true;
-        };
-        EnableTrackingProtection = {
-          Value = true;
-          Locked = true;
-          Cryptomining = true;
-          Fingerprinting = true;
-          EmailTracking = true;
-        };
-        FirefoxHome = {
-          Search = false;
-          TopSites = false;
-          SponsoredTopSites = false;
-          Highlights = false;
-          Pocket = false;
-          SponsoredPocket = false;
-          Snippets = false;
-          Locked = true;
-        };
-        FirefoxSuggest = {
-          WebSuggestions = false;
-          SponsoredSuggestions = false;
-          ImproveSuggest = false;
-          Locked = false;
-        };
-        Homepage = {
-          Locked = true;
-          StartPage = "previous-session";
-        };
-        HttpAllowlist = [ "192.168.1.111" ];
-        HttpsOnlyMode = "force_enabled";
-        HardwareAcceleration = true;
-        DisablePocket = true;
-        DisableFirefoxAccounts = true;
-        DisableAccounts = true;
-        DisableFirefoxScreenshots = true;
-        OverrideFirstRunPage = "";
-        OverridePostUpdatePage = "";
-        DontCheckDefaultBrowser = true;
-        DisplayBookmarksToolbar = "always"; # alternatives: "always" or "newtab"
-        DisplayMenuBar = "default-off"; # alternatives: "always", "never" or "default-on"
-        SearchBar = "unified"; # alternative: "separate"
-        # NOTE: cannot make NoDefaultBookmarks true due to following issue
-        # https://github.com/nix-community/home-manager/issues/5821
-        NoDefaultBookmarks = false;
+  programs.firefox = {
+    enable = config.package.web.enable;
 
-        # ---- EXTENSIONS ----
-        # Check about:support for extension/add-on ID strings.
-        # Valid strings for installation_mode are "allowed", "blocked",
-        # "force_installed" and "normal_installed".
-        ExtensionSettings = {
-          "*".installation_mode = "blocked"; # blocks all addons except the ones specified below
-          # uBlock Origin:
-          "uBlock0@raymondhill.net" = {
-            install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
-            installation_mode = "force_installed";
-          };
-          "addon@darkreader.org" = {
-            install_url = "https://addons.mozilla.org/firefox/downloads/latest/darkreader/latest.xpi";
-            installation_mode = "force_installed";
-          };
-          "{d7742d87-e61d-4b78-b8a1-b469842139fa}" = {
-            install_url = "https://addons.mozilla.org/firefox/downloads/latest/vimium-ff/latest.xpi";
-            installation_mode = "force_installed";
-          };
-          "firefox-compact-dark@mozilla.org" = {
-            install_url = "https://addons.mozilla.org/firefox/downloads/latest/vimium-ff/latest.xpi";
-            installation_mode = "force_installed";
-          };
-          "{ddc62400-f22d-4dd3-8b4a-05837de53c2e}" = {
-            install_url = "https://addons.mozilla.org/firefox/downloads/latest/read-aloud/latest.xpi";
-            installation_mode = "force_installed";
-          };
-        };
-
+    # ---- POLICIES ----
+    # Check about:policies#documentation for options.
+    policies = {
+      AutofillCreditCardEnabled = false;
+      BackgroundAppUpdate = false;
+      AppAutoUpdate = false;
+      DisableAppUpdate = false;
+      PasswordManagerEnabled = false;
+      OfferToSaveLogins = false;
+      OfferToSaveLoginsDefault = false;
+      SearchSuggestEnabled = false;
+      DisableMasterPasswordCreation = false;
+      DisablePasswordReveal = true;
+      DisableTelemetry = true;
+      DNSOverHTTPS = {
+        Enabled = true;
+        ProviderURL = "mozilla.cloudflare-dns.com";
       };
+      DisableFirefoxStudies = true;
+      DisableSecurityBypass = {
+        InvalidCertificate = true;
+        SafeBrowsing = true;
+      };
+      EnableTrackingProtection = {
+        Value = true;
+        Locked = true;
+        Cryptomining = true;
+        Fingerprinting = true;
+        EmailTracking = true;
+      };
+      FirefoxHome = {
+        Search = false;
+        TopSites = false;
+        SponsoredTopSites = false;
+        Highlights = false;
+        Pocket = false;
+        SponsoredPocket = false;
+        Snippets = false;
+        Locked = true;
+      };
+      FirefoxSuggest = {
+        WebSuggestions = false;
+        SponsoredSuggestions = false;
+        ImproveSuggest = false;
+        Locked = false;
+      };
+      Homepage = {
+        Locked = true;
+        StartPage = "previous-session";
+      };
+      HttpAllowlist = [ "192.168.1.111" ];
+      HttpsOnlyMode = "force_enabled";
+      HardwareAcceleration = true;
+      DisablePocket = true;
+      DisableFirefoxAccounts = true;
+      DisableAccounts = true;
+      DisableFirefoxScreenshots = true;
+      OverrideFirstRunPage = "";
+      OverridePostUpdatePage = "";
+      DontCheckDefaultBrowser = true;
+      DisplayBookmarksToolbar = "always"; # alternatives: "always" or "newtab"
+      DisplayMenuBar = "default-off"; # alternatives: "always", "never" or "default-on"
+      SearchBar = "unified"; # alternative: "separate"
+      # NOTE: cannot make NoDefaultBookmarks true due to following issue
+      # https://github.com/nix-community/home-manager/issues/5821
+      NoDefaultBookmarks = false;
     };
   };
 }
