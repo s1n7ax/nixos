@@ -18,7 +18,7 @@
           bookmarks = [
             {
               name = "Edx";
-              url = "https://www.edx.org/";
+              url = "https://home.edx.org/";
             }
             {
               name = "Udemy";
