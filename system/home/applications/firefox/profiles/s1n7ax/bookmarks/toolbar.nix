@@ -29,7 +29,7 @@
           url = "https://studio.youtube.com/channel/UCjKCYQ21t4GMWWDQZI2jTYg";
         }
         {
-          name = "TL-MR100";
+          name = "Router";
           tags = [ "router" ];
           url = "http://192.168.1.1/";
         }

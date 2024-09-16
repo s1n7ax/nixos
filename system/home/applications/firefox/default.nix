@@ -13,6 +13,7 @@
     ./profiles/s1n7ax/bookmarks/my-repos.nix
     ./profiles/s1n7ax/bookmarks/neovim.nix
     ./profiles/s1n7ax/bookmarks/github.nix
+    ./profiles/s1n7ax/bookmarks/docker.nix
 
     ./profiles/work
     ./profiles/work/bookmarks/toolbar.nix
