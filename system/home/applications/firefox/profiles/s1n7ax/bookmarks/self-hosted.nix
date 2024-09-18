@@ -52,7 +52,7 @@
         {
           name = "Grafana";
           tags = [ "self-hosted" ];
-          url = "http://192.168.1.111:3001/";
+          url = "http://192.168.1.111:3001/dashboards/";
         }
       ];
     }
