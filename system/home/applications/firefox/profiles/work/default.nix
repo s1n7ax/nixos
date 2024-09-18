@@ -1,9 +1,8 @@
 { ... }:
 {
-  programs.firefox = {
+  config.programs.firefox = {
     profiles.work = {
-      id = 0;
-      name = "Work Profile";
+      name = "Work Profilee";
       search = {
         force = true;
         default = "DuckDuckGo";

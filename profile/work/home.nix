@@ -6,7 +6,8 @@
     ../../system/home/packages/default.nix
   ];
 
-  programs.firefox.profiles.work.isDefault = true;
+  programs.firefox.profiles.s1n7ax.id = 1;
+  programs.firefox.profiles.work.id = 0;
 
   package = {
     office.enable = true;

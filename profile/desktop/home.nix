@@ -6,7 +6,8 @@
     ../../system/home/packages/default.nix
   ];
 
-  programs.firefox.profiles.s1n7ax.isDefault = true;
+  programs.firefox.profiles.s1n7ax.id = 0;
+  programs.firefox.profiles.work.id = 1;
 
   package = {
     camera.enable = true;
