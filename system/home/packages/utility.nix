@@ -53,5 +53,6 @@
     trash-cli
     appimage-run
     xdg-utils
+    tldr
   ];
 }
