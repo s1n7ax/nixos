@@ -47,7 +47,7 @@
         {
           name = "Ad Guard";
           tags = [ "self-hosted" ];
-          url = "http://192.168.1.111:3000/";
+          url = "http://192.168.1.200:3000/";
         }
         {
           name = "Grafana";
