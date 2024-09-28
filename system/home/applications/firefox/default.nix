@@ -14,6 +14,8 @@
     ./profiles/s1n7ax/bookmarks/neovim.nix
     ./profiles/s1n7ax/bookmarks/github.nix
     ./profiles/s1n7ax/bookmarks/docker.nix
+    ./profiles/s1n7ax/bookmarks/important-articals.nix
+    ./profiles/s1n7ax/bookmarks/other.nix
 
     ./profiles/work
     ./profiles/work/bookmarks/toolbar.nix
