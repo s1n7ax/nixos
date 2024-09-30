@@ -78,6 +78,11 @@
           tags = [ "notes" ];
           url = "https://excalidraw.com/";
         }
+        {
+          name = "Gmail";
+          tags = [ "email" ];
+          url = "https://mail.google.com/";
+        }
       ];
     }
   ];
