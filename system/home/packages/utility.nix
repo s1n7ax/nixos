@@ -11,6 +11,7 @@
     ../applications/cursor.nix
     ../applications/styles.nix
     ../applications/htop.nix
+    ../applications/alias.nix
   ];
 
   services.kdeconnect.enable = true;
