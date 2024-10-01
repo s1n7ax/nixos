@@ -5,6 +5,11 @@
       toolbar = true;
       bookmarks = [
         {
+          name = "outlook";
+          tags = [ "email" ];
+          url = "https://outlook.office.com";
+        }
+        {
           name = "orlitech-be-auth";
           tags = [
             "github"
@@ -30,10 +35,15 @@
           tags = [
             "spring"
           ];
-          url = "https://app.clickup.com/9016146704/v/l/6-901603959074-1";
+          url = "https://app.clickup.com/9016146704/v/l/6-901604061184-1";
         }
         {
-          name = "http://192.168.1.1/";
+          name = "ChatGPT";
+          tags = "AI";
+          url = "https://chatgpt.com/";
+        }
+        {
+          name = "Router";
           tags = [
             "router"
           ];
