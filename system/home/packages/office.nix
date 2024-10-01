@@ -15,10 +15,9 @@
         "teams"
       ];
 
-    home.packages = with pkgs; [
-      slack
-      teams-for-linux
-      insomnia
-    ];
+    home.packages =
+      with pkgs;
+      [
+      ];
   };
 }
