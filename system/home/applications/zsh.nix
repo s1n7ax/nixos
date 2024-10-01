@@ -51,6 +51,7 @@
       gl = "git log --oneline";
       gla = "git log";
       gst = "git status";
+      gs = "git switch";
       gp = "git pull";
       gP = "git push";
       gc = "git commit -m";
