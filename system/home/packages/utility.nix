@@ -55,5 +55,9 @@
     appimage-run
     xdg-utils
     tldr
+
+    # networking
+    dig
+    traceroute
   ];
 }
