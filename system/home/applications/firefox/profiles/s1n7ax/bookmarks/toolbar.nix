@@ -74,11 +74,6 @@
           url = "https://monkeytype.com/";
         }
         {
-          name = "Drawing";
-          tags = [ "notes" ];
-          url = "https://excalidraw.com/";
-        }
-        {
           name = "Gmail";
           tags = [ "email" ];
           url = "https://mail.google.com/";
