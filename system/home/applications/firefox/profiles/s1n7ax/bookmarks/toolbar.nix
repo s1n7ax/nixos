@@ -83,6 +83,16 @@
           tags = [ "email" ];
           url = "https://mail.google.com/";
         }
+        {
+          name = "Adebe Express";
+          tags = [ "editor" ];
+          url = "https://express.adobe.com/";
+        }
+        {
+          name = "Drawing";
+          tags = [ "notes" ];
+          url = "https://excalidraw.com/";
+        }
       ];
     }
   ];
