@@ -12,7 +12,7 @@
       "ctrl+c" = "copy_or_interrupt";
       "cursor_blink_interval" = 0;
     };
-    theme = "Catppuccin-Mocha";
+    themeFile = "Catppuccin-Mocha";
     shellIntegration.enableZshIntegration = true;
   };
 }
