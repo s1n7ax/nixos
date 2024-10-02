@@ -82,6 +82,11 @@
           tags = [ "notes" ];
           url = "https://excalidraw.com/";
         }
+        {
+          name = "Adebe Express";
+          tags = [ "editor" ];
+          url = "https://express.adobe.com/";
+        }
       ];
     }
   ];
