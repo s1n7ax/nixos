@@ -247,7 +247,7 @@ in
       "dom.vibrator.enabled" = lock-val false;
       "dom.vr.enabled" = lock-val false;
       "dom.w3c_pointer_events.enabled" = lock-val false;
-      "dom.webaudio.enabled" = lock-val false;
+      "dom.webaudio.enabled" = lock-val true;
       "experiments.activeExperiment" = lock-val false;
       "experiments.enabled" = lock-val false;
       "experiments.manifest.uri" = lock-val "";
