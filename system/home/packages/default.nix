@@ -21,6 +21,7 @@
     ../packages/dev/env.nix
     ../packages/dev/web.nix
     ../packages/dev/ide.nix
+    ../packages/dev/llm.nix
 
     ../packages/camera.nix
     ../packages/screen-capture.nix

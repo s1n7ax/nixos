@@ -18,6 +18,7 @@
     web.enable = true;
 
     dev = {
+      llm.enable = true;
       c.enable = true;
       container.enable = true;
       java.enable = true;
