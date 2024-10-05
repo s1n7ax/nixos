@@ -26,7 +26,7 @@
         {
           name = "YouTube Studio";
           tags = [ "video" ];
-          url = "https://studio.youtube.com/channel/UCjKCYQ21t4GMWWDQZI2jTYg";
+          url = "https://studio.youtube.com/";
         }
         {
           name = "Router";

@@ -125,8 +125,8 @@
           url = "https://www.lazyvim.org/";
         }
         {
-          name = "nvim-lspconfig/doc/server_configurations.md at master · neovim/nvim-lspconfig";
-          url = "https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md";
+          name = "nvim-lspconfig";
+          url = "https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md";
         }
         {
           name = "eclipse-jdtls/eclipse.jdt.ls: Java language server";
