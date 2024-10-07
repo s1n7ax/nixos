@@ -15,6 +15,7 @@
     web.enable = true;
 
     dev = {
+      llm.enable = true;
       container.enable = true;
       javascript.enable = true;
       lua.enable = true;
@@ -22,6 +23,7 @@
       nix.enable = true;
       database.enable = true;
       web.enable = true;
+      ide.enable = true;
     };
   };
 }
