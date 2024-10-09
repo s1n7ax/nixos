@@ -63,6 +63,10 @@
           name = "Scale, Standardize, or Normalize with Scikit-Learn | by Jeff Hale | Towards Data Science";
           url = "https://towardsdatascience.com/scale-standardize-or-normalize-with-scikit-learn-6ccc7d176a02";
         }
+        {
+          name = "zakirullin/cognitive-load: 🧠 Cognitive Load is what matters";
+          url = "https://github.com/zakirullin/cognitive-load";
+        }
       ];
     }
   ];
