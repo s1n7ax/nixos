@@ -9,6 +9,7 @@
 
   config = lib.mkIf config.package.dev.javascript.enable {
     home.packages = with pkgs; [
+      deno
       nodejs_22
       nodePackages.pnpm
       yarn
