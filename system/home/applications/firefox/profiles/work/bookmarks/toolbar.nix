@@ -12,17 +12,17 @@
         {
           name = "orlitech-be-auth";
           tags = [ "github" ];
-          url = "https://github.com/Orli-Tech/orlitech-be-auth/pulls/assigned/srinesha";
+          url = "https://github.com/Orli-Tech/orlitech-be-auth/pulls";
         }
         {
           name = "orlitech-fe";
           tags = [ "github" ];
-          url = "https://github.com/Orli-Tech/orlitech-fe/pulls/assigned/srinesha";
+          url = "https://github.com/Orli-Tech/orlitech-fe/pulls";
         }
         {
           name = "orlitech-be";
           tags = [ "github" ];
-          url = "https://github.com/Orli-Tech/orlitech-be/pulls/assigned/srinesha";
+          url = "https://github.com/Orli-Tech/orlitech-be/pulls";
         }
         {
           name = "Sprint";
