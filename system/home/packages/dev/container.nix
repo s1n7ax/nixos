@@ -2,8 +2,6 @@
   lib,
   config,
   pkgs,
-  # pkgs-devenv,
-  # pkgs-my,
   ...
 }:
 {
@@ -11,8 +9,7 @@
 
   config = lib.mkIf config.package.dev.container.enable {
     home.packages = with pkgs; [
-      # pkgs-devenv.devenv
-      # pkgs-my.devcontainer
+      devcontainer
       lazydocker
       dockerfile-language-server-nodejs
       hadolint
