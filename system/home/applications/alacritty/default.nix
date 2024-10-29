@@ -29,10 +29,12 @@
         padding.y = 0;
       };
 
-      import = [
-        "${pkgs.alacritty-theme}/catppuccin_mocha.toml"
-        "~/.config/alacritty/keys.yml"
-      ];
+      general = {
+        import = [
+          "${pkgs.alacritty-theme}/catppuccin_mocha.toml"
+          "~/.config/alacritty/keys.yml"
+        ];
+      };
     };
   };
 }
