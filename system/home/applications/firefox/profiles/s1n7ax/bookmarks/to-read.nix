@@ -67,6 +67,10 @@
           name = "zakirullin/cognitive-load: 🧠 Cognitive Load is what matters";
           url = "https://github.com/zakirullin/cognitive-load";
         }
+        {
+          name = "The Copenhagen Book";
+          url = "https://thecopenhagenbook.com/";
+        }
       ];
     }
   ];
