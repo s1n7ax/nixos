@@ -20,6 +20,20 @@
           ];
           url = "https://zigbee.blakadder.com/";
         }
+
+      ];
+    }
+    {
+      name = "Development";
+      bookmarks = [
+        {
+          name = "Component Party";
+          tags = [
+            "frontend"
+            "framework"
+          ];
+          url = "https://component-party.dev/";
+        }
       ];
     }
   ];
