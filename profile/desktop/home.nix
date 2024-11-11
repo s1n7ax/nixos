@@ -34,6 +34,7 @@
       database.enable = true;
       web.enable = true;
       ide.enable = true;
+      ci.enable = true;
     };
   };
 }
