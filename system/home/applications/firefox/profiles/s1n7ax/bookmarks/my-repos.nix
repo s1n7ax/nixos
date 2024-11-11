@@ -85,8 +85,8 @@
           url = "https://github.com/nvim-java/mason-registry/";
         }
         {
-          name = "s1n7ax/my-website-ssr";
-          url = "https://github.com/s1n7ax/my-website-ssr";
+          name = "s1n7ax/my-website";
+          url = "https://github.com/s1n7ax/my-website";
         }
         {
           name = "s1n7ax/lazyvim-dotnvim";

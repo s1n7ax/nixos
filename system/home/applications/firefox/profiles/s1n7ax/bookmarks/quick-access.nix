@@ -36,5 +36,15 @@
         }
       ];
     }
+    {
+      name = "Other";
+      bookmarks = [
+        {
+          name = "localhost";
+          tags = [ "local" ];
+          url = "http://localhost:3000";
+        }
+      ];
+    }
   ];
 }
