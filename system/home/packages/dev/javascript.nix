@@ -20,6 +20,7 @@
       typescript
       eslint_d
       nodePackages.typescript-language-server
+      supabase-cli
     ];
   };
 }

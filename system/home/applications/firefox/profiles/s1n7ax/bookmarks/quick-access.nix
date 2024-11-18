@@ -44,6 +44,11 @@
           tags = [ "local" ];
           url = "http://localhost:3000";
         }
+        {
+          name = "tailwind";
+          tags = [ "css" ];
+          url = "https://nerdcave.com/tailwind-cheat-sheet";
+        }
       ];
     }
   ];

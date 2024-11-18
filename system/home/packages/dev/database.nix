@@ -9,6 +9,7 @@
 
   config = lib.mkIf config.package.dev.database.enable {
     home.packages = with pkgs; [
+      pgformatter
       postgresql
       sqlite
       sqlfluff
