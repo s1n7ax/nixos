@@ -110,6 +110,10 @@ in
 
       decoration = {
         # See https://wiki.hyprland.org/Configuring/Variables/ for more
+        shadow = {
+          enabled = true;
+          range = 4;
+        };
 
         rounding = 10;
 
@@ -119,11 +123,6 @@ in
           passes = 3;
           vibrancy = 0.5;
         };
-
-        drop_shadow = true;
-        shadow_range = 4;
-        shadow_render_power = 3;
-        "col.shadow" = "rgba(1a1a1aee)";
       };
 
       animations = {
