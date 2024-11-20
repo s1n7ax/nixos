@@ -5,17 +5,19 @@
 {
   imports = [
     ./profiles/s1n7ax
-    ./profiles/s1n7ax/bookmarks/toolbar.nix
-    ./profiles/s1n7ax/bookmarks/to-read.nix
+    ./profiles/s1n7ax/bookmarks/cool-websites.nix
+    ./profiles/s1n7ax/bookmarks/docker.nix
+    ./profiles/s1n7ax/bookmarks/github.nix
+    ./profiles/s1n7ax/bookmarks/important-articals.nix
     ./profiles/s1n7ax/bookmarks/learning.nix
-    ./profiles/s1n7ax/bookmarks/self-hosted.nix
-    ./profiles/s1n7ax/bookmarks/nixos.nix
     ./profiles/s1n7ax/bookmarks/my-repos.nix
     ./profiles/s1n7ax/bookmarks/neovim.nix
-    ./profiles/s1n7ax/bookmarks/github.nix
-    ./profiles/s1n7ax/bookmarks/docker.nix
-    ./profiles/s1n7ax/bookmarks/important-articals.nix
+    ./profiles/s1n7ax/bookmarks/nixos.nix
     ./profiles/s1n7ax/bookmarks/other.nix
+    ./profiles/s1n7ax/bookmarks/quick-access.nix
+    ./profiles/s1n7ax/bookmarks/self-hosted.nix
+    ./profiles/s1n7ax/bookmarks/to-read.nix
+    ./profiles/s1n7ax/bookmarks/toolbar.nix
 
     ./profiles/work
     ./profiles/work/bookmarks/toolbar.nix
