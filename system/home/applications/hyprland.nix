@@ -92,8 +92,9 @@ in
           natural_scroll = false;
         };
 
-        sensitivity = -0.5;
+        sensitivity = -0.6;
         accel_profile = "flat";
+        scroll_points = "1 1";
       };
 
       general = {
