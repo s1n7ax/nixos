@@ -3,6 +3,7 @@
   imports = [
     ../applications/kitty.nix
     ../applications/alacritty
+    ../applications/wezterm.nix
     ../applications/lazygit.nix
     ../applications/scripts.nix
     ../applications/starship.nix
