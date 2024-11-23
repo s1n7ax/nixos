@@ -228,7 +228,7 @@ in
       "dom.enable_resource_timing" = lock-val false;
       "dom.enable_user_timing" = lock-val false;
       "dom.event.clipboardevents.enabled" = lock-val false;
-      "dom.event.contextmenu.enabled" = lock-val false;
+      "dom.event.contextmenu.enabled" = lock-val true; # setting this to false will show the default context menu
       "dom.flyweb.enabled" = lock-val false;
       "dom.forms.datetime" = lock-val false;
       "dom.gamepad.enabled" = lock-val false;
