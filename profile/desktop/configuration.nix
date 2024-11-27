@@ -25,4 +25,11 @@
     nvidia.enable = true;
     docker.enable = true;
   };
+
+  services.openssh = {
+    enable = true;
+    settings = {
+      AllowUsers = [ "s1n7ax" ];
+    };
+  };
 }
