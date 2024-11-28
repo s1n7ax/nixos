@@ -34,6 +34,13 @@
           ];
           url = "https://component-party.dev/";
         }
+        {
+          name = "Typescript Playground";
+          tags = [
+            "typescript"
+          ];
+          url = "https://www.typescriptlang.org/play/";
+        }
       ];
     }
     {
