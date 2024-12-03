@@ -93,10 +93,6 @@
           url = "https://github.com/mason-org/mason-registry";
         }
         {
-          name = "GitHub Support";
-          url = "https://support.github.com/request?q=how+to+remove+generated+from+label";
-        }
-        {
           name = "feat: click support for `'statusline'` and `'winbar'` by famiu · Pull Request #18650 · neovim/neovim";
           url = "https://github.com/neovim/neovim/pull/18650";
         }
