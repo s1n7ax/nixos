@@ -72,7 +72,8 @@ in
       "browser.newtabpage.activity-stream.feeds.snippets" = lock-val false;
       "browser.newtabpage.activity-stream.feeds.telemetry" = lock-val false;
       "browser.newtabpage.activity-stream.fxaccounts.endpoint" = lock-val "";
-      "browser.newtabpage.activity-stream.improvesearch.topSiteSearchShortcuts.searchEngines" = lock-val "";
+      "browser.newtabpage.activity-stream.improvesearch.topSiteSearchShortcuts.searchEngines" =
+        lock-val "";
       "browser.newtabpage.activity-stream.prerender" = lock-val false;
       "browser.newtabpage.activity-stream.section.highlights.includeBookmarks" = lock-val false;
       "browser.newtabpage.activity-stream.section.highlights.includeDownloads" = lock-val false;
@@ -227,7 +228,7 @@ in
       "dom.enable_performance_navigation_timing" = lock-val false;
       "dom.enable_resource_timing" = lock-val false;
       "dom.enable_user_timing" = lock-val false;
-      "dom.event.clipboardevents.enabled" = lock-val false;
+      "dom.event.clipboardevents.enabled" = lock-val true;
       "dom.event.contextmenu.enabled" = lock-val true; # setting this to false will show the default context menu
       "dom.flyweb.enabled" = lock-val false;
       "dom.forms.datetime" = lock-val false;
@@ -282,7 +283,8 @@ in
       "extensions.update.enabled" = lock-val false;
       "extensions.update.url" = lock-val "";
       "extensions.webcompat-reporter.newIssueEndpoint" = lock-val "";
-      "extensions.webextensions.base-content-security-policy" = "default-src 'self' moz-extension: blob: filesystem: 'unsafe-eval' 'unsafe-inline'; script-src 'self' moz-extension: blob: filesystem: 'unsafe-eval' 'unsafe-inline'; object-src 'self' moz-extension: blob: filesystem:;";
+      "extensions.webextensions.base-content-security-policy" =
+        "default-src 'self' moz-extension: blob: filesystem: 'unsafe-eval' 'unsafe-inline'; script-src 'self' moz-extension: blob: filesystem: 'unsafe-eval' 'unsafe-inline'; object-src 'self' moz-extension: blob: filesystem:;";
       "extensions.webextensions.identity.redirectDomain" = lock-val "";
       "extensions.webextensions.restrictedDomains" = lock-val "";
       "extensions.webservice.discoverURL" = lock-val "";
