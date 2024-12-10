@@ -165,7 +165,7 @@ in
         "$amod, S, exec, alacritty -e vifm"
         "$amod, R, exec, thunar"
         "$amod, Z, exec, slurp | grim -g - - | wl-copy -t image/png"
-        ''$amod, X, exec, grim -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"''
+        ''$amod, X, exec, slurp | grim -g - -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"''
 
         "$amod, O, exec, poweroff"
 
