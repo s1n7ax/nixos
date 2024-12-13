@@ -57,6 +57,11 @@
           url = "http://localhost:5173";
         }
         {
+          name = "supabase local";
+          tags = [ "local" ];
+          url = "http://127.0.0.1:54323";
+        }
+        {
           name = "tailwind";
           tags = [ "css" ];
           url = "https://nerdcave.com/tailwind-cheat-sheet";
