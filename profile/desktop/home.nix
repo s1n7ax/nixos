@@ -16,6 +16,7 @@
     multi-media.enable = true;
     gaming.enable = true;
     web.enable = true;
+    present.enable = true;
 
     dev = {
       llm.enable = true;

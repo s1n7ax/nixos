@@ -35,6 +35,7 @@
     ../packages/office.nix
     ../packages/gaming.nix
     ../packages/web.nix
+    ../packages/present.nix
   ];
 
 }
