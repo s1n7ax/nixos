@@ -162,7 +162,7 @@ in
         "$mod, P, exec, rofi -show drun"
 
         "$amod, T, exec, firefox"
-        "$amod, S, exec, alacritty -e vifm"
+        "$amod, S, exec, kitty -e vifm"
         "$amod, R, exec, thunar"
         "$amod, Z, exec, slurp | grim -g - - | wl-copy -t image/png"
         ''$amod, X, exec, slurp | grim -g - -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"''
