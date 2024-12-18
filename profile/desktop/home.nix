@@ -34,7 +34,7 @@
       yaml.enable = true;
       database.enable = true;
       web.enable = true;
-      ide.enable = false;
+      ide.enable = true;
       ci.enable = true;
     };
   };
