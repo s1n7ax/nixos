@@ -24,6 +24,7 @@
       database.enable = true;
       web.enable = true;
       ide.enable = true;
+      java.enable = true;
     };
   };
 }
