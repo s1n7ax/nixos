@@ -28,13 +28,14 @@
           size = 32;
         };
         font = {
-          name = "JetBrainsMonoNL Nerd Font Mono";
-          size = "28";
+          name = "Maple Mono NF";
+          size = "12";
         };
         icon = {
           name = "Tela-circle-dark";
           package = pkgs.tela-circle-icon-theme;
         };
+        terminal = "wezterm";
       };
       args = {
         inherit
@@ -95,5 +96,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    wezterm = {
+      url = "github:wez/wezterm?dir=nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 }

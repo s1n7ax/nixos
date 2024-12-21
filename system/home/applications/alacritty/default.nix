@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, settings, ... }:
 
 {
   home.file = {
@@ -12,7 +12,7 @@
       font = {
         size = 19;
         builtin_box_drawing = true;
-        normal.family = "Maple Mono NF";
+        normal.family = "${settings.font.name}";
       };
 
       cursor = {

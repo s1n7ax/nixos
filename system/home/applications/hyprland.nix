@@ -56,7 +56,7 @@ in
         "xdg-open 'https://' &"
         "blueman-manager& "
         "pwvucontrol &"
-        "kitty &"
+        "${settings.terminal} &"
       ];
 
       env = [
@@ -162,7 +162,7 @@ in
         "$mod, P, exec, rofi -show drun"
 
         "$amod, T, exec, firefox"
-        "$amod, S, exec, kitty -e vifm"
+        "$amod, S, exec, ${settings.terminal} -e vifm"
         "$amod, R, exec, thunar"
         "$amod, Z, exec, slurp | grim -g - - | wl-copy -t image/png"
         ''$amod, X, exec, slurp | grim -g - -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"''
@@ -171,7 +171,7 @@ in
 
         "$smod, Q, exit,"
 
-        "$mod, Return, exec, kitty"
+        "$mod, Return, exec, ${settings.terminal}"
 
         # window layouts
         "$mod, H, togglefloating,"
