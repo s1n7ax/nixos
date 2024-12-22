@@ -21,7 +21,6 @@
       config.font_size = ${settings.font.size}
       config.max_fps = 144
       config.enable_tab_bar = false
-      config.dpi = 144
 
 
       return config
