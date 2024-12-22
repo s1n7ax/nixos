@@ -5,16 +5,17 @@
     (st.overrideAttrs (oldAttrs: rec {
       # ligatures dependency
       buildInputs = oldAttrs.buildInputs ++ [ harfbuzz ];
+
       patches = [
         # ligatures patch
         (fetchpatch {
-          url = "https://st.suckless.org/patches/ligatures/0.8.3/st-ligatures-20200430-0.8.3.diff";
-          sha256 = "67b668c77677bfcaff42031e2656ce9cf173275e1dfd6f72587e8e8726298f09";
+          url = "https://st.suckless.org/patches/ligatures/0.9.2/st-ligatures-20240427-0.9.2.diff";
+          hash = "sha256-kFmGCrsqiphY1uiRCX/Gz4yOdlLxIIHBlsM1pvW5TTA=";
         })
       ];
       # version controlled config file
       configFile = writeText "config.def.h" (builtins.readFile ./config.h);
-      postPatch = oldAttrs.postPatch ++ ''cp ${configFile} config.def.h'';
+      postPatch = oldAttrs.postPatch + ''cp ${configFile} config.def.h'';
     }))
   ];
 

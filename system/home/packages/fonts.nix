@@ -21,7 +21,6 @@
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif
     noto-fonts-color-emoji
-    fira-code-nerdfont
     # use nerd.fonts.<font_name> where font_name is any one of the fonts name from
     # https://www.nerdfonts.com/font-downloads
     nerd-fonts.fira-code
