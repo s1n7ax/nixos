@@ -11,7 +11,6 @@
   config = lib.mkIf config.package.present.enable {
     home.packages = with pkgs; [
       presenterm
-      zoom-us
       marp-cli
     ];
   };
