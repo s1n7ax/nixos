@@ -13,6 +13,7 @@
     office.enable = true;
     screen-capture.enable = true;
     web.enable = true;
+    present.enable = true;
 
     dev = {
       llm.enable = true;
