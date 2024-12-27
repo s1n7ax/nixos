@@ -1,0 +1,13 @@
+defaults:
+  theme: catppuccin-frappe
+  terminal_font_size: 20
+options:
+  incremental_lists: true
+  implicit_slide_ends: true
+bindings:
+  next_fast: ["i"]
+  previous_fast: ["m"]
+  previous: ["e"]
+  next: ["n"]
+  first_slide: ["gg"]
+  last_slide: ["G"]
