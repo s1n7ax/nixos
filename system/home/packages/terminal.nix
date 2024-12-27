@@ -3,8 +3,9 @@
   imports = [
     ../applications/kitty.nix
     ../applications/alacritty
-    ../applications/wezterm.nix
-    ../applications/st/st.nix
+    # ../applications/wezterm.nix
+    # ../applications/st/st.nix
+    ../applications/ghostty.nix
     ../applications/lazygit.nix
     ../applications/scripts.nix
     ../applications/starship.nix
