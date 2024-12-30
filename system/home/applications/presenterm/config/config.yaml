@@ -2,8 +2,9 @@ defaults:
   theme: catppuccin-frappe
   terminal_font_size: 20
 options:
-  incremental_lists: true
+  incremental_lists: false
   implicit_slide_ends: true
+  end_slide_shorthand: true
 bindings:
   next_fast: ["i"]
   previous_fast: ["m"]

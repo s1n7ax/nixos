@@ -9,7 +9,7 @@
 
   config = lib.mkIf config.package.dev.container.enable {
     home.packages = with pkgs; [
-      devcontainer
+      #devcontainer
       lazydocker
       dockerfile-language-server-nodejs
       hadolint
