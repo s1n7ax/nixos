@@ -29,13 +29,13 @@
         };
         font = {
           name = "Maple Mono NF";
-          size = "12";
+          size = "18";
         };
         icon = {
           name = "Tela-circle-dark";
           package = pkgs.tela-circle-icon-theme;
         };
-        terminal = "kitty";
+        terminal = "ghostty";
       };
       args = {
         inherit
@@ -100,6 +100,5 @@
       url = "github:wez/wezterm?dir=nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    ghostty.url = "github:ghostty-org/ghostty";
   };
 }
