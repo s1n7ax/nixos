@@ -8,7 +8,10 @@
     vimAlias = true;
   };
 
-  home.packages = with pkgs; [ gcc ];
+  home.packages = with pkgs; [
+    gcc
+    neovide
+  ];
 
   home.file.".config/luacheck/.luacheckrc".text = ''
     stds.nvim = {
