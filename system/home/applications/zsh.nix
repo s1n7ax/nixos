@@ -36,6 +36,7 @@
       h = "Hyprland";
       rm = "trash";
       npm = "pnpm";
+      npx = "pnpm dlx";
 
       # rust alternatives
       cat = "bat";
