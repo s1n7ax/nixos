@@ -3,7 +3,7 @@
   home.file.".config/ghostty/config".text = ''
     font-family = ${settings.font.name}
     font-size = ${settings.font.size}
-    theme = catppuccin-frappe
+    theme = Bright Lights
     cursor-style = bar
     cursor-style-blink = false
     window-decoration = false

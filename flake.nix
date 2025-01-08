@@ -35,7 +35,7 @@
           name = "Tela-circle-dark";
           package = pkgs.tela-circle-icon-theme;
         };
-        terminal = "ghostty";
+        terminal = "alacritty";
       };
       args = {
         inherit
