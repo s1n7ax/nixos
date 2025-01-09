@@ -66,6 +66,16 @@
           tags = [ "css" ];
           url = "https://nerdcave.com/tailwind-cheat-sheet";
         }
+        {
+          name = "docusaurus";
+          tags = [ "docs" ];
+          url = "https://docusaurus.io";
+        }
+        {
+          name = "presenterm";
+          tags = [ "docs" ];
+          url = "https://mfontanini.github.io/presenterm";
+        }
       ];
     }
   ];
