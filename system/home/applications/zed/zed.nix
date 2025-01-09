@@ -52,6 +52,15 @@
             "Down"
           ];
           "] space" = "vim::InsertLineBelow";
+          ", a" = "workspace::ToggleZoom";
+          "shift-i" = "editor::Hover";
+          ", ," = "file_finder::Toggle";
+          "0" = "vim::FirstNonWhitespace";
+          # "shift-y" = [
+          #   "vim::PushOperator"
+          #   "Yank"
+          #   "vim::EndOfLine"
+          # ];
         };
       }
       {
