@@ -17,6 +17,7 @@
       core = {
         untrackedcache = true;
         fsmonitor = true;
+        compression = 0;
       };
       init = {
         defaultBranch = "main";
@@ -33,6 +34,10 @@
       maintainance = {
         auto = false;
         strategy = "incremental";
+      };
+      http = {
+        lowSpeedLimit = 1;
+        lowSpeedTime = 500;
       };
     };
   };
