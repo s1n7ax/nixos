@@ -64,7 +64,7 @@
       dc = "devcontainer --workspace-folder .";
       dcu = ''
         devcontainer up \
-          --workspace-folder .
+          --workspace-folder . \
           --mount 'type=bind,source=/home/s1n7ax/.config/nvim,target=/root/.config/nvim'
       '';
 
