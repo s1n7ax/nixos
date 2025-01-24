@@ -1,11 +1,11 @@
-{ pkgs, ... }:
+{ settings, pkgs, ... }:
 {
   programs.kitty = {
     enable = true;
 
     font = {
-      name = "Maple Mono NF";
-      size = 18;
+      name = settings.font.name;
+      size = settings.font.size;
       package = pkgs.maple-mono-NF;
     };
     settings = {

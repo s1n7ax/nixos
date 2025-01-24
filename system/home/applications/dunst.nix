@@ -40,7 +40,7 @@ in
         gap_size = 5;
         separator_color = "auto";
         sort = "yes";
-        font = "${settings.font.name} ${settings.font.size}";
+        font = "${settings.font.name} ${toString settings.font.size}";
         line_height = 3;
         markup = "full";
         format = "%s\n%b";

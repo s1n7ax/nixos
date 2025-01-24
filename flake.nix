@@ -28,8 +28,8 @@
           size = 32;
         };
         font = {
-          name = "Maple Mono NF";
-          size = "18";
+          name = "MonaspiceNeNerdFontMono";
+          size = 18;
         };
         icon = {
           name = "Tela-circle-dark";

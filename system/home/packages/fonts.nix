@@ -23,7 +23,8 @@
     noto-fonts-color-emoji
     # use nerd.fonts.<font_name> where font_name is any one of the fonts name from
     # https://www.nerdfonts.com/font-downloads
-    # nerd-fonts.fira-code
+    nerd-fonts.fira-code
+    nerd-fonts.monaspace
     maple-mono-NF
   ];
 }
