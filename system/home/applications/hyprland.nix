@@ -30,25 +30,25 @@ in
       };
 
       windowrulev2 = [
-        "workspace 1,class:(org.kde.digikam)"
-        "workspace 2,class:(steam),float(0)"
-        "workspace 2,title:(Steam),float(0)"
-        "workspace 3,class:(Tor Browser)"
-        "workspace 3,class:(obsidian)"
+        "workspace 1, monitor:HDMI-A-1, class:(org.kde.digikam)"
+        "workspace 2, monitor:HDMI-A-1, class:(steam),float(0)"
+        "workspace 2, monitor:HDMI-A-1, title:(Steam),float(0)"
+        "workspace 3, monitor:HDMI-A-1, class:(Tor Browser)"
+        "workspace 3, monitor:HDMI-A-1, class:(obsidian)"
 
-        "workspace 4,class:(firefox)"
-        "workspace 4,class:(LibreWolf)"
+        "workspace 4, monitor:HDMI-A-1, class:(firefox)"
+        "workspace 4, monitor:HDMI-A-1, class:(LibreWolf)"
 
-        "workspace 5,class:(com.obsproject.Studio)"
+        "workspace 5, monitor:HDMI-A-1, class:(com.obsproject.Studio)"
 
-        "workspace 8,class:(com.github.wwmm.easyeffects)"
-        "workspace 8,class:(pavucontrol)"
-        "workspace 8,class:(org.pulseaudio.pavucontrol)"
-        "workspace 8,class:(com.saivert.pwvucontrol)"
-        "workspace 8,class:(.blueman-manager-wrapped)"
+        "workspace 8, class:(com.github.wwmm.easyeffects)"
+        "workspace 8, class:(pavucontrol)"
+        "workspace 8, class:(org.pulseaudio.pavucontrol)"
+        "workspace 8, class:(com.saivert.pwvucontrol)"
+        "workspace 8, class:(.blueman-manager-wrapped)"
 
-        "float,class:(steam),title:(Friends List)"
-        "float,class:(Tor Browser)"
+        "float, monitor:HDMI-A-1, class:(steam),title:(Friends List)"
+        "float, monitor:HDMI-A-1, class:(Tor Browser)"
       ];
       monitor = ",preferred,auto,1";
       exec-once = [
