@@ -340,7 +340,8 @@ in
       "mailnews.mx_service_url" = lock-val "";
       "media.autoplay.default" = lock-val 2;
       "media.decoder-doctor.new-issue-endpoint" = lock-val "";
-      "media.eme.enabled" = lock-val false;
+      # media.eme.enabled is needed for DRM to work
+      "media.eme.enabled" = lock-val true;
       "media.getusermedia.audiocapture.enabled" = lock-val false;
       "media.getusermedia.browser.enabled" = lock-val false;
       "media.getusermedia.screensharing.enabled" = lock-val false;
