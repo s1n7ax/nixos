@@ -46,7 +46,7 @@
       DisableTelemetry = true;
       DNSOverHTTPS = {
         Enabled = true;
-        ProviderURL = "mozilla.cloudflare-dns.com";
+        ProviderURL = "https://mozilla.cloudflare-dns.com";
       };
       DisableFirefoxStudies = true;
       DisableSecurityBypass = {
