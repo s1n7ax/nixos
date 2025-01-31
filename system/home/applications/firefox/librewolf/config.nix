@@ -8,6 +8,12 @@ in
 {
   programs.firefox.policies = {
     Preferences = {
+      # DRM doesn't work when following are disabled
+      "media.eme.enabled" = lock-val true;
+      "media.gmp-widevinecdm.enabled" = lock-val true;
+      "media.gmp-widevinecdm.visible" = lock-val true;
+
+      #
       "accessibility.force_disabled" = lock-val 1;
       "accessibility.support.url" = lock-val "";
       "accessibility.typeaheadfind" = lock-val true;
@@ -340,8 +346,6 @@ in
       "mailnews.mx_service_url" = lock-val "";
       "media.autoplay.default" = lock-val 2;
       "media.decoder-doctor.new-issue-endpoint" = lock-val "";
-      # media.eme.enabled is needed for DRM to work
-      "media.eme.enabled" = lock-val true;
       "media.getusermedia.audiocapture.enabled" = lock-val false;
       "media.getusermedia.browser.enabled" = lock-val false;
       "media.getusermedia.screensharing.enabled" = lock-val false;
@@ -355,8 +359,6 @@ in
       "media.gmp-manager.url.override" = "data:text/plain,";
       "media.gmp-provider.enabled" = lock-val false;
       "media.gmp-widevinecdm.autoupdate" = lock-val false;
-      "media.gmp-widevinecdm.enabled" = lock-val false;
-      "media.gmp-widevinecdm.visible" = lock-val false;
       "media.gmp.trial-create.enabled" = lock-val false;
       "media.navigator.enabled" = lock-val false;
       "media.peerconnection.enabled" = lock-val false;
