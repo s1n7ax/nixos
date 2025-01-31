@@ -30,6 +30,11 @@
           url = "https://app.clickup.com/9016146704/v/l/6-901604061184-1";
         }
         {
+          name = "DeepSeek";
+          tags = [ "AI" ];
+          url = "https://chat.deepseek.com/";
+        }
+        {
           name = "ChatGPT";
           tags = [ "AI" ];
           url = "https://chatgpt.com/";

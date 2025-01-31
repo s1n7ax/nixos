@@ -44,9 +44,9 @@
           url = "http://192.168.1.111:8123/";
         }
         {
-          name = "ChatGPT";
-          tags = [ "ai" ];
-          url = "https://chatgpt.com/";
+          name = "DeepSeek";
+          tags = [ "AI" ];
+          url = "https://chat.deepseek.com/";
         }
         {
           name = "LeetCode";
