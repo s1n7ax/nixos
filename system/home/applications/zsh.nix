@@ -25,6 +25,8 @@
       bindkey "^a" beginning-of-line
       bindkey "^o" end-of-line
       bindkey "^l" clear-screen
+      bindkey "^s" up-line-or-history
+      bindkey "^t" down-line-or-history
     '';
     shellAliases = {
       n = "nvim";
