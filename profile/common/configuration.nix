@@ -8,7 +8,7 @@ in
   programs.zsh.enable = true;
 
   users.users.${username} = {
-    shell = pkgs.zsh;
+    shell = pkgs.${settings.shell};
     isNormalUser = true;
     group = username;
     extraGroups = [

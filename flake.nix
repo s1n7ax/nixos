@@ -17,7 +17,7 @@
 
       settings = {
         username = "s1n7ax";
-        shell = "zsh";
+        shell = "fish";
         wm = {
           name = "hyprland";
           package = pkgs.hyprland;
@@ -90,7 +90,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-21.05";
     hardware.url = "github:nixos/nixos-hardware";
     home-manager = {
       url = "github:nix-community/home-manager";
