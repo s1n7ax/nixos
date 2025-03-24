@@ -25,6 +25,6 @@
     # https://www.nerdfonts.com/font-downloads
     nerd-fonts.fira-code
     nerd-fonts.monaspace
-    maple-mono-NF
+    maple-mono.NF
   ];
 }
