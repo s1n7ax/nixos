@@ -5,7 +5,7 @@
   ...
 }:
 {
-  imports = [ ../../applications/zed/zed.nix ];
+  # imports = [ ../../applications/zed/zed.nix ];
 
   options.package.dev.ide.enable = lib.mkEnableOption "IDEs";
 
