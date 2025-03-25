@@ -3,6 +3,7 @@
   imports = [
     ../common/configuration.nix
     ./hardware-configuration.nix
+    ./gpg.nix
 
     ../../system/core/boot.nix
     ../../system/core/network-manager.nix
