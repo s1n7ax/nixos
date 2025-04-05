@@ -12,6 +12,11 @@
             url = "http://192.168.1.111:8123";
           }
           {
+            name = "Frigate";
+            tags = [ "self-hosted" ];
+            url = "http://192.168.1.111:8971";
+          }
+          {
             name = "Portainer";
             tags = [ "self-hosted" ];
             url = "http://192.168.1.111:9000/";
