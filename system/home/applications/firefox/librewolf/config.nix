@@ -12,7 +12,7 @@ in
 {
   options.package.firefox.librewolf.enable = lib.mkEnableOption "Apply librewolf policies to Firefox";
 
-  config = lib.mkIf config.package.dev.c.enable {
+  config = lib.mkIf config.package.firefox.librewolf.enable {
     programs.firefox.policies = {
       Preferences = {
         # DRM doesn't work when following are disabled
@@ -589,5 +589,4 @@ in
       };
     };
   };
-
 }
