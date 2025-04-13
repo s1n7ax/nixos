@@ -14,7 +14,7 @@
     screen-capture.enable = true;
     web.enable = true;
     present.enable = true;
-    firefox.librewolf.enable = false;
+    # firefox.librewolf.enable = false;
 
     dev = {
       llm.enable = true;
