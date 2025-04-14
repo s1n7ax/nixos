@@ -17,7 +17,7 @@
 
       settings = {
         username = "s1n7ax";
-        shell = "zsh";
+        shell = "fish";
         wm = {
           name = "hyprland";
           package = pkgs.hyprland;
@@ -35,7 +35,7 @@
           name = "Tela-circle-dark";
           package = pkgs.tela-circle-icon-theme;
         };
-        terminal = "alacritty";
+        terminal = "kitty";
       };
       args = {
         inherit

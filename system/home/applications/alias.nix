@@ -1,6 +1,6 @@
 { ... }:
-{
-  home.shellAliases = {
+let
+  alias = {
     # kubectl
     k = "kubectl";
     kgg = "kubectl get all";
@@ -17,4 +17,8 @@
     dde = "docker compose exec";
     ddb = "docker compose build";
   };
+in
+{
+  home.shellAliases = alias;
+  programs.fish.shellAliases = alias;
 }

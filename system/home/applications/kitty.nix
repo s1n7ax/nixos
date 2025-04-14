@@ -10,8 +10,12 @@
     settings = {
       "ctrl+c" = "copy_or_interrupt";
       "cursor_blink_interval" = 0;
+      "clear_all_shortcuts" = "no";
+
     };
     themeFile = "Catppuccin-Mocha";
-    shellIntegration.enableZshIntegration = true;
+
+    shellIntegration.enableZshIntegration = settings.shell == "zsh";
+    shellIntegration.enableFishIntegration = settings.shell == "fish";
   };
 }

@@ -5,10 +5,10 @@ in
 {
   networking.hostName = username;
   time.timeZone = "Asia/Colombo";
-  programs.zsh.enable = true;
+  programs.${settings.shell}.enable = true;
 
   users.users.${username} = {
-    shell = pkgs.zsh;
+    shell = pkgs.${settings.shell};
     isNormalUser = true;
     group = username;
     extraGroups = [

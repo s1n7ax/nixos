@@ -1,8 +1,9 @@
-{ ... }: {
+{ settings, ... }:
+{
   programs.zoxide = {
     enable = true;
-    enableNushellIntegration = false;
-    enableZshIntegration = true;
-    enableFishIntegration = false;
+    enableNushellIntegration = settings.shell == "nu";
+    enableZshIntegration = settings.shell == "zsh";
+    enableFishIntegration = true;
   };
 }
