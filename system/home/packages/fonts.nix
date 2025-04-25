@@ -6,6 +6,7 @@
 
       emoji = [ "Noto Color Emoji" ];
       monospace = [
+        "Iosevka Nerd Font Mono"
         "Noto Sans Mono"
         "CaskaydiaCove Nerd Font Mono"
       ];
@@ -25,6 +26,7 @@
     # https://www.nerdfonts.com/font-downloads
     nerd-fonts.fira-code
     nerd-fonts.monaspace
+    nerd-fonts.iosevka
     maple-mono.NF
   ];
 }

@@ -28,7 +28,7 @@
           size = 32;
         };
         font = {
-          name = "MonaspiceNeNerdFontMono";
+          name = "Iosevka Nerd Font Mono";
           size = 18;
         };
         icon = {
