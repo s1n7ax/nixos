@@ -23,6 +23,7 @@ in
       "video"
       "wheel"
       "adbusers"
+      "disk"
     ];
   };
 

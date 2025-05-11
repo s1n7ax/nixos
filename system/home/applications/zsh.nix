@@ -15,7 +15,7 @@
     };
 
     syntaxHighlighting.enable = true;
-    initExtra = ''
+    initContent = ''
       # this disables the <c-s> terminal freeze
       stty -ixon
 
