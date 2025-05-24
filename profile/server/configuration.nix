@@ -1,39 +1,18 @@
 { ... }:
 {
   features = {
-    desktop = {
-      enable = false;
-      hyprland.enable = false;
-      xdg.enable = false;
-      kdeconnect.enable = false;
-      dconf.enable = true;
-    };
+    desktop.dconf.enable = true;
 
-    hardware = {
-      bluetooth.enable = false;
-      audio.enable = false;
-      openrgb.enable = false;
-    };
+    development.docker.enable = true;
 
-    development = {
-      virtualbox.enable = false;
-      virt-manager.enable = false;
-    };
-
-    security = {
-      gpg.enable = false;
-    };
+    security.gpg.enable = true;
 
     network = {
       ssh = {
         enable = true;
         agent.enable = true;
       };
-
     };
-
-    services.enable = false;
-    storage.cloud.enable = false;
   };
 
   imports = [
