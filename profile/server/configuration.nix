@@ -37,7 +37,7 @@
 
   imports = [
     ./hardware-configuration.nix
-    ./gpg.nix
+    # ./gpg.nix
 
     ../common/configuration.nix
 
