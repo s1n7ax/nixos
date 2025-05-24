@@ -5,11 +5,6 @@
     autosuggestion.enable = true;
     enableCompletion = true;
     oh-my-zsh.enable = true;
-    sessionVariables = {
-      WLR_NO_HARDWARE_CURSORS = "1"; # no cursor fix for wayland
-      EDITOR = "nvim";
-      TERM = "alacritty";
-    };
     localVariables = {
       PATH = "/home/s1n7ax/.cargo/bin:$PATH";
     };

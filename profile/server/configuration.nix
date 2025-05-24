@@ -19,6 +19,6 @@
     ../common/configuration.nix
 
     ./hardware-configuration.nix
-    # ./gpg.nix
+    ./gpg.nix
   ];
 }
