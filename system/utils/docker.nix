@@ -1,5 +1,4 @@
 {
-  lib,
   config,
   ...
 }:
@@ -26,7 +25,5 @@
   #   )
   # ];
 
-  options.package.docker.enable = lib.mkEnableOption "Docker";
-
-  config.virtualisation.docker.enable = config.package.docker.enable;
+  config.virtualisation.docker.enable = config.features.development.docker.enable;
 }

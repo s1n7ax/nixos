@@ -2,7 +2,7 @@
 {
   options.package.nvidia.enable = lib.mkEnableOption "Nvidia";
 
-  config = lib.mkIf config.package.nvidia.enable {
+  config = lib.mkIf config.features.hardware.nvidia.enable {
     hardware.graphics = {
       enable = true;
       enable32Bit = true;

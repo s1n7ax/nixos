@@ -17,8 +17,5 @@
     ../../system/hardware/bluetooth.nix
   ];
 
-  package = {
-    docker.enable = true;
-  };
   programs.nix-ld.enable = true;
 }

@@ -23,10 +23,6 @@
     ../../system/mounts/cloud-storages.nix
   ];
 
-  package = {
-    docker.enable = true;
-  };
-
   services.openssh = {
     enable = true;
     settings = {

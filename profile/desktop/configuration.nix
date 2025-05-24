@@ -22,11 +22,6 @@
     ../../system/mounts/cloud-storages.nix
   ];
 
-  package = {
-    nvidia.enable = true;
-    docker.enable = true;
-  };
-
   services.openssh = {
     enable = true;
     settings = {
