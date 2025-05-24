@@ -1,10 +1,14 @@
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
+
+with lib;
+
 {
   # flatpak needs xdg.portal.enable = true
-  xdg.portal = {
+  xdg.portal = mkIf config.features.desktop.xdg.enable {
     enable = true;
-    configPackages = with pkgs; [
-      xdg-desktop-portal
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-hyprland
+      xdg-desktop-portal-gtk
       kdePackages.xdg-desktop-portal-kde
     ];
   };

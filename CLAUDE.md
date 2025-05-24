@@ -15,6 +15,9 @@ sudo nixos-rebuild switch --upgrade --flake ./#desktop
 # Build and switch to work profile  
 sudo nixos-rebuild switch --upgrade --flake ./#work
 
+# Build and switch to server profile
+sudo nixos-rebuild switch --upgrade --flake ./#server
+
 # Test configuration without switching
 sudo nixos-rebuild test --flake ./#desktop
 
@@ -83,10 +86,34 @@ package = {
 
 Each package module in `system/home/packages/` checks these flags to conditionally install packages.
 
+### Feature Flag System
+The configuration uses a custom options system (`system/options.nix`) to control features across all profiles:
+
+#### Available Feature Categories
+- **desktop**: Desktop environment features (hyprland, xdg, kdeconnect)
+- **security**: Security tools (gpg)
+- **hardware**: Hardware support (bluetooth, nvidia, openrgb, audio)
+- **development**: Development tools (docker, virtualbox, virt-manager)
+- **services**: System services (fwupd, flatpak)
+- **storage**: Storage features (cloud mounts)
+- **network**: Network services (ssh)
+
+#### Feature Configuration
+Features are configured in `flake.nix` for each profile:
+```nix
+features = {
+  desktop.enable = true;
+  desktop.hyprland.enable = true;
+  hardware.bluetooth.enable = false;  # Disable for server
+  development.virtualbox.enable = true;
+};
+```
+
 ### Profile Differences
 - **desktop**: Full desktop environment with gaming, multimedia, development tools
-- **work**: Work-focused profile with development tools but minimal gaming/multimedia
-- Both profiles share common base configuration and can be extended independently
+- **work**: Work-focused profile with development tools but minimal virtualization
+- **server**: Minimal server profile with most desktop features disabled
+- All profiles share common base configuration and can be extended independently
 
 ### Hardware Configuration
 Each profile requires its own `hardware-configuration.nix` that must be updated for the target hardware before installation.

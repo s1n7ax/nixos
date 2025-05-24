@@ -1,8 +1,11 @@
-{ ... }:
-{
-  security.rtkit.enable = true;
+{ config, lib, ... }:
 
-  services.pipewire = {
+with lib;
+
+{
+  security.rtkit.enable = mkIf config.features.hardware.audio.enable true;
+
+  services.pipewire = mkIf config.features.hardware.audio.enable {
     enable = true;
     audio.enable = true; # makes pipewire the default audio server
     alsa.enable = true;

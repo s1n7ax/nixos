@@ -1,8 +1,12 @@
-{ pkgs, settings, ... }:
+{ config, lib, pkgs, settings, ... }:
+
+with lib;
+
 let
   username = settings.username;
 in
-{
+
+mkIf config.features.storage.cloud.enable {
   environment.systemPackages = with pkgs; [ rclone ];
 
   systemd.mounts = [

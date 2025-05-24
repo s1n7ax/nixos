@@ -1,11 +1,16 @@
-{ ... }:
+{ config, lib, ... }:
+
+with lib;
+
 {
-  programs.kdeconnect.enable = true;
-  programs.dconf.enable = true;
-  programs.gnupg.agent = {
+  programs.kdeconnect.enable = mkIf config.features.desktop.kdeconnect.enable true;
+  programs.dconf.enable = mkIf config.features.desktop.enable true;
+
+  programs.gnupg.agent = mkIf config.features.security.gpg.enable {
     enable = true;
   };
-  programs.hyprland = {
+  
+  programs.hyprland = mkIf config.features.desktop.hyprland.enable {
     enable = true;
     xwayland.enable = true;
   };

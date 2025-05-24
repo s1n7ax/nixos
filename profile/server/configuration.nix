@@ -3,6 +3,7 @@
   imports = [
     ./hardware-configuration.nix
     ./gpg.nix
+
     ../common/configuration.nix
 
     ../../system/core/boot.nix
@@ -23,7 +24,6 @@
   ];
 
   package = {
-    nvidia.enable = true;
     docker.enable = true;
   };
 
