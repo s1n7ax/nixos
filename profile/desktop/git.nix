@@ -10,7 +10,7 @@
 
     userName = settings.username;
     userEmail = "srineshnisala@gmail.com";
-    signing.key = "168D1103741F3CE3862B4F4BB0F715E8C4A30F1E";
+    signing.key = "srineshnisala@gmail.com";
     signing.signByDefault = true;
 
     extraConfig = {
