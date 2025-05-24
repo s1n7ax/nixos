@@ -7,15 +7,15 @@ with lib;
     # Desktop Environment Features
     desktop = {
       enable = mkEnableOption "desktop environment features";
-      
+
       hyprland = {
         enable = mkEnableOption "Hyprland window manager";
       };
-      
+
       xdg = {
         enable = mkEnableOption "XDG desktop portals";
       };
-      
+
       kdeconnect = {
         enable = mkEnableOption "KDE Connect";
       };
@@ -28,20 +28,20 @@ with lib;
       };
     };
 
-    # Hardware Features  
+    # Hardware Features
     hardware = {
       bluetooth = {
         enable = mkEnableOption "Bluetooth support";
       };
-      
+
       nvidia = {
         enable = mkEnableOption "NVIDIA drivers";
       };
-      
+
       openrgb = {
         enable = mkEnableOption "OpenRGB for RGB lighting";
       };
-      
+
       audio = {
         enable = mkEnableOption "PipeWire audio system";
       };
@@ -52,11 +52,11 @@ with lib;
       docker = {
         enable = mkEnableOption "Docker containerization";
       };
-      
+
       virtualbox = {
         enable = mkEnableOption "VirtualBox virtualization";
       };
-      
+
       virt-manager = {
         enable = mkEnableOption "libvirt/KVM virtualization";
       };
@@ -78,7 +78,11 @@ with lib;
     network = {
       ssh = {
         enable = mkEnableOption "OpenSSH server";
+        agent = {
+          enable = mkEnableOption "SSH agent support";
+        };
       };
     };
   };
 }
+

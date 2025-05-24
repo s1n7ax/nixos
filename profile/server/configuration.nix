@@ -1,5 +1,40 @@
 { ... }:
 {
+  features = {
+    desktop = {
+      enable = false;
+      hyprland.enable = false;
+      xdg.enable = false;
+      kdeconnect.enable = false;
+    };
+
+    hardware = {
+      bluetooth.enable = false;
+      audio.enable = false;
+      openrgb.enable = false;
+    };
+
+    development = {
+      virtualbox.enable = false;
+      virt-manager.enable = false;
+    };
+
+    security = {
+      gpg.enable = false;
+    };
+
+    network = {
+      ssh = {
+        enable = true;
+        agent.enable = true;
+      };
+
+    };
+
+    services.enable = false;
+    storage.cloud.enable = false;
+  };
+
   imports = [
     ./hardware-configuration.nix
     ./gpg.nix
@@ -22,11 +57,4 @@
 
     ../../system/mounts/cloud-storages.nix
   ];
-
-  services.openssh = {
-    enable = true;
-    settings = {
-      AllowUsers = [ "s1n7ax" ];
-    };
-  };
 }
