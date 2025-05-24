@@ -42,6 +42,7 @@
     ../../system/core/network-manager.nix
     ../../system/core/pipewire.nix
     ../../system/core/polkit.nix
+    ../../system/core/ssh.nix
 
     ../../system/utils/applications.nix
     ../../system/utils/services.nix

@@ -9,6 +9,5 @@ with lib;
         AllowUsers = [ "s1n7ax" ];
       };
     };
-    services.ssh-agent.enable = true;
   };
 }
