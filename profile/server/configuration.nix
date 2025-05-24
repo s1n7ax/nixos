@@ -6,6 +6,7 @@
       hyprland.enable = false;
       xdg.enable = false;
       kdeconnect.enable = false;
+      dconf.enable = true;
     };
 
     hardware = {

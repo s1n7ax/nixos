@@ -4,9 +4,6 @@
     enable = true;
     enableFishIntegration = true;
     keymap = {
-
-      # colemak-dh friendly keybindings
-
       manager.prepend_keymap = [
         {
           on = "n";

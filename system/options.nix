@@ -8,6 +8,10 @@ with lib;
     desktop = {
       enable = mkEnableOption "desktop environment features";
 
+      dconf = {
+        enable = mkEnableOption "Dconf configuration system";
+      };
+
       hyprland = {
         enable = mkEnableOption "Hyprland window manager";
       };
@@ -85,4 +89,3 @@ with lib;
     };
   };
 }
-
