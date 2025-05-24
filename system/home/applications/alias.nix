@@ -38,6 +38,7 @@ let
 
     # git
     g = "git";
+    gf = "git fetch origin";
     ga = "git add";
     gl = "git log --oneline";
     gla = "git log";
