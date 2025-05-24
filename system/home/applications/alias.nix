@@ -19,7 +19,7 @@ let
 
     n = "nvim";
     nv = "neovide";
-    f = "vifm";
+    f = "yazi";
     lg = "lazygit";
     ld = "lazydocker";
     yt = "yt-dlp";
