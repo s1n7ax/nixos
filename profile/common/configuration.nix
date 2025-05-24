@@ -46,8 +46,24 @@ in
 
   imports = [
     ./firewall.nix
+    ../../system/core/boot.nix
+    ../../system/core/network-manager.nix
+    ../../system/core/pipewire.nix
+    ../../system/core/polkit.nix
+    ../../system/core/ssh.nix
+
+    ../../system/hardware/bluetooth.nix
     ../../system/hardware/nvidia.nix
+    ../../system/hardware/openrgb.nix
+
+    ../../system/mounts/cloud-storages.nix
+
+    ../../system/utils/applications.nix
     ../../system/utils/docker.nix
     ../../system/utils/podman.nix
+    ../../system/utils/services.nix
+    ../../system/utils/virt-manager.nix
+    ../../system/utils/virtualbox.nix
+    ../../system/utils/xdg.nix
   ];
 }
