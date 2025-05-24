@@ -46,24 +46,24 @@ in
 
   imports = [
     ./firewall.nix
-    ../../system/core/boot.nix
-    ../../system/core/network-manager.nix
-    ../../system/core/pipewire.nix
-    ../../system/core/polkit.nix
-    ../../system/core/ssh.nix
+    ../../system/nixos/core/boot.nix
+    ../../system/nixos/core/network-manager.nix
+    ../../system/nixos/core/pipewire.nix
+    ../../system/nixos/core/polkit.nix
+    ../../system/nixos/core/ssh.nix
 
-    ../../system/hardware/bluetooth.nix
-    ../../system/hardware/nvidia.nix
-    ../../system/hardware/openrgb.nix
+    ../../system/nixos/hardware/bluetooth.nix
+    ../../system/nixos/hardware/nvidia.nix
+    ../../system/nixos/hardware/openrgb.nix
 
-    ../../system/mounts/cloud-storages.nix
+    ../../system/nixos/mounts/cloud-storages.nix
 
-    ../../system/utils/applications.nix
-    ../../system/utils/docker.nix
-    ../../system/utils/podman.nix
-    ../../system/utils/services.nix
-    ../../system/utils/virt-manager.nix
-    ../../system/utils/virtualbox.nix
-    ../../system/utils/xdg.nix
+    ../../system/nixos/utils/applications.nix
+    ../../system/nixos/utils/docker.nix
+    ../../system/nixos/utils/podman.nix
+    ../../system/nixos/utils/services.nix
+    ../../system/nixos/utils/virt-manager.nix
+    ../../system/nixos/utils/virtualbox.nix
+    ../../system/nixos/utils/xdg.nix
   ];
 }
