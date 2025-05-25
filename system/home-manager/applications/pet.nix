@@ -18,11 +18,6 @@
         command = "docker rmi -f $(docker images -aq)";
         tag = [ "docker" ];
       }
-      {
-        description = "";
-        command = "docker rmi -f $(docker images -aq)";
-        tag = [ "git" ];
-      }
     ];
   };
 }
