@@ -14,6 +14,7 @@
     ../applications/htop.nix
     ../applications/alias.nix
     ../applications/ssh.nix
+    ../applications/pet.nix
   ];
 
   services.kdeconnect.enable = true;
