@@ -27,5 +27,6 @@
   virtualisation.docker = {
     enable = config.features.development.docker.enable;
     rootless.enable = true;
+    rootless.setSocketVariable = true;
   };
 }
