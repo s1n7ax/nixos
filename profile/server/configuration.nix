@@ -20,5 +20,6 @@
 
     ./hardware-configuration.nix
     ./gpg.nix
+    ../../system/nixos/profile/server
   ];
 }
