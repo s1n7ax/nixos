@@ -24,6 +24,8 @@
   #     final: prev: { docker = pinnedPkgs.docker; }
   #   )
   # ];
-
-  config.virtualisation.docker.enable = config.features.development.docker.enable;
+  virtualisation.docker = {
+    enable = config.features.development.docker.enable;
+    rootless.enable = true;
+  };
 }
