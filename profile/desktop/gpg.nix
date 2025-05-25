@@ -1,6 +1,7 @@
 { ... }:
 {
   programs.gnupg.agent.settings = {
-    default-cache-ttl = 300;
+    # expires after 15 min
+    default-cache-ttl = 900000;
   };
 }
