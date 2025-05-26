@@ -1,5 +1,5 @@
 {
   github = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
   server = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHAsksMYthB3wMx9p1PQU/WNtVdfVt3dNXIE/CXUKB45";
-  desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqbfHrSpJ59EVa8+EnpAS6begsk+eG7x/klxbHf7fwN";
+  desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICCbb/a4qlKElECtcA07ImQk+QfOILQ5IkiXjpCRqhlL";
 }
