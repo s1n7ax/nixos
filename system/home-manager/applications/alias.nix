@@ -38,6 +38,7 @@ let
 
     # git
     g = "git";
+    gcl = "git clone";
     gf = "git fetch origin";
     ga = "git add";
     gl = "git log --oneline";
