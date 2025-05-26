@@ -24,6 +24,7 @@ in
       "wheel"
       "adbusers"
       "disk"
+      "apex" # for google coral
     ];
   };
 
@@ -55,6 +56,7 @@ in
     ../../system/nixos/hardware/bluetooth.nix
     ../../system/nixos/hardware/nvidia.nix
     ../../system/nixos/hardware/openrgb.nix
+    ../../system/nixos/hardware/coral.nix
 
     ../../system/nixos/mounts/cloud-storages.nix
 

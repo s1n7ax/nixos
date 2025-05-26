@@ -49,6 +49,10 @@ with lib;
       audio = {
         enable = mkEnableOption "PipeWire audio system";
       };
+
+      coral = {
+        enable = mkEnableOption "Google Coral drivers for PCIe";
+      };
     };
 
     # Development & Virtualization

@@ -7,6 +7,8 @@
 
     security.gpg.enable = true;
 
+    hardware.coral.enable = true;
+
     network = {
       ssh = {
         enable = true;
