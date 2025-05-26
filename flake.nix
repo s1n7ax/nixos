@@ -56,6 +56,7 @@
           modules = [
             ./system/options.nix
             ./profile/desktop/configuration.nix
+            inputs.agenix.nixosModules.default
 
             home-manager.nixosModules.home-manager
             {
@@ -63,7 +64,10 @@
                 inherit extraSpecialArgs;
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                users.s1n7ax = import ./profile/desktop/home.nix;
+                users.${settings.username} = import ./profile/desktop/home.nix;
+                sharedModules = [
+                  inputs.agenix.homeManagerModules.default
+                ];
               };
             }
           ];
@@ -77,6 +81,7 @@
           modules = [
             ./system/options.nix
             ./profile/server/configuration.nix
+            inputs.agenix.nixosModules.default
 
             home-manager.nixosModules.home-manager
             {
@@ -84,7 +89,7 @@
                 inherit extraSpecialArgs;
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                users.s1n7ax = import ./profile/server/home.nix;
+                users.${settings.username} = import ./profile/server/home.nix;
               };
             }
           ];
@@ -101,5 +106,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    agenix.url = "github:ryantm/agenix";
   };
 }

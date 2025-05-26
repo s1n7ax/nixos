@@ -1,4 +1,9 @@
-{ pkgs, settings, ... }:
+{
+  pkgs,
+  settings,
+  config,
+  ...
+}:
 
 {
   home.file = {

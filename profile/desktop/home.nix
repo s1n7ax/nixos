@@ -1,4 +1,4 @@
-{ ... }:
+{ config, ... }:
 {
   programs.firefox.profiles.s1n7ax.id = 0;
   programs.firefox.profiles.work.id = 1;
@@ -40,4 +40,15 @@
     ../../system/home-manager/packages
     ../../system/home-manager/profile/desktop
   ];
+
+  age = {
+    identityPaths = [ "/home/s1n7ax/.ssh/id_ed25519" ];
+    secrets = {
+      secret3 = {
+        file = ../../secrets/secret1.age;
+      };
+    };
+  };
+
+  home.file."hello.txt".text = config.age.secrets.secret3.path;
 }

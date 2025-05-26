@@ -1,8 +1,14 @@
-{ pkgs, settings, ... }:
+{
+  pkgs,
+  settings,
+  config,
+  ...
+}:
 let
   username = settings.username;
 in
 {
+  # environment.etc."hello.txt".source = config.age.secrets.secret1.path;
   networking.hostName = username;
   time.timeZone = "Asia/Colombo";
   programs.${settings.shell}.enable = true;
@@ -45,6 +51,8 @@ in
   ];
 
   imports = [
+    ../../system/secrets.nix
+
     ./firewall.nix
     ../../system/nixos/core/boot.nix
     ../../system/nixos/core/network-manager.nix
