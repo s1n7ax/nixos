@@ -17,7 +17,7 @@
         }
         {
           on = "m";
-          run = "back";
+          run = "leave";
           desc = "Go back";
         }
         {
@@ -25,26 +25,74 @@
           run = "enter";
           desc = "Enter directory";
         }
-        # {
-        #   on = "l";
-        #   run = "open";
-        #   desc = "Open file or directory";
-        # }
-        # {
-        #   on = "c";
-        #   run = "copy";
-        #   desc = "Copy file or directory";
-        # }
-        # {
-        #   on = "v";
-        #   run = "paste";
-        #   desc = "Paste file or directory";
-        # }
-        # {
-        #   on = "d";
-        #   run = "delete";
-        #   desc = "Delete file or directory";
-        # }
+        {
+          on = "<c-q>";
+          run = "quit";
+          desc = "Quit";
+        }
+        {
+          on = "s";
+          run = "search --via=rg";
+          desc = "Search files by content via ripgrep";
+        }
+        {
+          on = "!";
+          for = "unix";
+          run = ''shell "$SHELL" --block'';
+          desc = "Open $SHELL here";
+        }
+        {
+          on = [
+            "g"
+            "h"
+          ];
+          run = "cd ~";
+          desc = "Go home";
+        }
+        {
+          on = [
+            "g"
+            "c"
+          ];
+          run = "cd ~/.config";
+          desc = "Go ~/.config";
+        }
+        {
+          on = [
+            "g"
+            "d"
+          ];
+          run = "cd ~/Downloads";
+          desc = "Go ~/Downloads";
+        }
+        {
+          on = [
+            "g"
+            "<Space>"
+          ];
+          run = "cd --interactive";
+          desc = "Jump interactively";
+        }
+        {
+          on = [
+            "g"
+            "f"
+          ];
+          run = "follow";
+          desc = "Follow hovered symlink";
+        }
+      ];
+      pick.prepend_keymap = [
+        {
+          on = "n";
+          run = "arrow 1";
+          desc = "Move cursor up";
+        }
+        {
+          on = "e";
+          run = "arrow -1";
+          desc = "Move cursor down";
+        }
       ];
     };
   };
