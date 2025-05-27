@@ -26,7 +26,9 @@
   # ];
   virtualisation.docker = {
     enable = config.features.development.docker.enable;
-    rootless.enable = true;
-    rootless.setSocketVariable = true;
+
+    # frigate does not work with rootless
+    # rootless.enable = false;
+    # rootless.setSocketVariable = false;
   };
 }
