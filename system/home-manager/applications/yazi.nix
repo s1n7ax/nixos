@@ -26,6 +26,11 @@
           desc = "Enter directory";
         }
         {
+          on = "<cr>";
+          run = "enter";
+          desc = "Enter directory";
+        }
+        {
           on = "<c-q>";
           run = "quit";
           desc = "Quit";

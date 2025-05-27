@@ -18,6 +18,16 @@
         command = "docker rmi -f $(docker images -aq)";
         tag = [ "docker" ];
       }
+      {
+        description = "Copy file with rsync";
+        command = "rsync --verbose --archive --append  <source> <destination>";
+        tag = [ "docker" ];
+      }
+      {
+        description = "Move file with rsync";
+        command = "rsync --verbose --archive --append --remove-source-files  <source> <destination>";
+        tag = [ "docker" ];
+      }
     ];
   };
 }
