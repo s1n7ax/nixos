@@ -10,5 +10,6 @@
     ripgrep
     starship
     zellij
+    xh
   ];
 }
