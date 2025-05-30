@@ -88,8 +88,7 @@ in
     secrets.hello = {
       owner = config.users.users.s1n7ax.name;
       group = config.users.users.s1n7ax.group;
+      path = "/etc/testing.txt";
     };
   };
-
-  environment.etc."testing.txt".text = "cat ${config.sops.secrets.hello.path}";
 }
