@@ -1,4 +1,10 @@
-{ pkgs, settings, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  settings,
+  ...
+}:
 let
   username = settings.username;
 in
@@ -46,6 +52,8 @@ in
   ];
 
   imports = [
+    inputs.sops-nix.nixosModules.sops
+
     ./firewall.nix
     ../../system/nixos/core/boot.nix
     ../../system/nixos/core/network-manager.nix
@@ -68,4 +76,20 @@ in
     ../../system/nixos/utils/virtualbox.nix
     ../../system/nixos/utils/xdg.nix
   ];
+
+  sops = {
+    defaultSopsFile = ../../secrets.yaml;
+    age = {
+      sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+      keyFile = "/var/lib/sops-nix/key.txt";
+      generateKey = true;
+    };
+
+    secrets.hello = {
+      owner = config.users.users.s1n7ax.name;
+      group = config.users.users.s1n7ax.group;
+    };
+  };
+
+  environment.etc."testing.txt".text = "cat ${config.sops.secrets.hello.path}";
 }

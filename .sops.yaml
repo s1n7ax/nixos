@@ -1,0 +1,9 @@
+keys:
+  - &s1n7ax age1lzy76q95cn2q56gpst8u6w2srgyarvte2hxt0duvvglku7w0xfvqmzdmk7
+  - &desktop age1m54q8uk72vvvn0fqj0jhje6mfyhvgrwf3zm6sdc9nqhgwzvsn4sslh0ynn
+creation_rules:
+  - path_regex: secrets.yaml$
+    key_groups:
+    - age:
+      - *s1n7ax
+      - *desktop
