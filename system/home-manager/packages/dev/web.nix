@@ -11,6 +11,7 @@
     home.packages = with pkgs; [
       jq
       httpie
+      bruno
       dart-sass
     ];
   };
