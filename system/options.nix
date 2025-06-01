@@ -61,6 +61,10 @@ with lib;
         enable = mkEnableOption "Docker containerization";
       };
 
+      podman = {
+        enable = mkEnableOption "Podman containerization";
+      };
+
       virtualbox = {
         enable = mkEnableOption "VirtualBox virtualization";
       };

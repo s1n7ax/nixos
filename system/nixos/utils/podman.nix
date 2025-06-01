@@ -1,8 +1,6 @@
-{ lib, config, ... }:
+{ config, ... }:
 {
-  options.package.podman.enable = lib.mkEnableOption "Podman";
-
   config.virtualisation.podman = {
-    enable = config.package.podman.enable;
+    enable = config.features.development.podman.enable;
   };
 }
