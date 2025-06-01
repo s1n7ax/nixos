@@ -3,6 +3,9 @@
   settings,
   ...
 }:
+let
+  secrets = builtins.toString inputs.secrets;
+in
 {
   imports = [
     inputs.sops-nix.homeManagerModules.sops
@@ -14,7 +17,7 @@
 
   sops = {
     age.keyFile = ".config/sops/age/keys.txt";
-    defaultSopsFile = ../../secrets.yaml;
+    defaultSopsFile = "${secrets}/secrets.yaml";
 
     secrets.hello = {
       path = "testing.txt";

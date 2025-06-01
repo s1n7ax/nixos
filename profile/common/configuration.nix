@@ -7,6 +7,7 @@
 }:
 let
   username = settings.username;
+  secrets = builtins.toString inputs.secrets;
 in
 {
   networking.hostName = username;
@@ -78,7 +79,7 @@ in
   ];
 
   sops = {
-    defaultSopsFile = ../../secrets.yaml;
+    defaultSopsFile = "${secrets}/secrets.yaml";
     age = {
       sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
       keyFile = "/var/lib/sops-nix/key.txt";
