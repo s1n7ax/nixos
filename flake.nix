@@ -107,7 +107,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     secrets = {
-      url = "git+ssh://git@github.com:s1n7ax/nix-secrets.git?ref=main&shallow=1";
+      url = "git+ssh://git@github.com/s1n7ax/nix-secrets?ref=main";
       flake = false;
     };
   };
