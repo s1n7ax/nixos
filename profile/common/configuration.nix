@@ -52,6 +52,7 @@ in
 
   imports = [
     inputs.sops-nix.nixosModules.sops
+    "${inputs.secrets}/modules/nixos.nix"
 
     ./firewall.nix
     ../../system/nixos/core/boot.nix
@@ -74,7 +75,6 @@ in
     ../../system/nixos/utils/virt-manager.nix
     ../../system/nixos/utils/virtualbox.nix
     ../../system/nixos/utils/xdg.nix
-    ../../system/nixos/secrets
   ];
 
 }
