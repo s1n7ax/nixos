@@ -26,7 +26,7 @@
           desc = "Enter directory";
         }
         {
-          on = "<cr>";
+          on = "<Enter>";
           run = "enter";
           desc = "Enter directory";
         }

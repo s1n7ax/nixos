@@ -1,4 +1,9 @@
-{ pkgs, settings, ... }:
+{
+  inputs,
+  pkgs,
+  settings,
+  ...
+}:
 let
   username = settings.username;
 in
@@ -46,6 +51,9 @@ in
   ];
 
   imports = [
+    inputs.sops-nix.nixosModules.sops
+    "${inputs.secrets}/modules/nixos.nix"
+
     ./firewall.nix
     ../../system/nixos/core/boot.nix
     ../../system/nixos/core/network-manager.nix
@@ -68,4 +76,5 @@ in
     ../../system/nixos/utils/virtualbox.nix
     ../../system/nixos/utils/xdg.nix
   ];
+
 }

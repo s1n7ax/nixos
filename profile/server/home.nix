@@ -12,7 +12,6 @@
   imports = [
     ../common/home.nix
     ./git.nix
-    ../../system/home-manager/packages
     ../../system/home-manager/profile/server
   ];
 }
