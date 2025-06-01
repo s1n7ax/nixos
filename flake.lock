@@ -271,8 +271,21 @@
         "neovim-nightly-overlay": "neovim-nightly-overlay",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-stable": "nixpkgs-stable",
+        "secrets": "secrets",
         "sops-nix": "sops-nix"
       }
+    },
+    "secrets": {
+      "flake": false,
+      "locked": {
+        "path": "git@github.com:s1n7ax/nix-secrets.git",
+        "type": "path"
+      },
+      "original": {
+        "path": "git@github.com:s1n7ax/nix-secrets.git",
+        "type": "path"
+      },
+      "parent": []
     },
     "sops-nix": {
       "inputs": {
