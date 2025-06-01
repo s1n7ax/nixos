@@ -1,5 +1,4 @@
 {
-  config,
   inputs,
   pkgs,
   settings,
@@ -7,7 +6,6 @@
 }:
 let
   username = settings.username;
-  secrets = builtins.toString inputs.secrets;
 in
 {
   networking.hostName = username;
@@ -76,20 +74,7 @@ in
     ../../system/nixos/utils/virt-manager.nix
     ../../system/nixos/utils/virtualbox.nix
     ../../system/nixos/utils/xdg.nix
+    ../../system/nixos/secrets
   ];
 
-  sops = {
-    defaultSopsFile = "${secrets}/secrets.yaml";
-    age = {
-      sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-      keyFile = "/var/lib/sops-nix/key.txt";
-      generateKey = true;
-    };
-
-    secrets.hello = {
-      owner = config.users.users.s1n7ax.name;
-      group = config.users.users.s1n7ax.group;
-      path = "/etc/testing.txt";
-    };
-  };
 }
