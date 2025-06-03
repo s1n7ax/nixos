@@ -95,5 +95,11 @@ with lib;
         };
       };
     };
+
+    homelab = {
+      frigate = {
+        enable = mkEnableOption "Frigate NVR";
+      };
+    };
   };
 }

@@ -9,9 +9,14 @@
     };
   };
 
+  features = {
+    homelab.frigate.enable = true;
+  };
+
   imports = [
     ../common/home.nix
     ./git.nix
     ../../system/home-manager/profile/server
+    ../../system/home-manager/homelab
   ];
 }

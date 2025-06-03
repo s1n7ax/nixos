@@ -29,7 +29,7 @@ in
       "wheel"
       "adbusers"
       "disk"
-      "apex" # for google coral
+      "coral" # for google coral
     ];
   };
 
@@ -55,6 +55,9 @@ in
     "${inputs.secrets}/modules/nixos.nix"
 
     ./firewall.nix
+
+    ../../system/options.nix
+
     ../../system/nixos/core/boot.nix
     ../../system/nixos/core/network-manager.nix
     ../../system/nixos/core/pipewire.nix

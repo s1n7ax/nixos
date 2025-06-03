@@ -13,5 +13,6 @@
     "${inputs.secrets}/modules/home-manager.nix"
 
     ../../system/home-manager/packages
+    ../../system/options.nix
   ];
 }
