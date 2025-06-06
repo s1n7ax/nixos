@@ -12,10 +12,9 @@ with lib;
   config = mkIf config.features.homelab.frigate.enable {
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab 0700 - - -"
-      "d %h/.homelab 0700 - - -"
+      "d %h/.homelab/frigate 0700 - - -"
       "d %h/.homelab/frigate/media 0700 - - -"
       "d %h/.homelab/frigate/config 0700 - - -"
-      "f %h/.homelab/frigate/config/frigate.db 0700 - - -"
     ];
 
     services.podman.containers = {
@@ -37,26 +36,22 @@ with lib;
         # Volume mounts
         volumes = [
           "/etc/localtime:/etc/localtime:ro"
-          "${data_path}/config/frigate.db:/config/frigate.db:Z"
+          "${data_path}/config:/config/db:Z"
           "${data_path}/media:/media/frigate:Z"
           "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
         ];
 
-        # Environment variables
         environment = {
           TZ = "Asia/Colombo";
           FRIGATE_RTSP_PASSWORD = "password";
         };
 
-        # Additional podman arguments for complex options
         extraPodmanArgs = [
-          # Shared memory size
           "--shm-size=1024m"
 
           # Tmpfs mount for cache
           "--mount=type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000"
 
-          # Group management
           "--group-add=keep-groups"
         ];
         autoStart = true;
@@ -82,6 +77,9 @@ with lib;
           coral:
             type: edgetpu
             device: pci
+
+        database:
+          path: /config/db/frigate.db
 
         objects:
           track:
