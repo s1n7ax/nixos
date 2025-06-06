@@ -43,15 +43,11 @@ with lib;
 
         environment = {
           TZ = "Asia/Colombo";
-          FRIGATE_RTSP_PASSWORD = "password";
         };
 
         extraPodmanArgs = [
           "--shm-size=1024m"
-
-          # Tmpfs mount for cache
           "--mount=type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000"
-
           "--group-add=keep-groups"
         ];
         autoStart = true;
