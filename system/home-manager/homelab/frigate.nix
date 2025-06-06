@@ -11,53 +11,57 @@ with lib;
 {
   config = mkIf config.features.homelab.frigate.enable {
     systemd.user.tmpfiles.rules = [
-      "d %h/.homelab 0700 - - -"
       "d %h/.homelab/frigate 0700 - - -"
       "d %h/.homelab/frigate/media 0700 - - -"
       "d %h/.homelab/frigate/config 0700 - - -"
     ];
 
-    services.podman.containers = {
-      frigate = {
-        image = "ghcr.io/blakeblackshear/frigate:stable";
+    services.podman.networks.frigate-network = {
+      autoStart = true;
+      driver = "bridge";
+    };
 
-        ports = [
-          "8971:8971"
-          "8554:8554"
-          "8555:8555/tcp"
-          "8555:8555/udp"
-        ];
+    services.podman.containers.frigate = {
+      image = "ghcr.io/blakeblackshear/frigate:stable";
 
-        devices = [
-          "/dev/apex_0:/dev/apex_0"
-          "/dev/dri/renderD128:/dev/dri/renderD128"
-        ];
+      network = [ "frigate-network" ];
 
-        # Volume mounts
-        volumes = [
-          "/etc/localtime:/etc/localtime:ro"
-          "${data_path}/config:/config/db:Z"
-          "${data_path}/media:/media/frigate:Z"
-          "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
-        ];
+      ports = [
+        "8971:8971"
+        "8554:8554"
+        "8555:8555/tcp"
+        "8555:8555/udp"
+      ];
 
-        environment = {
-          TZ = "Asia/Colombo";
-        };
+      devices = [
+        "/dev/apex_0:/dev/apex_0"
+        "/dev/dri/renderD128:/dev/dri/renderD128"
+      ];
 
-        extraPodmanArgs = [
-          "--shm-size=1024m"
-          "--mount=type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000"
-          "--group-add=keep-groups"
-        ];
-        autoStart = true;
+      # Volume mounts
+      volumes = [
+        "/etc/localtime:/etc/localtime:ro"
+        "${data_path}/config:/config/db:Z"
+        "${data_path}/media:/media/frigate:Z"
+        "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
+      ];
+
+      environment = {
+        TZ = "Asia/Colombo";
       };
+
+      extraPodmanArgs = [
+        "--shm-size=1024m"
+        "--mount=type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000"
+        "--group-add=keep-groups"
+      ];
+      autoStart = true;
     };
 
     sops.templates."frigate-config.yml" = {
       content = ''
         mqtt:
-          enabled: false
+          enabled: true
           host: mqtt
 
         tls:

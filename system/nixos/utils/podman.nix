@@ -1,6 +1,7 @@
-{ config, ... }:
+{ config, lib, ... }:
+with lib;
 {
-  config.virtualisation.podman = {
-    enable = config.features.development.podman.enable;
+  config.virtualisation.podman = mkIf config.features.development.podman.enable {
+    enable = true;
   };
 }
