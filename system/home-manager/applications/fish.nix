@@ -9,7 +9,7 @@
       set -g fish_greeting
 
 
-      bind ctrl-n backward-word
+      bind ctrl-n backward-word and backward-word and forward-word
       bind ctrl-e forward-word
       bind ctrl-w backward-kill-word
       bind ctrl-a beginning-of-line
