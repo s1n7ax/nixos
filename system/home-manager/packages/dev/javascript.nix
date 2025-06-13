@@ -25,6 +25,7 @@
       eslint_d
       nodePackages.typescript-language-server
       supabase-cli
+      typescript-go
     ];
   };
 }
