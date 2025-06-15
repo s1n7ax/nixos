@@ -16,6 +16,11 @@
         config.allowUnfree = true;
       };
 
+      pkgs-stable = import inputs.nixpkgs-stable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
       settings = {
         username = "s1n7ax";
         shell = "fish";
@@ -42,6 +47,7 @@
         inherit
           inputs
           settings
+          pkgs-stable
           ;
       };
       specialArgs = args;
@@ -93,7 +99,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
     hardware.url = "github:nixos/nixos-hardware";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     home-manager = {

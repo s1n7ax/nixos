@@ -2,6 +2,7 @@
   lib,
   config,
   pkgs,
+  pkgs-stable,
   ...
 }:
 {
@@ -13,7 +14,7 @@
       PATH = "$HOME/.local/share/pnpm:$PATH";
     };
     home.packages = with pkgs; [
-      deno
+      pkgs-stable.deno
       nodejs_22
       nodePackages.pnpm
       yarn
