@@ -1,14 +1,15 @@
+{ config, pkgs, ... }:
 {
   settings = {
     username = "s1n7ax";
     shell = "fish";
     wm = {
       name = "hyprland";
-      # package = pkgs.hyprland;
+      package = pkgs.hyprland;
     };
     cursor = {
       name = "Bibata-Modern-Ice";
-      # package = pkgs.bibata-cursors;
+      package = pkgs.bibata-cursors;
       size = 32;
     };
     font = {
@@ -17,7 +18,7 @@
     };
     icon = {
       name = "Tela-circle-dark";
-      # package = pkgs.tela-circle-icon-theme;
+      package = pkgs.tela-circle-icon-theme;
     };
     terminal = "kitty";
   };

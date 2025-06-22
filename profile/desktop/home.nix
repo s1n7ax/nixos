@@ -4,10 +4,10 @@
   programs.firefox.profiles.work.id = 1;
 
   imports = [
-    ../common/home.nix
-    ./git.nix
-    ../../system/home-manager/profile/desktop
-
     ./options.nix
+    ./git.nix
+    ../common/home.nix
+    ../../system/home-manager/profile/desktop
+    # ../../system/home-manager/homelab
   ];
 }
