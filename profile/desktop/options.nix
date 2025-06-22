@@ -64,7 +64,6 @@
     };
 
     development = {
-      enable = true;
       llm.enable = true;
       c.enable = true;
       container.enable = true;

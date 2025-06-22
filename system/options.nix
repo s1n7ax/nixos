@@ -200,6 +200,10 @@ with lib;
       browser = {
         enable = mkEnableOption "Web browser";
       };
+
+      firefox.librewolf = {
+        enable = mkEnableOption "LibreWolf browser";
+      };
     };
 
     presentation = {
