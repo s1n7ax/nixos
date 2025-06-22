@@ -56,8 +56,6 @@ in
 
     ./firewall.nix
 
-    ../../system/options.nix
-
     ../../system/nixos/core/boot.nix
     ../../system/nixos/core/network-manager.nix
     ../../system/nixos/core/pipewire.nix

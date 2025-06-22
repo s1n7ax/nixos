@@ -38,6 +38,7 @@
           inherit specialArgs;
 
           modules = [
+            ./system/options.nix
             ./profile/desktop/configuration.nix
 
             home-manager.nixosModules.home-manager
