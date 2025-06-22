@@ -2,8 +2,10 @@
   features = {
     desktop.dconf.enable = true;
 
-    development.docker.enable = true;
-    development.podman.enable = true;
+    virtualization = {
+      docker.enable = true;
+      podman.enable = true;
+    };
 
     security.gpg.enable = true;
 

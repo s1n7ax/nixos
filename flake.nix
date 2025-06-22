@@ -59,6 +59,7 @@
           inherit specialArgs;
 
           modules = [
+            ./system/options.nix
             ./profile/server/configuration.nix
 
             home-manager.nixosModules.home-manager
