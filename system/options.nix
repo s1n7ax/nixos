@@ -42,11 +42,6 @@ with lib;
         description = "Size of the cursor theme.";
       };
     };
-    # cursor = {
-    #   name = "Bibata-Modern-Ice";
-    #   package = pkgs.bibata-cursors;
-    #   size = 32;
-    # };
     font = {
       name = mkOption {
         type = types.str;
@@ -59,10 +54,6 @@ with lib;
         description = "Font size for the terminal.";
       };
     };
-    # font = {
-    #   name = "Iosevka Nerd Font Mono";
-    #   size = 18;
-    # };
     icon = {
       name = mkOption {
         type = types.str;
@@ -75,10 +66,6 @@ with lib;
         description = "Package for the icon theme.";
       };
     };
-    # icon = {
-    #   name = "Tela-circle-dark";
-    #   package = pkgs.tela-circle-icon-theme;
-    # };
     terminal = mkOption {
       type = types.str;
       default = "kitty";
@@ -87,7 +74,6 @@ with lib;
   };
 
   options.features = {
-    # Desktop Environment Features
     desktop = {
       enable = mkEnableOption "desktop environment features";
 
@@ -108,14 +94,12 @@ with lib;
       };
     };
 
-    # Security & Authentication
     security = {
       gpg = {
         enable = mkEnableOption "GnuPG agent";
       };
     };
 
-    # Hardware Features
     hardware = {
       bluetooth = {
         enable = mkEnableOption "Bluetooth support";
@@ -138,7 +122,6 @@ with lib;
       };
     };
 
-    # Development & Virtualization
     virtualization = {
       docker = {
         enable = mkEnableOption "Docker containerization";
@@ -157,19 +140,16 @@ with lib;
       };
     };
 
-    # Services
     services = {
       enable = mkEnableOption "additional system services";
     };
 
-    # Storage & Mounts
     storage = {
       cloud = {
         enable = mkEnableOption "cloud storage mounts";
       };
     };
 
-    # Network Services
     network = {
       ssh = {
         enable = mkEnableOption "OpenSSH server";
@@ -185,12 +165,16 @@ with lib;
       };
     };
 
-    video-production = {
-      camera = {
-        enable = mkEnableOption "External camera support for video production";
-      };
-      screen-capture = {
-        enable = mkEnableOption "Screen capture tools for video production";
+    productivity = {
+      enable = mkEnableOption "Productivity tools";
+
+      video-production = {
+        camera = {
+          enable = mkEnableOption "External camera support for video production";
+        };
+        screen-capture = {
+          enable = mkEnableOption "Screen capture tools for video production";
+        };
       };
     };
 

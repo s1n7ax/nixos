@@ -18,5 +18,7 @@
     ./git.nix
     ../../system/home-manager/profile/server
     ../../system/home-manager/homelab
+
+    ./options.nix
   ];
 }

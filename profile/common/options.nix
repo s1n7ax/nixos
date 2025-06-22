@@ -1,10 +1,5 @@
 {
-  inputs,
-  config,
-  ...
-}:
-{
-  config.settings = {
+  settings = {
     username = "s1n7ax";
     shell = "fish";
     wm = {
@@ -26,21 +21,4 @@
     };
     terminal = "kitty";
   };
-
-  config = {
-    home.username = config.settings.username;
-    home.homeDirectory = "/home/${config.settings.username}";
-    home.stateVersion = "24.05";
-  };
-
-  imports = [
-    ../../system/options.nix
-
-    inputs.sops-nix.homeManagerModules.sops
-    "${inputs.secrets}/modules/home-manager.nix"
-    ../../system/home-manager/packages
-
-    ./options.nix
-  ];
-
 }

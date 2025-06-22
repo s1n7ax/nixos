@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.features.video-production.camera.enable {
+  config = lib.mkIf config.features.productivity.video-production.camera.enable {
     home.packages = with pkgs; [ gphoto2 ];
   };
 }
