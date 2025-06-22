@@ -6,7 +6,7 @@
 }:
 {
 
-  config = lib.mkIf config.package.present.enable {
+  config = lib.mkIf config.features.presentation.enable {
     home.packages = with pkgs; [
       presenterm
     ];

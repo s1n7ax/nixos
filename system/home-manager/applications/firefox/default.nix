@@ -28,7 +28,7 @@
   ];
 
   programs.firefox = {
-    enable = config.package.web.enable;
+    enable = config.features.web.enable;
 
     # ---- POLICIES ----
     # Check about:policies#documentation for options.

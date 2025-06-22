@@ -25,7 +25,7 @@
   #   )
   # ];
   virtualisation.docker = {
-    enable = config.features.development.docker.enable;
+    enable = config.features.virtualization.docker.enable;
 
     # frigate does not work with rootless
     # rootless.enable = false;

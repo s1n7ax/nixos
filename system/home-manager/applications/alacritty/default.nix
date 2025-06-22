@@ -1,4 +1,4 @@
-{ pkgs, settings, ... }:
+{ pkgs, config, ... }:
 
 {
   home.file = {
@@ -12,7 +12,7 @@
       font = {
         size = 19;
         builtin_box_drawing = true;
-        normal.family = "${settings.font.name}";
+        normal.family = "${config.settings.font.name}";
       };
 
       cursor = {

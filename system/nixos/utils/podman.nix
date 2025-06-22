@@ -6,7 +6,7 @@
 }:
 with lib;
 {
-  config.virtualisation.podman = mkIf config.features.development.podman.enable {
+  config.virtualisation.podman = mkIf config.features.virtualization.podman.enable {
     enable = true;
     package = pkgs-stable.podman;
   };

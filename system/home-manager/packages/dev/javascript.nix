@@ -6,9 +6,7 @@
   ...
 }:
 {
-  options.package.dev.javascript.enable = lib.mkEnableOption "javascript depelopment environment";
-
-  config = lib.mkIf config.package.dev.javascript.enable {
+  config = lib.mkIf config.features.development.javascript.enable {
     home.sessionVariables = {
       PNPM_HOME = "$HOME/.local/share/pnpm";
       PATH = "$HOME/.local/share/pnpm:$PATH";

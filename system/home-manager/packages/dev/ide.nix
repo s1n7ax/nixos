@@ -5,11 +5,7 @@
   ...
 }:
 {
-  # imports = [ ../../applications/zed/zed.nix ];
-
-  options.package.dev.ide.enable = lib.mkEnableOption "IDEs";
-
-  config = lib.mkIf config.package.dev.ide.enable {
+  config = lib.mkIf config.features.development.ide.enable {
     home.packages = with pkgs; [
       vscode
     ];

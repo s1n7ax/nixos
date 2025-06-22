@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.python.enable = lib.mkEnableOption "python development environment";
-
-  config = lib.mkIf config.package.dev.python.enable {
+  config = lib.mkIf config.features.development.python.enable {
     home.packages = with pkgs; [
       (python3.withPackages (py-packages: with py-packages; [ pip ]))
       isort

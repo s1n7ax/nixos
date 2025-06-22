@@ -5,7 +5,7 @@
   ...
 }:
 {
-  options.package.camera.enable = lib.mkEnableOption "camera related packages";
-
-  config = lib.mkIf config.package.camera.enable { home.packages = with pkgs; [ gphoto2 ]; };
+  config = lib.mkIf config.features.video-production.camera.enable {
+    home.packages = with pkgs; [ gphoto2 ];
+  };
 }

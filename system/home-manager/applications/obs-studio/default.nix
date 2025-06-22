@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 {
   programs.obs-studio = {
-    enable = config.package.screen-capture.enable;
+    enable = config.features.video-production.screen-capture.enable;
     plugins = [ pkgs.obs-studio-plugins.obs-source-record ];
   };
 

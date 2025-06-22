@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.rust.enable = lib.mkEnableOption "rust development environment";
-
-  config = lib.mkIf config.package.dev.rust.enable {
+  config = lib.mkIf config.features.development.rust.enable {
     home.packages = with pkgs; [
       cargo
       cargo-leptos

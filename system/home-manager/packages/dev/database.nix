@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.database.enable = lib.mkEnableOption "database environment";
-
-  config = lib.mkIf config.package.dev.database.enable {
+  config = lib.mkIf config.features.development.database.enable {
     home.packages = with pkgs; [
       pgformatter
       postgresql

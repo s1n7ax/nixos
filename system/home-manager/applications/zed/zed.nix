@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.package.dev.ide.enable {
+  config = lib.mkIf config.features.development.ide.enable {
     home.packages = with pkgs; [
       zed-editor
     ];

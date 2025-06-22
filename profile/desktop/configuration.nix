@@ -8,7 +8,7 @@
       xdg.enable = true;
     };
 
-    development = {
+    virtualization = {
       docker.enable = true;
       virt-manager.enable = true;
       virtualbox.enable = true;

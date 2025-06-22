@@ -1,4 +1,4 @@
-{ settings, ... }:
+{ config, ... }:
 {
   programs.git = {
     enable = true;
@@ -8,7 +8,7 @@
     };
     lfs.enable = true;
 
-    userName = settings.username;
+    userName = config.settings.username;
     userEmail = "srineshnisala@gmail.com";
     signing.key = "srineshnisala@gmail.com";
     signing.signByDefault = true;

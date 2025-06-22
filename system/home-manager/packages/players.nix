@@ -5,7 +5,7 @@
   ...
 }:
 {
-  options.package.players.enable = lib.mkEnableOption "video/audio player packages";
-
-  config = lib.mkIf config.package.players.enable { home.packages = with pkgs; [ vlc ]; };
+  config = lib.mkIf config.features.multimedia.video.enable {
+    home.packages = with pkgs; [ vlc ];
+  };
 }
