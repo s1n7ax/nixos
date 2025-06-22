@@ -6,6 +6,7 @@
       nixpkgs,
       home-manager,
       sops-nix,
+      quadlet-nix,
       ...
     }@inputs:
     let
@@ -21,32 +22,9 @@
         config.allowUnfree = true;
       };
 
-      settings = {
-        username = "s1n7ax";
-        shell = "fish";
-        wm = {
-          name = "hyprland";
-          package = pkgs.hyprland;
-        };
-        cursor = {
-          name = "Bibata-Modern-Ice";
-          package = pkgs.bibata-cursors;
-          size = 32;
-        };
-        font = {
-          name = "Iosevka Nerd Font Mono";
-          size = 18;
-        };
-        icon = {
-          name = "Tela-circle-dark";
-          package = pkgs.tela-circle-icon-theme;
-        };
-        terminal = "kitty";
-      };
       args = {
         inherit
           inputs
-          settings
           pkgs-stable
           ;
       };
@@ -61,8 +39,9 @@
           inherit specialArgs;
 
           modules = [
+            ./system/options.nix
             ./profile/desktop/configuration.nix
-
+            quadlet-nix.nixosModules.quadlet
             home-manager.nixosModules.home-manager
             {
               home-manager = {
@@ -81,8 +60,9 @@
           inherit specialArgs;
 
           modules = [
+            ./system/options.nix
             ./profile/server/configuration.nix
-
+            quadlet-nix.nixosModules.quadlet
             home-manager.nixosModules.home-manager
             {
               home-manager = {
@@ -102,6 +82,8 @@
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
     hardware.url = "github:nixos/nixos-hardware";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";

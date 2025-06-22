@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.lua.enable = lib.mkEnableOption "lua depelopment environment";
-
-  config = lib.mkIf config.package.dev.lua.enable {
+  config = lib.mkIf config.features.development.lua.enable {
     home.packages = with pkgs; [
       stylua
       lua-language-server

@@ -1,9 +1,14 @@
-{ config, lib, pkgs, settings, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
-  username = settings.username;
+  username = config.settings.username;
 in
 
 mkIf config.features.storage.cloud.enable {

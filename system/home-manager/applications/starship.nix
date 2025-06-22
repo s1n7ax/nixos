@@ -1,8 +1,8 @@
-{ settings, ... }:
+{ config, ... }:
 {
   programs.starship = {
     enable = true;
-    enableZshIntegration = settings.shell == "zsh";
-    enableFishIntegration = settings.shell == "fish";
+    enableZshIntegration = config.settings.shell == "zsh";
+    enableFishIntegration = config.settings.shell == "fish";
   };
 }

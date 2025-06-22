@@ -1,9 +1,9 @@
-{ settings, pkgs, ... }:
+{ config, pkgs, ... }:
 {
   gtk = {
     enable = true;
     iconTheme = {
-      inherit (settings.icon) name package;
+      inherit (config.settings.icon) name package;
     };
     theme = {
       name = "Breeze-Dark";
@@ -11,7 +11,7 @@
     };
 
     cursorTheme = {
-      inherit (settings.cursor) name package size;
+      inherit (config.settings.cursor) name package size;
     };
     gtk3.extraConfig = {
       gtk-button-images = 0;

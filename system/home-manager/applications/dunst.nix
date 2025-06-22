@@ -1,4 +1,4 @@
-{ pkgs, settings, ... }:
+{ pkgs, config, ... }:
 let
   dunstConf = pkgs.fetchgit {
     url = "https://github.com/catppuccin/dunst.git";
@@ -11,7 +11,7 @@ in
     enable = true;
     # configFile = "${dunstConf}/src/macchiato.conf";
     iconTheme = {
-      inherit (settings.icon) name package;
+      inherit (config.settings.icon) name package;
     };
     settings = {
       global = {
@@ -40,7 +40,7 @@ in
         gap_size = 5;
         separator_color = "auto";
         sort = "yes";
-        font = "${settings.font.name} ${toString settings.font.size}";
+        font = "${config.settings.font.name} ${toString config.settings.font.size}";
         line_height = 3;
         markup = "full";
         format = "%s\n%b";
@@ -52,7 +52,7 @@ in
         stack_duplicates = true;
         hide_duplicate_count = false;
         show_indicators = "yes";
-        icon_theme = settings.icon.name;
+        icon_theme = config.settings.icon.name;
         icon_position = "left";
         min_icon_size = 32;
         max_icon_size = 128;

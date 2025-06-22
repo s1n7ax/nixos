@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.yaml.enable = lib.mkEnableOption "yaml environment";
-
-  config = lib.mkIf config.package.dev.yaml.enable {
+  config = lib.mkIf config.features.development.yaml.enable {
     home.packages = with pkgs; [ yaml-language-server ];
   };
 }

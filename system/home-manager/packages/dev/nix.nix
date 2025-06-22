@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.nix.enable = lib.mkEnableOption "nix development environment";
-
-  config = lib.mkIf config.package.dev.nix.enable {
+  config = lib.mkIf config.features.development.nix.enable {
     home.packages = with pkgs; [
       nixpkgs-fmt
       nil

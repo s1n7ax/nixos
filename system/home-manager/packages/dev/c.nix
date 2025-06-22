@@ -5,13 +5,10 @@
   ...
 }:
 {
-  options.package.dev.c.enable = lib.mkEnableOption "c/c++ development environment";
-
-  config = lib.mkIf config.package.dev.c.enable {
+  config = lib.mkIf config.features.development.c.enable {
     home.packages = with pkgs; [
       gcc
       gnumake
     ];
   };
-
 }

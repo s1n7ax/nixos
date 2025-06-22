@@ -1,7 +1,6 @@
 {
-  settings,
-  pkgs,
   config,
+  pkgs,
   ...
 }:
 {
@@ -21,7 +20,7 @@
       drun-display-format = "{name}";
       window-format = "{w}{t}";
       font = "JetBrainsMono Nerd Font 10";
-      icon-theme = settings.icon.name;
+      icon-theme = config.settings.icon.name;
 
       kb-move-end = "";
       kb-element-next = "";

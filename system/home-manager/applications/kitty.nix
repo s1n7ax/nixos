@@ -1,11 +1,11 @@
-{ settings, ... }:
+{ config, ... }:
 {
   programs.kitty = {
     enable = true;
 
     font = {
-      name = settings.font.name;
-      size = settings.font.size;
+      name = config.settings.font.name;
+      size = config.settings.font.size;
     };
     settings = {
       "ctrl+c" = "copy_or_interrupt";
@@ -15,7 +15,7 @@
     };
     themeFile = "Catppuccin-Mocha";
 
-    shellIntegration.enableZshIntegration = settings.shell == "zsh";
-    shellIntegration.enableFishIntegration = settings.shell == "fish";
+    shellIntegration.enableZshIntegration = config.settings.shell == "zsh";
+    shellIntegration.enableFishIntegration = config.settings.shell == "fish";
   };
 }

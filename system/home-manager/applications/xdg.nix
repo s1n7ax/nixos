@@ -1,4 +1,4 @@
-{ pkgs, settings, ... }:
+{ pkgs, config, ... }:
 {
   xdg = {
     enable = true;
@@ -9,7 +9,7 @@
 
     portal = {
       enable = true;
-      configPackages = [ settings.wm.package ];
+      configPackages = [ config.settings.wm.package ];
       extraPortals = with pkgs; [
         xdg-desktop-portal-hyprland
         xdg-desktop-portal-gtk

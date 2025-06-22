@@ -1,7 +1,7 @@
-{ settings, ... }:
+{ config, ... }:
 {
   home.pointerCursor = {
-    inherit (settings.cursor) name package size;
+    inherit (config.settings.cursor) name package size;
     gtk.enable = true;
     x11.enable = true;
     x11.defaultCursor = "Bibata-Modern-Ice";
