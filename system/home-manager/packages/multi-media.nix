@@ -11,6 +11,7 @@
     home.packages = with pkgs; [
       gimp
       handbrake
+      kdePackages.kdenlive
     ];
   };
 
