@@ -1,9 +1,8 @@
 { ... }:
 {
   networking.firewall = {
-    enable = true;
+    enable = false;
     allowPing = false;
-
   };
 
   networking.firewall.allowedTCPPorts = [

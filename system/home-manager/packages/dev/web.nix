@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.web.enable = lib.mkEnableOption "web development environment";
-
-  config = lib.mkIf config.package.dev.web.enable {
+  config = lib.mkIf config.features.development.web.enable {
     home.packages = with pkgs; [
       jq
       httpie

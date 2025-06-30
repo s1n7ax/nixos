@@ -1,19 +1,19 @@
 {
   inputs,
   pkgs,
-  settings,
+  config,
   ...
 }:
 let
-  username = settings.username;
+  username = config.settings.username;
 in
 {
   networking.hostName = username;
   time.timeZone = "Asia/Colombo";
-  programs.${settings.shell}.enable = true;
+  programs.${config.settings.shell}.enable = true;
 
   users.users.${username} = {
-    shell = pkgs.${settings.shell};
+    shell = pkgs.${config.settings.shell};
     isNormalUser = true;
     group = username;
     extraGroups = [
@@ -56,8 +56,6 @@ in
 
     ./firewall.nix
 
-    ../../system/options.nix
-
     ../../system/nixos/core/boot.nix
     ../../system/nixos/core/network-manager.nix
     ../../system/nixos/core/pipewire.nix
@@ -78,6 +76,8 @@ in
     ../../system/nixos/utils/virt-manager.nix
     ../../system/nixos/utils/virtualbox.nix
     ../../system/nixos/utils/xdg.nix
+
+    ../../system/nixos
   ];
 
 }

@@ -5,9 +5,7 @@
   ...
 }:
 {
-  options.package.dev.markdown.enable = lib.mkEnableOption "markdown environment";
-
-  config = lib.mkIf config.package.dev.markdown.enable {
+  config = lib.mkIf config.features.development.markdown.enable {
     home.packages = with pkgs; [
       cbfmt
       marksman

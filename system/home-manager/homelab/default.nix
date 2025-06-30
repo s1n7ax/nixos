@@ -7,7 +7,11 @@
   ];
 
   imports = [
-    ./frigate.nix
     ./mqtt.nix
+    ./z2m.nix
+    ./home-assistant.nix
+    ./frigate.nix
+    ./homepage.nix
+    ./entertainment
   ];
 }

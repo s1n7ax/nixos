@@ -1,9 +1,9 @@
-{ settings, ... }:
+{ ... }:
 {
   imports = [
     ../applications/mpv.nix
-    ../applications/${settings.shell}.nix
-    ../applications/${settings.wm.name}.nix
+    ../applications/fish.nix
+    ../applications/hyprland.nix
 
     ../packages/dev/c.nix
     ../packages/dev/container.nix
@@ -32,7 +32,6 @@
     ../packages/terminal.nix
     ../packages/players.nix
     ../packages/multi-media.nix
-    ../packages/office.nix
     ../packages/gaming.nix
     ../packages/web.nix
     ../packages/present.nix

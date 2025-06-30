@@ -25,8 +25,8 @@ let
     yt = "yt-dlp";
     h = "Hyprland";
     rm = "trash";
-    npm = "pnpm";
-    npx = "pnpm dlx";
+    p = "pnpm";
+    px = "pnpm dlx";
 
     # rust alternatives
     cat = "bat";
