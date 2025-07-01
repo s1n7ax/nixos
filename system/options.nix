@@ -262,6 +262,16 @@ with lib;
       llm = {
         enable = mkEnableOption "LLM tools";
       };
+      ai = {
+        enable = mkEnableOption "AI development tools and assistants";
+        claude = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Claude Code AI assistant";
+          };
+        };
+      };
       c = {
         enable = mkEnableOption "C/C++ development tools";
       };

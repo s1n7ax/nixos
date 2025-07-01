@@ -21,6 +21,7 @@
     development = {
       nix.enable = true;
       javascript.enable = true;
+      ai.enable = true;
     };
 
     homelab = {

@@ -23,6 +23,7 @@
     ../packages/dev/ide.nix
     ../packages/dev/llm.nix
     ../packages/dev/ci.nix
+    ../packages/dev/ai.nix
 
     ../packages/camera.nix
     ../packages/screen-capture.nix

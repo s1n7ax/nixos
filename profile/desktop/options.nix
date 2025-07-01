@@ -65,6 +65,7 @@
 
     development = {
       llm.enable = true;
+      ai.enable = true;
       c.enable = true;
       container.enable = true;
       java.enable = true;
