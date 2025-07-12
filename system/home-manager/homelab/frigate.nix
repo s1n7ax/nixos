@@ -110,11 +110,8 @@ with lib;
             - bicycle
             - car
             - motorcycle
-            - airplane
             - bus
-            - train
             - truck
-            - boat
             - umbrella
           filters:
             person:
@@ -157,11 +154,8 @@ with lib;
               - bicycle
               - car
               - motorcycle
-              - airplane
               - bus
-              - train
               - truck
-              - boat
               - umbrella
 
         #--------------------------------------------------------------------#
@@ -171,7 +165,7 @@ with lib;
           enabled: true
           timestamp: true
           retain:
-            default: 2 # Keep snapshots for 2 days
+            default: 30 # Keep snapshots for 2 days
 
         #--------------------------------------------------------------------#
         #                               RECORD                               #
