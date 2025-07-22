@@ -2,7 +2,7 @@
   lib,
   config,
   pkgs,
-  pkgs-stable,
+  pkgs-unstable,
   ...
 }:
 {
@@ -12,7 +12,7 @@
       PATH = "$HOME/.local/share/pnpm:$PATH";
     };
     home.packages = with pkgs; [
-      pkgs-stable.deno
+      deno
       nodejs_22
       nodePackages.pnpm
       yarn
@@ -25,7 +25,7 @@
       eslint_d
       nodePackages.typescript-language-server
       supabase-cli
-      typescript-go
+      pkgs-unstable.typescript-go
     ];
   };
 }

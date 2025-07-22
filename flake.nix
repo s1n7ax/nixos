@@ -17,7 +17,7 @@
         config.allowUnfree = true;
       };
 
-      pkgs-stable = import inputs.nixpkgs-stable {
+      pkgs-unstable = import inputs.nixpkgs-unsable {
         inherit system;
         config.allowUnfree = true;
       };
@@ -25,7 +25,7 @@
       args = {
         inherit
           inputs
-          pkgs-stable
+          pkgs-unstable
           ;
       };
       specialArgs = args;
@@ -78,14 +78,14 @@
     };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs-unsable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     hardware.url = "github:nixos/nixos-hardware";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
 
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sops-nix = {
