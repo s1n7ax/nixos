@@ -320,6 +320,9 @@ with lib;
       ci = {
         enable = mkEnableOption "Continuous Integration (CI) tools";
       };
+      virtualization = {
+        enable = mkEnableOption "Virtualization development tools";
+      };
     };
   };
 }

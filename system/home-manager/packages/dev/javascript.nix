@@ -26,6 +26,8 @@
       nodePackages.typescript-language-server
       supabase-cli
       pkgs-unstable.typescript-go
+      svelte-language-server
+      vtsls
     ];
   };
 }
