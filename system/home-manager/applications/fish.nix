@@ -5,6 +5,8 @@
     shellInit = ''
       stty -ixon
 
+      set -x PATH $PATH ~/.cargo/bin 
+
       # disable greeting
       set -g fish_greeting
 
