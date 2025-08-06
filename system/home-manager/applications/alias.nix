@@ -39,7 +39,7 @@ let
     # git
     g = "git";
     gcl = "git clone";
-    gf = "git fetch origin";
+    gf = "git fetch -a";
     ga = "git add";
     gl = "git log --oneline";
     gla = "git log";
