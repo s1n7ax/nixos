@@ -48,7 +48,7 @@
         }
         {
           on = [
-            "g"
+            "'"
             "h"
           ];
           run = "cd ~";
@@ -56,7 +56,7 @@
         }
         {
           on = [
-            "g"
+            "'"
             "c"
           ];
           run = "cd ~/.config";
@@ -64,7 +64,23 @@
         }
         {
           on = [
-            "g"
+            "'"
+            "l"
+          ];
+          run = "cd ~/.local";
+          desc = "Go ~/.local";
+        }
+        {
+          on = [
+            "'"
+            "d"
+          ];
+          run = "cd ~/.cache";
+          desc = "Go ~/.cache";
+        }
+        {
+          on = [
+            "'"
             "d"
           ];
           run = "cd ~/Downloads";
@@ -72,7 +88,7 @@
         }
         {
           on = [
-            "g"
+            "'"
             "<Space>"
           ];
           run = "cd --interactive";
