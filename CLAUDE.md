@@ -63,7 +63,7 @@ The `settings` object in flake.nix contains:
 - `shell`: Default shell (fish)  
 - `wm`: Window manager config (hyprland)
 - `cursor`, `font`, `icon`: Theming configuration
-- `terminal`: Default terminal (kitty)
+- `terminal`: Default terminal (ghostty)
 
 ### Module Organization
 - **system/core/**: Essential system services (boot, networking, audio, polkit)
