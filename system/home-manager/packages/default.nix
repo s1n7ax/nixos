@@ -24,6 +24,7 @@
     ../packages/dev/llm.nix
     ../packages/dev/ci.nix
     ../packages/dev/ai.nix
+    ../packages/dev/network.nix
 
     ../packages/camera.nix
     ../packages/screen-capture.nix
