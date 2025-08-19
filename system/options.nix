@@ -120,6 +120,10 @@ with lib;
       coral = {
         enable = mkEnableOption "Google Coral drivers for PCIe";
       };
+
+      firmware = {
+        enable = mkEnableOption "Hardware firmware support";
+      };
     };
 
     virtualization = {
@@ -260,6 +264,12 @@ with lib;
 
     presentation = {
       enable = mkEnableOption "Presentation tools";
+    };
+
+    tools = {
+      downloading = {
+        enable = mkEnableOption "downloading tools like wget, curl";
+      };
     };
 
     development = {

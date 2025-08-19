@@ -9,7 +9,10 @@
 
     security.gpg.enable = true;
 
-    hardware.coral.enable = true;
+    hardware = {
+      coral.enable = true;
+      firmware.enable = true;
+    };
 
     network = {
       ssh = {
@@ -17,6 +20,10 @@
         agent.enable = true;
       };
       monitoring.enable = true;
+    };
+
+    tools = {
+      downloading.enable = true;
     };
 
     development = {

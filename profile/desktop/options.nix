@@ -17,6 +17,7 @@
       openrgb.enable = false;
       audio.enable = true;
       coral.enable = false;
+      firmware.enable = true;
     };
 
     virtualization = {
@@ -62,6 +63,10 @@
 
     presentation = {
       enable = true;
+    };
+
+    tools = {
+      downloading.enable = true;
     };
 
     development = {

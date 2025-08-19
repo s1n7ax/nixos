@@ -63,6 +63,7 @@ in
     ../../system/nixos/core/ssh.nix
 
     ../../system/nixos/hardware/bluetooth.nix
+    ../../system/nixos/hardware/firmware.nix
     ../../system/nixos/hardware/nvidia.nix
     ../../system/nixos/hardware/openrgb.nix
     ../../system/nixos/hardware/coral.nix
@@ -71,6 +72,7 @@ in
 
     ../../system/nixos/utils/applications.nix
     ../../system/nixos/utils/docker.nix
+    ../../system/nixos/utils/downloading.nix
     ../../system/nixos/utils/podman.nix
     ../../system/nixos/utils/services.nix
     ../../system/nixos/utils/virt-manager.nix
