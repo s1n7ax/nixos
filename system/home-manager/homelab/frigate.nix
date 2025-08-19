@@ -194,6 +194,13 @@ with lib;
                   roles: [record]
                 - path: rtsp://viewer:${front_road}@192.168.1.124:554/Streaming/Channels/102/
                   roles: [detect, audio]
+
+            objects:
+              filters:
+                car:
+                  mask: 1,0.798,0.734,0.492,0.355,0.809,0.432,1,1,1
+                motorcycle:
+                  mask: 0.101,0.333,0.194,0.279,0.219,0.478,0.133,0.526
                     
           #--------------------------------------------------------------------#
           #                                CAR                                 #
