@@ -16,6 +16,7 @@
         enable = true;
         agent.enable = true;
       };
+      monitoring.enable = true;
     };
 
     development = {

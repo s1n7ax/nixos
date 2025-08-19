@@ -157,6 +157,10 @@ with lib;
           enable = mkEnableOption "SSH agent support";
         };
       };
+
+      monitoring = {
+        enable = mkEnableOption "Network monitoring tools";
+      };
     };
 
     homelab = {
