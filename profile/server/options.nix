@@ -4,7 +4,7 @@
 
     virtualization = {
       docker.enable = true;
-      podman.enable = true;
+      podman.enable = false;
     };
 
     security.gpg.enable = true;
