@@ -72,7 +72,7 @@ in
 
     ../../system/nixos/utils/applications.nix
     ../../system/nixos/utils/docker.nix
-    ../../system/nixos/utils/downloading.nix
+    ../../system/utils/downloading.nix
     ../../system/nixos/utils/podman.nix
     ../../system/nixos/utils/services.nix
     ../../system/nixos/utils/virt-manager.nix
