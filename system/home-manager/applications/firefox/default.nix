@@ -80,7 +80,7 @@
         Locked = true;
         StartPage = "previous-session";
       };
-      HttpAllowlist = [ "192.168.1.111" ];
+      HttpAllowlist = [ "192.168.1.110" ];
       HttpsOnlyMode = "force_enabled";
       HardwareAcceleration = true;
       DisablePocket = true;

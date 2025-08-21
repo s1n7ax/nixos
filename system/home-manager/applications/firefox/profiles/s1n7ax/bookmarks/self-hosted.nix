@@ -9,22 +9,22 @@
           {
             name = "Home Assistant";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:8123";
+            url = "http://192.168.1.110:8124";
           }
           {
             name = "Frigate";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:8971";
+            url = "http://192.168.1.110:8971";
           }
           {
             name = "Portainer";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:9000/";
+            url = "http://192.168.1.110:9000/";
           }
           {
             name = "Jellifin";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:8000/";
+            url = "http://192.168.1.110:8000/";
           }
           {
             name = "qBittorrent";
@@ -34,32 +34,32 @@
           {
             name = "Radarr Movies";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:7878/";
+            url = "http://192.168.1.110:7878/";
           }
           {
             name = "Sonarr TV";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:8989/";
+            url = "http://192.168.1.110:8989/";
           }
           {
             name = "Prowlarr";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:9696/";
+            url = "http://192.168.1.110:9696/";
           }
           {
             name = "Lidarr - Music";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:8686/";
+            url = "http://192.168.1.110:8686/";
           }
           {
             name = "Ad Guard";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:3000/";
+            url = "http://192.168.1.110:3000/";
           }
           {
             name = "Grafana";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:3001/dashboards/";
+            url = "http://192.168.1.110:3001/dashboards/";
           }
         ];
       }
