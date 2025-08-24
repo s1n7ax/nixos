@@ -35,6 +35,7 @@
     ../packages/players.nix
     ../packages/multi-media.nix
     ../packages/gaming.nix
+    ../packages/mobile.nix
     ../packages/web.nix
     ../packages/present.nix
   ];

@@ -25,6 +25,7 @@
       podman.enable = false;
       virtualbox.enable = false;
       virt-manager.enable = true;
+      waydroid.enable = true;
     };
 
     services = {
@@ -54,6 +55,7 @@
       video.enable = true;
       audio.enable = true;
       gaming.enable = true;
+      mobile.enable = true;
     };
 
     web = {

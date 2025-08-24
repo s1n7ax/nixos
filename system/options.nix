@@ -142,6 +142,10 @@ with lib;
       virt-manager = {
         enable = mkEnableOption "libvirt/KVM virtualization";
       };
+
+      waydroid = {
+        enable = mkEnableOption "Waydroid Android container";
+      };
     };
 
     services = {
@@ -247,6 +251,10 @@ with lib;
 
       gaming = {
         enable = mkEnableOption "Gaming tools and emulators";
+      };
+
+      mobile = {
+        enable = mkEnableOption "Mobile app emulation and development tools";
       };
     };
 

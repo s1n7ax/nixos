@@ -6,6 +6,6 @@
 }:
 {
   config = lib.mkIf config.features.productivity.video-production.camera.enable {
-    home.packages = with pkgs; [ gphoto2 ];
+    home.packages = with pkgs; [ gphoto2 darktable ];
   };
 }
