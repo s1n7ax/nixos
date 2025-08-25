@@ -13,7 +13,7 @@
     };
     home.packages = with pkgs; [
       pkgs-unstable.deno
-      nodejs_22
+      nodejs_24
       nodePackages.pnpm
       yarn
       emmet-language-server
