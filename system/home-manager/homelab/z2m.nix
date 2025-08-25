@@ -65,6 +65,11 @@ with lib;
           - 76
           - 67
           - 57
+      availability:
+        active:
+          timeout: 1
+        passive:
+          timeout: 120
       frontend:
         enabled: true
         port: 8080
