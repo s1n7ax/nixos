@@ -12,7 +12,7 @@
       PATH = "$HOME/.local/share/pnpm:$PATH";
     };
     home.packages = with pkgs; [
-      deno
+      pkgs-unstable.deno
       nodejs_22
       nodePackages.pnpm
       yarn
