@@ -11,5 +11,6 @@
     starship
     zellij
     xh
+    dua
   ];
 }
