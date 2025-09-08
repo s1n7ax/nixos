@@ -61,6 +61,7 @@
     web = {
       enable = true;
       browser.enable = true;
+      firefox.librewolf.enable = true;
     };
 
     presentation = {

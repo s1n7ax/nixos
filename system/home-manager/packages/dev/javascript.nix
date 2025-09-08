@@ -13,14 +13,14 @@
     };
     home.packages = with pkgs; [
       pkgs-unstable.deno
-      nodejs_24
+      nodejs_22
       nodePackages.pnpm
       yarn
       emmet-language-server
       vscode-langservers-extracted
       tailwindcss-language-server
       prettierd
-      biome
+      pkgs-unstable.biome
       typescript
       eslint_d
       nodePackages.typescript-language-server

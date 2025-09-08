@@ -29,7 +29,7 @@
           {
             name = "qBittorrent";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.111:8001/";
+            url = "http://192.168.1.110:8001/";
           }
           {
             name = "Radarr Movies";
