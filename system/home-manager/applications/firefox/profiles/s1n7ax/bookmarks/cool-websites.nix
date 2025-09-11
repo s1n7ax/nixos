@@ -19,6 +19,19 @@
               }
             ];
           }
+          {
+            name = "Design";
+            bookmarks = [
+              {
+                name = "Backgrounds";
+                tags = [
+                  "ui"
+                  "design"
+                ];
+                url = "https://bg.ibelick.com/";
+              }
+            ];
+          }
         ];
       }
     ];
