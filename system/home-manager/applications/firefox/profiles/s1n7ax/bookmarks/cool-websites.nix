@@ -30,6 +30,14 @@
                 ];
                 url = "https://bg.ibelick.com/";
               }
+              {
+                name = "Gradient Generator";
+                tags = [
+                  "ui"
+                  "design"
+                ];
+                url = "https://www.joshwcomeau.com/gradient-generator/";
+              }
             ];
           }
         ];
