@@ -25,6 +25,12 @@ with lib;
         "mqtt-network"
         "z2m-network"
       ];
+      extraPodmanArgs = [
+        "--group-add=keep-groups"
+      ];
+      devices = [
+        "/dev/ttyUSB0:/dev/ttyUSB0"
+      ];
       volumes = [
         "${data_path}:/app/data"
         "${data_path}/configuration.yaml:/app/data/configuration.yaml"
@@ -46,7 +52,7 @@ with lib;
         base_topic: zigbee2mqtt
         server: mqtt://mqtt:1883
       serial:
-        port: tcp://192.168.1.100:6638
+        port: /dev/ttyUSB0
         baudrate: 115200
         adapter: zstack
         disable_led: false

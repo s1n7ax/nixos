@@ -18,6 +18,7 @@ in
     group = username;
     extraGroups = [
       "audio"
+      "dialout"
       "docker"
       "libvirtd"
       "network"
