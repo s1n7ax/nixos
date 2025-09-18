@@ -38,7 +38,7 @@ let
 
     # git
     g = "git";
-    gcl = "git clone";
+    gcl = "git clean -dxf -e '.env' -e '.env.local'";
     gf = "git fetch -a";
     ga = "git add";
     gl = "git log --oneline";
