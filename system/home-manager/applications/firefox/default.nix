@@ -24,7 +24,7 @@
 
     ./extensions.nix
     # about:config changes
-    ./librewolf/config.nix
+    # ./librewolf/config.nix
   ];
 
   programs.firefox = {

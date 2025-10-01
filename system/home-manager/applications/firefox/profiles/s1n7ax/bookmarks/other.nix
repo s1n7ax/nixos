@@ -16,6 +16,11 @@
             tags = [ "css" ];
             url = "https://tailwindcss.com/";
           }
+          {
+            name = "IRD";
+            tags = [ "IRD" ];
+            url = "https://eservices.ird.gov.lk/Dashboard/ShowDashboard";
+          }
         ];
       }
     ];
