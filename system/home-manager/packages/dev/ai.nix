@@ -2,7 +2,7 @@
   config,
   lib,
   pkgs,
-  settings,
+  pkgs-unstable,
   ...
 }:
 with lib;
@@ -11,11 +11,9 @@ with lib;
   config = mkIf config.features.development.ai.enable {
     home.packages =
       with pkgs;
-      [
-      ]
+      [ ]
       ++ optionals config.features.development.ai.claude.enable [
-        claude-code
+        pkgs-unstable.claude-code
       ];
   };
 }
-
