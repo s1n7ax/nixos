@@ -49,5 +49,9 @@
       installation_mode = "force_installed";
     };
 
+    "{f6ba91b3-f237-4add-bf0f-11598d163298}" = {
+      install_url = "https://addons.mozilla.org/firefox/downloads/latest/new-tab-s1n7ax/latest.xpi";
+      installation_mode = "force_installed";
+    };
   };
 }
