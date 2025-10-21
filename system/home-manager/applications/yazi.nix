@@ -41,6 +41,15 @@
           desc = "Search files by content via ripgrep";
         }
         {
+          on = [
+            "g"
+            "s"
+          ];
+          for = "unix";
+          run = ''shell 'kc-share "$@"' --confirm'';
+          desc = "Share selected files via KDEConnect";
+        }
+        {
           on = "!";
           for = "unix";
           run = ''shell "$SHELL" --block'';

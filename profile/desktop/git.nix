@@ -4,7 +4,7 @@
     enable = true;
     difftastic = {
       enable = true;
-      display = "inline";
+      display = "side-by-side";
     };
     lfs.enable = true;
 
