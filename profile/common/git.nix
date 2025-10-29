@@ -31,7 +31,7 @@
       safe = {
         directory = [ "/etc/nixos" ];
       };
-      maintainance = {
+      maintenance = {
         auto = false;
         strategy = "incremental";
       };
