@@ -1,10 +1,10 @@
-{ config, ... }:
+{ config, lib, ... }:
 {
   programs.git = {
     enable = true;
     difftastic = {
       enable = true;
-      display = "inline";
+      display = lib.mkDefault "side-by-side";
     };
     lfs.enable = true;
 
@@ -31,7 +31,7 @@
       safe = {
         directory = [ "/etc/nixos" ];
       };
-      maintainance = {
+      maintenance = {
         auto = false;
         strategy = "incremental";
       };
