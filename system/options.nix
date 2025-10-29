@@ -293,6 +293,9 @@ with lib;
             description = "Claude Code AI assistant";
           };
         };
+        codex = {
+          enable = mkEnableOption "Codex terminal assistant";
+        };
       };
       c = {
         enable = mkEnableOption "C/C++ development tools";

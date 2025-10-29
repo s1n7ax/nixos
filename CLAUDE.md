@@ -12,9 +12,6 @@ nix flake update
 # Build and switch to desktop profile
 sudo nixos-rebuild switch --upgrade --flake ./#desktop
 
-# Build and switch to work profile  
-sudo nixos-rebuild switch --upgrade --flake ./#work
-
 # Build and switch to server profile
 sudo nixos-rebuild switch --upgrade --flake ./#server
 
@@ -45,15 +42,15 @@ nixos-rebuild switch --flake ./#desktop --dry-run
 This is a modular NixOS configuration using flakes with profile-based system management.
 
 ### Core Structure
-- **flake.nix**: Main entry point defining system configurations for `desktop` and `work` profiles
+- **flake.nix**: Main entry point defining system configurations for `desktop` and `server` profiles
 - **profile/**: Contains profile-specific configurations that import from common and system modules
 - **system/**: Reusable system modules organized by category
 - **settings**: Global configuration object passed to all modules via specialArgs
 
 ### Configuration Hierarchy
 1. **flake.nix** defines global settings (username, shell, WM, theming) and profile configurations
-2. **profile/{desktop,work}/configuration.nix** imports common config + profile-specific system modules
-3. **profile/{desktop,work}/home.nix** imports common home config + profile-specific package sets
+2. **profile/{desktop,server}/configuration.nix** imports common config + profile-specific system modules
+3. **profile/{desktop,server}/home.nix** imports common home config + profile-specific package sets
 4. **profile/common/** contains shared configuration between all profiles
 5. **system/** contains modular system configurations imported by profiles
 
@@ -109,9 +106,66 @@ features = {
 };
 ```
 
+### Adding New Package Options
+
+To add a new package option to the configuration, follow these steps:
+
+#### 1. Add the option definition to `system/options.nix`
+Define a new enable option under the appropriate feature category:
+```nix
+development = {
+  ai = {
+    codex = {
+      enable = mkEnableOption "Codex terminal assistant";
+    };
+  };
+};
+```
+
+#### 2. Create a package module in `system/home-manager/packages/`
+Create a new `.nix` file in the appropriate subdirectory (e.g., `system/home-manager/packages/dev/codex.nix`):
+```nix
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+{
+  config = lib.mkIf config.features.development.ai.codex.enable {
+    home.packages = with pkgs; [
+      codex
+    ];
+  };
+}
+```
+
+#### 3. Import the module in `system/home-manager/packages/default.nix`
+Add the new module to the imports list:
+```nix
+imports = [
+  # ... other imports
+  ../packages/dev/codex.nix
+  # ... more imports
+];
+```
+
+#### 4. Enable the option in profile configurations
+Enable the feature in the desired profile's `options.nix` file (e.g., `profile/desktop/options.nix`):
+```nix
+development = {
+  ai.codex.enable = true;
+};
+```
+
+#### 5. Rebuild the system
+Apply the changes by rebuilding:
+```shell
+sudo nixos-rebuild switch --upgrade --flake ./#desktop
+```
+
 ### Profile Differences
 - **desktop**: Full desktop environment with gaming, multimedia, development tools
-- **work**: Work-focused profile with development tools but minimal virtualization
 - **server**: Minimal server profile with most desktop features disabled
 - All profiles share common base configuration and can be extended independently
 
