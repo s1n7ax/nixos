@@ -196,6 +196,10 @@ with lib;
         enable = mkEnableOption "AdGuard DNS filtering";
       };
 
+      filepizza = {
+        enable = mkEnableOption "FilePizza peer-to-peer file sharing service";
+      };
+
       homepage = {
         enable = mkEnableOption "Homepage dashboard";
       };
