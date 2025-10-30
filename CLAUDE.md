@@ -115,15 +115,15 @@ Define a new enable option under the appropriate feature category:
 ```nix
 development = {
   ai = {
-    codex = {
-      enable = mkEnableOption "Codex terminal assistant";
+    my-assistant = {
+      enable = mkEnableOption "My custom AI assistant";
     };
   };
 };
 ```
 
 #### 2. Create a package module in `system/home-manager/packages/`
-Create a new `.nix` file in the appropriate subdirectory (e.g., `system/home-manager/packages/dev/codex.nix`):
+Create a new `.nix` file in the appropriate subdirectory (e.g., `system/home-manager/packages/dev/my-assistant.nix`):
 ```nix
 {
   lib,
@@ -132,9 +132,9 @@ Create a new `.nix` file in the appropriate subdirectory (e.g., `system/home-man
   ...
 }:
 {
-  config = lib.mkIf config.features.development.ai.codex.enable {
+  config = lib.mkIf config.features.development.ai.my-assistant.enable {
     home.packages = with pkgs; [
-      codex
+      myAwesomeAssistant
     ];
   };
 }
@@ -145,7 +145,7 @@ Add the new module to the imports list:
 ```nix
 imports = [
   # ... other imports
-  ../packages/dev/codex.nix
+  ../packages/dev/my-assistant.nix
   # ... more imports
 ];
 ```
@@ -154,7 +154,7 @@ imports = [
 Enable the feature in the desired profile's `options.nix` file (e.g., `profile/desktop/options.nix`):
 ```nix
 development = {
-  ai.codex.enable = true;
+  ai.my-assistant.enable = true;
 };
 ```
 

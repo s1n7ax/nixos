@@ -75,7 +75,6 @@
     development = {
       llm.enable = true;
       ai.enable = true;
-      ai.codex.enable = true;
       c.enable = true;
       container.enable = true;
       java.enable = true;
