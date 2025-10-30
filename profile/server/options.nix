@@ -39,7 +39,6 @@
       home-assistant.enable = true;
       z2m.enable = true;
       adguard.enable = true;
-      filepizza.enable = true;
       homepage.enable = true;
 
       entertainment = {

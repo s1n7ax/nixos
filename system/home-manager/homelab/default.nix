@@ -12,7 +12,6 @@
     ./home-assistant.nix
     ./frigate.nix
     ./homepage.nix
-    ./filepizza.nix
     ./entertainment
   ];
 }
