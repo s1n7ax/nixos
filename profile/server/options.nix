@@ -40,7 +40,7 @@
       z2m.enable = true;
       adguard.enable = true;
       pairdrop.enable = true;
-      homepage.enable = true;
+      homepage.enable = false;
 
       entertainment = {
         enable = true;
