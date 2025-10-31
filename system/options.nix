@@ -196,6 +196,10 @@ with lib;
         enable = mkEnableOption "AdGuard DNS filtering";
       };
 
+      pairdrop = {
+        enable = mkEnableOption "PairDrop peer-to-peer file sharing service";
+      };
+
       homepage = {
         enable = mkEnableOption "Homepage dashboard";
       };

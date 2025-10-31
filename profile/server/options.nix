@@ -39,6 +39,7 @@
       home-assistant.enable = true;
       z2m.enable = true;
       adguard.enable = true;
+      pairdrop.enable = true;
       homepage.enable = true;
 
       entertainment = {

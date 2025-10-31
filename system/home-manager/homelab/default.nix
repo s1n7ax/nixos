@@ -12,6 +12,7 @@
     ./home-assistant.nix
     ./frigate.nix
     ./homepage.nix
+    ./pairdrop.nix
     ./entertainment
   ];
 }
