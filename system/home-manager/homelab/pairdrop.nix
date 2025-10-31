@@ -13,7 +13,7 @@ with lib;
     services.podman.containers.pairdrop = {
       image = "lscr.io/linuxserver/pairdrop:latest";
       ports = [
-        "127.0.0.1:3000:3000"
+        "3002:3000"
       ];
       environment = {
         PUID = "1000";
