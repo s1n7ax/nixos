@@ -98,9 +98,9 @@ with lib;
           hwaccel_args: preset-vaapi
 
         detectors:
-          coral:
-            type: edgetpu
-            device: pci
+          ov:
+            type: openvino
+            device: GPU
 
         database:
           path: /config/db/frigate.db
@@ -134,10 +134,15 @@ with lib;
         #                               MODEL                                #
         #--------------------------------------------------------------------#
         model:
-          path: /data/models/model.tflite
-          labelmap_path: /data/models/labels.txt
-          width: 512
-          height: 512
+          width: 300
+          height: 300
+          input_tensor: nhwc
+          input_pixel_format: bgr
+          path: /openvino-model/ssdlite_mobilenet_v2.xml
+          labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+          # path: /data/models/model.tflite
+          # labelmap_path: /data/models/labels.txt
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
