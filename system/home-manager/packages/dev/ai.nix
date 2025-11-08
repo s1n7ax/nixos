@@ -1,48 +1,65 @@
 {
   config,
   lib,
+  pkgs-unstable,
   ...
 }:
 with lib;
 
 {
   config = mkIf config.features.development.ai.enable {
-    programs.claude-code = mkIf config.features.development.ai.claude.enable {
-      enable = true;
+    home.packages = mkIf config.features.development.ai.claude.enable [
+      pkgs-unstable.claude-code
+    ];
 
-      settings = {
-        theme = "dark";
-        permissions = {
-          allow = [
-            "Bash(npmp run lint)"
-            "Bash(npmp run test:*)"
-            "Bash(npmp run dev)"
-          ];
-          deny = [
-            "Bash(curl:*)"
-            "Read(./.env)"
-            "Read(./.env.*)"
-            "Read(./secrets/**)"
-          ];
-        };
-        outputStyle = "markdown";
+    home.file.".claude/settings.json" = mkIf config.features.development.ai.claude.enable {
+      text = builtins.toJSON {
         alwaysThinkingEnabled = true;
-        includeCoAuthoredBy = false;
         statusLine = {
-          enable = true;
-          left = [
-            { type = "git-branch"; }
-            { type = "git-status"; }
-          ];
-          right = [
-            { type = "directory"; }
-            {
-              type = "clock";
-              format = "%H:%M";
-            }
-          ];
+          type = "command";
+          command = "~/.claude/statusline.sh";
+          padding = 0;
         };
       };
+    };
+
+    home.file.".claude/statusline.sh" = mkIf config.features.development.ai.claude.enable {
+      executable = true;
+      text = ''
+        #!/usr/bin/env bash
+
+        # Read JSON input
+        input=$(cat)
+
+        # Extract data using jq
+        CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""')
+
+        # Git branch and status
+        if git rev-parse --git-dir > /dev/null 2>&1; then
+          BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+          # Git status indicators
+          if [[ -n $(git status -s 2>/dev/null) ]]; then
+            STATUS="●"  # Modified
+          else
+            STATUS="✓"  # Clean
+          fi
+
+          GIT_INFO="\033[36m''${BRANCH}\033[0m \033[33m''${STATUS}\033[0m"
+        else
+          GIT_INFO=""
+        fi
+
+        # Directory (basename only)
+        DIR_NAME=$(basename "$CURRENT_DIR")
+
+        # Build status line
+        if [[ -n "$GIT_INFO" ]]; then
+          echo -e "''${GIT_INFO}  \033[35m''${DIR_NAME}\033[0m"
+        else
+          echo -e "\033[35m''${DIR_NAME}\033[0m"
+        fi
+      '';
     };
   };
 }
