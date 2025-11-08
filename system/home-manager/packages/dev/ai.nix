@@ -1,16 +1,19 @@
 {
   config,
   lib,
+  pkgs-unstable,
   ...
 }:
 with lib;
 
 {
   config = mkIf config.features.development.ai.enable {
-    programs.claude-code = mkIf config.features.development.ai.claude.enable {
-      enable = true;
+    home.packages = mkIf config.features.development.ai.claude.enable [
+      pkgs-unstable.claude-code
+    ];
 
-      settings = {
+    xdg.configFile."claude/config.json" = mkIf config.features.development.ai.claude.enable {
+      text = builtins.toJSON {
         theme = "dark";
         permissions = {
           allow = [
