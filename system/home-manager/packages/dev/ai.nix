@@ -1,7 +1,7 @@
 {
   config,
   lib,
-  pkgs-unstable,
+  pkgs,
   ...
 }:
 with lib;
@@ -9,7 +9,7 @@ with lib;
 {
   config = mkIf config.features.development.ai.enable {
     home.packages = mkIf config.features.development.ai.claude.enable [
-      pkgs-unstable.claude-code
+      pkgs.claude-code
     ];
 
     home.file.".claude/settings.json" = mkIf config.features.development.ai.claude.enable {

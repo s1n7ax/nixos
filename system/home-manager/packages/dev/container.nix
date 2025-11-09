@@ -9,7 +9,7 @@
     home.packages = with pkgs; [
       devcontainer
       lazydocker
-      dockerfile-language-server-nodejs
+      dockerfile-language-server
       hadolint
     ];
   };

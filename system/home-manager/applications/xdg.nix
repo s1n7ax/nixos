@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 {
   xdg = {
     enable = true;
@@ -6,16 +6,8 @@
       enable = true;
       createDirectories = false;
     };
-
-    portal = {
-      enable = true;
-      configPackages = [ config.settings.wm.package ];
-      extraPortals = with pkgs; [
-        xdg-desktop-portal-hyprland
-        xdg-desktop-portal-gtk
-      ];
-    };
     mime.enable = true;
+    portal.enable = lib.mkForce (config.features.desktop.xdg.enable);
     mimeApps = {
       enable = true;
 
@@ -52,6 +44,15 @@
           "video/mp4" = players;
           "video/x-matroska" = players;
         };
+    };
+  } // lib.optionalAttrs config.features.desktop.xdg.enable {
+    portal = {
+      enable = true;
+      configPackages = [ config.settings.wm.package ];
+      extraPortals = with pkgs; [
+        xdg-desktop-portal-hyprland
+        xdg-desktop-portal-gtk
+      ];
     };
   };
 }

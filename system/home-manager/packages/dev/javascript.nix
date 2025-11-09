@@ -2,7 +2,6 @@
   lib,
   config,
   pkgs,
-  pkgs-unstable,
   ...
 }:
 {
@@ -12,7 +11,7 @@
       PATH = "$HOME/.local/share/pnpm:$PATH";
     };
     home.packages = with pkgs; [
-      pkgs-unstable.deno
+      deno
       nodejs_22
       nodePackages.pnpm
       yarn
@@ -20,12 +19,12 @@
       vscode-langservers-extracted
       tailwindcss-language-server
       prettierd
-      pkgs-unstable.biome
+      biome
       typescript
       eslint_d
       nodePackages.typescript-language-server
       supabase-cli
-      pkgs-unstable.typescript-go
+      typescript-go
       svelte-language-server
       vtsls
     ];

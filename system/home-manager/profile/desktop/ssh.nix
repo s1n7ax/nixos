@@ -2,6 +2,7 @@
 {
   programs.ssh = {
     enable = true;
+    enableDefaultConfig = false;
     matchBlocks = {
       "192.168.1.110" = {
         user = "s1n7ax";

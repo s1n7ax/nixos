@@ -6,9 +6,9 @@
 {
   programs.rofi = {
     enable = true;
-    package = pkgs.rofi-wayland;
+    package = pkgs.rofi;
     pass.enable = true;
-    pass.package = pkgs.rofi-pass-wayland;
+    pass.package = pkgs.rofi-pass;
 
     extraConfig = {
       modi = "drun,filebrowser,window,run";
