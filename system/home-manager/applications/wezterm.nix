@@ -8,7 +8,7 @@
   programs.wezterm = {
     enable = true;
     enableZshIntegration = true;
-    package = inputs.wezterm.packages.${pkgs.system}.default;
+    package = inputs.wezterm.packages.${pkgs.stdenv.hostPlatform.system}.default;
     extraConfig = ''
       local wezterm = require 'wezterm'
       local config = wezterm.config_builder()
