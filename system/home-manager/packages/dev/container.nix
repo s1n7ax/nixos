@@ -10,6 +10,7 @@
       devcontainer
       lazydocker
       dockerfile-language-server
+      docker-compose-language-service
       hadolint
     ];
   };
