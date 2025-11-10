@@ -172,13 +172,15 @@ in
         ''$amod, X, exec, slurp | grim -g - -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"''
 
         "$amod, O, exec, poweroff"
+        "$amod, P, exec, hyprctl dispatch togglefloating active && hyprctl dispatch resizeactive exact 30% 0 && hyprctl dispatch moveactive 2000 2000"
 
         "$smod, Q, exit,"
 
         "$mod, Return, exec, ${config.settings.terminal}"
 
         # window layouts
-        "$mod, H, togglefloating,"
+        ''$mod, H, exec, if [ "$(hyprctl activewindow -j | jq -r '.floating')" = "false" ]; then hyprctl dispatch togglefloating active && hyprctl dispatch resizeactive exact 35% 35% && hyprctl dispatch movewindow r && hyprctl dispatch movewindow d && hyprctl dispatch pin active; else hyprctl dispatch togglefloating active && hyprctl dispatch pin active; fi''
+
         "$mod, Q, fullscreenstate"
         "$mod, W, fullscreen, 1"
         "$mod, F, fullscreen, 0"
@@ -192,7 +194,9 @@ in
         # "$mod, M, movefocus, l"
         # "$mod, I, movefocus, r"
         "$mod, N, cyclenext, next"
+        "$mod, N, bringactivetotop,"
         "$mod, E, cyclenext, prev"
+        "$mod, E, bringactivetotop,"
 
         # Move focused window
         "$smod, M, movewindow, l"
