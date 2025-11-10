@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.features.development.container.enable {
+  config = lib.mkIf config.features.development.virtualization.enable {
     home.packages = with pkgs; [
       devcontainer
       lazydocker
