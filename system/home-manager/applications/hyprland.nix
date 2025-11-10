@@ -74,6 +74,10 @@ in
         "QT_AUTO_SCREEN_SCALE_FACTOR,1"
         "MOZ_ENABLE_WAYLAND,1"
         "GDK_SCALE,1"
+
+        "LIBVA_DRIVER_NAME,nvidia"
+        "__GLX_VENDOR_LIBRARY_NAME,nvidia"
+        "ELECTRON_OZONE_PLATFORM_HINT,auto"
       ];
 
       input = {
@@ -112,14 +116,14 @@ in
       decoration = {
         # See https://wiki.hyprland.org/Configuring/Variables/ for more
         shadow = {
-          enabled = true;
+          enabled = false;
           range = 4;
         };
 
         rounding = 10;
 
         blur = {
-          enabled = true;
+          enabled = false;
           size = 5;
           passes = 3;
           vibrancy = 0.5;
@@ -185,10 +189,10 @@ in
         "$mod, J, togglesplit, # dwindle"
 
         # Move focus with mod + arrow keys
-        "$mod, M, movefocus, l"
-        "$mod, I, movefocus, r"
-        "$mod, E, movefocus, u"
-        "$mod, N, movefocus, d"
+        # "$mod, M, movefocus, l"
+        # "$mod, I, movefocus, r"
+        "$mod, N, cyclenext, next"
+        "$mod, E, cyclenext, prev"
 
         # Move focused window
         "$smod, M, movewindow, l"
