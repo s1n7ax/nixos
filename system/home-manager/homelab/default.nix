@@ -1,6 +1,10 @@
+{ config, lib, ... }:
+with lib;
 {
-  services.podman.enable = true;
-  services.podman.enableTypeChecks = true;
+  config = mkIf config.features.virtualization.podman.enable {
+    services.podman.enable = true;
+    services.podman.enableTypeChecks = true;
+  };
 
   systemd.user.tmpfiles.rules = [
     "d %h/.homelab 0700 - - -"

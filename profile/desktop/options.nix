@@ -76,7 +76,7 @@
       llm.enable = true;
       ai.enable = true;
       c.enable = true;
-      container.enable = true;
+      virtualization.enable = true;
       java.enable = true;
       javascript.enable = true;
       lua.enable = true;
