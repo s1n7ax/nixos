@@ -1,17 +1,14 @@
 {
   config,
-  pkgs,
   ...
 }:
 {
   programs.rofi = {
     enable = true;
-    package = pkgs.rofi;
     pass.enable = true;
-    pass.package = pkgs.rofi-pass;
 
     extraConfig = {
-      modi = "drun,filebrowser,window,run";
+      modi = "drun,run";
       show-icons = true;
       display-drun = " ";
       display-run = " ";
@@ -182,5 +179,4 @@
         };
       };
   };
-
 }
