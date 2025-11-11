@@ -31,8 +31,8 @@ in
 
       windowrulev2 = [
         "workspace 1, monitor:HDMI-A-1, class:(org.kde.digikam)"
-        "workspace 2, monitor:HDMI-A-1, class:(steam),float(0)"
-        "workspace 2, monitor:HDMI-A-1, title:(Steam),float(0)"
+        "workspace 2, monitor:HDMI-A-1, class:(steam),floating:[0]"
+        "workspace 2, monitor:HDMI-A-1, title:(Steam),floating:[0]"
         "workspace 3, monitor:HDMI-A-1, class:(Tor Browser)"
         "workspace 3, monitor:HDMI-A-1, class:(obsidian)"
 
@@ -138,13 +138,9 @@ in
         # bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
 
         animation = [
-          "workspaces, 1, 1.5, default"
-          "windows, 1, 1.5, default, slide"
-          # "windowsIn, 1, 2, default, popin 80%"
-          # "windowsOut, 1, 2, default, popin 80%"
-          # "border, 1, 10, default"
-          # "borderangle, 1, 8, default"
-          # "fade, 1, 1, default"
+          "workspaces, 1, 1, default"
+          "windows, 1, 1, default, slide"
+          "fade, 0"
         ];
       };
 
