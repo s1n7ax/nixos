@@ -68,7 +68,7 @@
     };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     hardware.url = "github:nixos/nixos-hardware";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
