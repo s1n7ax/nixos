@@ -298,6 +298,9 @@ with lib;
           };
         };
       };
+      github = {
+        enable = mkEnableOption "GitHub CLI";
+      };
       c = {
         enable = mkEnableOption "C/C++ development tools";
       };

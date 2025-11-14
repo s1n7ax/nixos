@@ -75,6 +75,7 @@
     development = {
       llm.enable = true;
       ai.enable = true;
+      github.enable = true;
       c.enable = true;
       virtualization.enable = true;
       java.enable = true;
