@@ -8,9 +8,34 @@ with lib;
 
 {
   config = mkIf config.features.development.ai.enable {
-    home.packages = mkIf config.features.development.ai.claude.enable [
-      pkgs.claude-code
-    ];
+    programs.claude-code = {
+      enable = config.features.development.ai.claude.enable;
+      settings = {
+        includeCoAuthoredBy = false;
+        permissions = {
+          allow = [
+            "Bash(git diff:*)"
+            "Edit"
+          ];
+          ask = [
+            "Bash(git push:*)"
+          ];
+          deny = [
+            "WebFetch"
+            "Bash(curl:*)"
+            "Read(./.env)"
+            "Read(./secrets/**)"
+          ];
+          disableBypassPermissionsMode = "disable";
+        };
+        statusLine = {
+          command = "~/.claude/statusline.sh";
+          padding = 0;
+          type = "command";
+        };
+        theme = "dark";
+      };
+    };
 
     home.file.".claude/settings.json" = mkIf config.features.development.ai.claude.enable {
       text = builtins.toJSON {
