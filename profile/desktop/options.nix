@@ -23,7 +23,7 @@
     virtualization = {
       docker.enable = true;
       podman.enable = false;
-      virtualbox.enable = false;
+      virtualbox.enable = true;
       virt-manager.enable = true;
       waydroid.enable = true;
     };
