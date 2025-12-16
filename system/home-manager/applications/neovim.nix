@@ -10,6 +10,7 @@
       nodejs_24
       python3
       gcc
+      tree-sitter
     ];
   };
 }
