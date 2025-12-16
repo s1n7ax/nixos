@@ -12,6 +12,7 @@
       ruff
       black
       virtualenv
+      python313Packages.python-lsp-server
     ];
   };
 }
