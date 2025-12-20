@@ -28,6 +28,7 @@ with lib;
           ];
           disableBypassPermissionsMode = "disable";
         };
+        model = "opus";
         statusLine = {
           command = "~/.claude/statusline.sh";
           padding = 0;
