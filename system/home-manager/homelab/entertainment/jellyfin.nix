@@ -1,8 +1,8 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/jellyfin";
-  movie_path = "${config.home.homeDirectory}/.homelab/radarr/movies";
-  tv_path = "${config.home.homeDirectory}/.homelab/sonarr/tv";
+  movie_path = "${config.settings.storagePath}/.homelab/radarr/movies";
+  tv_path = "${config.settings.storagePath}/.homelab/sonarr/tv";
 in
 with lib;
 {

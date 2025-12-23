@@ -1,6 +1,7 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/qbittorrent";
+  storage_path = "${config.settings.storagePath}/.homelab/qbittorrent";
 in
 with lib;
 {
@@ -8,7 +9,9 @@ with lib;
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/qbittorrent 0700 - - -"
       "d %h/.homelab/qbittorrent/config 0700 - - -"
-      "d %h/.homelab/qbittorrent/downloads 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/qbittorrent 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/qbittorrent/downloads 0700 - - -"
     ];
 
     services.podman.containers.qbittorrent = {
@@ -17,7 +20,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config"
-        "${data_path}/downloads:/downloads"
+        "${storage_path}/downloads:/downloads"
       ];
 
       environment = {

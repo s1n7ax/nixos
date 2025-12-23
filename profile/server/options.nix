@@ -1,4 +1,8 @@
 {
+  settings = {
+    storagePath = "/storage";
+  };
+
   features = {
     desktop.dconf.enable = true;
 

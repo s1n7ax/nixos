@@ -71,6 +71,11 @@ with lib;
       default = "ghostty";
       description = "Default terminal emulator to use.";
     };
+    storagePath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Path to the large storage mount point (e.g., /storage for HDD). Set to null if not using external storage.";
+    };
   };
 
   options.features = {
