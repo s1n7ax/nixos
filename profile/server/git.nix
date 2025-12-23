@@ -2,18 +2,17 @@
 {
   programs.git = {
     enable = true;
-    difftastic = {
-      enable = true;
-      display = "inline";
-    };
     lfs.enable = true;
 
-    userName = config.settings.username;
-    userEmail = "srineshnisala@gmail.com";
-    signing.key = "srineshnisala@gmail.com";
-    signing.signByDefault = true;
-
-    extraConfig = {
+    settings = {
+      user = {
+        name = config.settings.username;
+        email = "srineshnisala@gmail.com";
+      };
+      signing = {
+        key = "srineshnisala@gmail.com";
+        signByDefault = true;
+      };
       core = {
         untrackedcache = true;
         fsmonitor = true;
@@ -39,6 +38,14 @@
         lowSpeedLimit = 1;
         lowSpeedTime = 500;
       };
+    };
+  };
+
+  programs.difftastic = {
+    enable = true;
+    git.enable = true;
+    options = {
+      display = "inline";
     };
   };
 }

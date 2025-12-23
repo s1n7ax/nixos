@@ -50,7 +50,7 @@
     # image
     ffmpeg_6-full
     nsxiv
-    libsForQt5.gwenview
+    kdePackages.gwenview
 
     # other
     wl-clipboard

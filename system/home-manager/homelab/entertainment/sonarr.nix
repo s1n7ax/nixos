@@ -1,7 +1,8 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/sonarr";
-  download_path = "${config.home.homeDirectory}/.homelab/qbittorrent/downloads";
+  storage_path = "${config.settings.storagePath}/.homelab/sonarr";
+  download_path = "${config.settings.storagePath}/.homelab/qbittorrent/downloads";
 in
 with lib;
 {
@@ -9,8 +10,9 @@ with lib;
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/sonarr 0700 - - -"
       "d %h/.homelab/sonarr/config 0700 - - -"
-      "d %h/.homelab/sonarr/tv 0700 - - -"
-      "d %h/.homelab/sonarr/downloads 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/sonarr 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/sonarr/tv 0700 - - -"
     ];
 
     services.podman.containers.sonarr = {
@@ -19,7 +21,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config:Z"
-        "${data_path}/tv:/tv"
+        "${storage_path}/tv:/tv"
         "${download_path}:/downloads"
       ];
 

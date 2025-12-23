@@ -1,7 +1,8 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/radarr";
-  download_path = "${config.home.homeDirectory}/.homelab/qbittorrent/downloads";
+  storage_path = "${config.settings.storagePath}/.homelab/radarr";
+  download_path = "${config.settings.storagePath}/.homelab/qbittorrent/downloads";
 in
 with lib;
 {
@@ -9,8 +10,9 @@ with lib;
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/radarr 0700 - - -"
       "d %h/.homelab/radarr/config 0700 - - -"
-      "d %h/.homelab/radarr/movies 0700 - - -"
-      "d %h/.homelab/radarr/downloads 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/radarr 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/radarr/movies 0700 - - -"
     ];
 
     services.podman.containers.radarr = {
@@ -19,7 +21,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config:Z"
-        "${data_path}/movies:/movies"
+        "${storage_path}/movies:/movies"
         "${download_path}:/downloads"
       ];
 

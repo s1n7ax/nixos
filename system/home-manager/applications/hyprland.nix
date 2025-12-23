@@ -31,8 +31,8 @@ in
 
       windowrulev2 = [
         "workspace 1, monitor:HDMI-A-1, class:(org.kde.digikam)"
-        "workspace 2, monitor:HDMI-A-1, class:(steam),float(0)"
-        "workspace 2, monitor:HDMI-A-1, title:(Steam),float(0)"
+        "workspace 2, monitor:HDMI-A-1, class:(steam),floating:[0]"
+        "workspace 2, monitor:HDMI-A-1, title:(Steam),floating:[0]"
         "workspace 3, monitor:HDMI-A-1, class:(Tor Browser)"
         "workspace 3, monitor:HDMI-A-1, class:(obsidian)"
 
@@ -74,6 +74,10 @@ in
         "QT_AUTO_SCREEN_SCALE_FACTOR,1"
         "MOZ_ENABLE_WAYLAND,1"
         "GDK_SCALE,1"
+
+        "LIBVA_DRIVER_NAME,nvidia"
+        "__GLX_VENDOR_LIBRARY_NAME,nvidia"
+        "ELECTRON_OZONE_PLATFORM_HINT,auto"
       ];
 
       input = {
@@ -112,14 +116,14 @@ in
       decoration = {
         # See https://wiki.hyprland.org/Configuring/Variables/ for more
         shadow = {
-          enabled = true;
+          enabled = false;
           range = 4;
         };
 
         rounding = 10;
 
         blur = {
-          enabled = true;
+          enabled = false;
           size = 5;
           passes = 3;
           vibrancy = 0.5;
@@ -131,15 +135,12 @@ in
 
         # Some default animations, see https://wiki.hyprland.org/Configuring/Animations/ for more
 
-        bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
+        # bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
 
         animation = [
-          "windows, 1, 1, myBezier"
-          "windowsOut, 1, 1, default, popin 80%"
-          "border, 1, 10, default"
-          "borderangle, 1, 8, default"
-          "fade, 1, 1, default"
           "workspaces, 1, 1, default"
+          "windows, 1, 1, default, slide"
+          "fade, 0"
         ];
       };
 
@@ -150,7 +151,7 @@ in
 
       gestures = {
         # See https://wiki.hyprland.org/Configuring/Variables/ for more
-        workspace_swipe = false;
+        # workspace_swipe = false;
       };
 
       "$mod" = "SUPER";
@@ -168,13 +169,15 @@ in
         ''$amod, X, exec, slurp | grim -g - -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"''
 
         "$amod, O, exec, poweroff"
+        "$amod, P, exec, hyprctl dispatch togglefloating active && hyprctl dispatch resizeactive exact 30% 0 && hyprctl dispatch moveactive 2000 2000"
 
         "$smod, Q, exit,"
 
         "$mod, Return, exec, ${config.settings.terminal}"
 
         # window layouts
-        "$mod, H, togglefloating,"
+        ''$mod, H, exec, if [ "$(hyprctl activewindow -j | jq -r '.floating')" = "false" ]; then hyprctl dispatch togglefloating active && hyprctl dispatch resizeactive exact 35% 35% && hyprctl dispatch movewindow r && hyprctl dispatch movewindow d && hyprctl dispatch pin active; else hyprctl dispatch togglefloating active && hyprctl dispatch pin active; fi''
+
         "$mod, Q, fullscreenstate"
         "$mod, W, fullscreen, 1"
         "$mod, F, fullscreen, 0"
@@ -185,10 +188,12 @@ in
         "$mod, J, togglesplit, # dwindle"
 
         # Move focus with mod + arrow keys
-        "$mod, M, movefocus, l"
-        "$mod, I, movefocus, r"
-        "$mod, E, movefocus, u"
-        "$mod, N, movefocus, d"
+        # "$mod, M, movefocus, l"
+        # "$mod, I, movefocus, r"
+        "$mod, N, cyclenext, next"
+        "$mod, N, bringactivetotop,"
+        "$mod, E, cyclenext, prev"
+        "$mod, E, bringactivetotop,"
 
         # Move focused window
         "$smod, M, movewindow, l"

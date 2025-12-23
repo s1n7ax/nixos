@@ -23,7 +23,7 @@
     virtualization = {
       docker.enable = true;
       podman.enable = false;
-      virtualbox.enable = false;
+      virtualbox.enable = true;
       virt-manager.enable = true;
       waydroid.enable = true;
     };
@@ -75,8 +75,9 @@
     development = {
       llm.enable = true;
       ai.enable = true;
+      github.enable = true;
       c.enable = true;
-      container.enable = true;
+      virtualization.enable = true;
       java.enable = true;
       javascript.enable = true;
       lua.enable = true;

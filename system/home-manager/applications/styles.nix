@@ -7,7 +7,7 @@
     };
     theme = {
       name = "Breeze-Dark";
-      package = pkgs.libsForQt5.breeze-gtk;
+      package = pkgs.kdePackages.breeze-gtk;
     };
 
     cursorTheme = {
@@ -29,7 +29,7 @@
   qt = {
     style = {
       name = "Breeze-Dark";
-      package = pkgs.libsForQt5.breeze-qt5;
+      package = pkgs.kdePackages.breeze;
     };
   };
 }

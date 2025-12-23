@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 {
   xdg = {
     enable = true;
@@ -6,16 +6,52 @@
       enable = true;
       createDirectories = false;
     };
-
-    portal = {
-      enable = true;
-      configPackages = [ config.settings.wm.package ];
-      extraPortals = with pkgs; [
-        xdg-desktop-portal-hyprland
-        xdg-desktop-portal-gtk
-      ];
-    };
     mime.enable = true;
+    portal.enable = lib.mkForce (config.features.desktop.xdg.enable);
+    desktopEntries = {
+      whatsapp = {
+        name = "WhatsApp";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://web.whatsapp.com";
+        icon = "whatsapp";
+        terminal = false;
+        categories = [ "Network" "InstantMessaging" ];
+      };
+      facebook = {
+        name = "Facebook";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://facebook.com";
+        icon = "facebook";
+        terminal = false;
+        categories = [ "Network" "Chat" ];
+      };
+      youtube = {
+        name = "YouTube";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://youtube.com";
+        icon = "youtube";
+        terminal = false;
+        categories = [ "Network" "AudioVideo" ];
+      };
+      chatgpt = {
+        name = "ChatGPT";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://chat.openai.com";
+        icon = "openai";
+        terminal = false;
+        categories = [ "Network" "Utility" ];
+      };
+      github = {
+        name = "GitHub";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com";
+        icon = "github";
+        terminal = false;
+        categories = [ "Network" "Development" ];
+      };
+      sinhala-unicode = {
+        name = "Sinhala Unicode";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://www.sinhalaunicode.org/";
+        icon = "preferences-desktop-locale";
+        terminal = false;
+        categories = [ "Network" "Utility" ];
+      };
+    };
     mimeApps = {
       enable = true;
 
@@ -52,6 +88,15 @@
           "video/mp4" = players;
           "video/x-matroska" = players;
         };
+    };
+  } // lib.optionalAttrs config.features.desktop.xdg.enable {
+    portal = {
+      enable = true;
+      configPackages = [ config.settings.wm.package ];
+      extraPortals = with pkgs; [
+        xdg-desktop-portal-hyprland
+        xdg-desktop-portal-gtk
+      ];
     };
   };
 }

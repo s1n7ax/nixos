@@ -11,7 +11,7 @@
       marksman
       markdownlint-cli
       markdownlint-cli2
-      python311Packages.mdformat
+      python312Packages.mdformat
     ];
   };
 }

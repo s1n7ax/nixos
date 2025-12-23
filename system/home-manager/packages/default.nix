@@ -6,7 +6,8 @@
     ../applications/hyprland.nix
 
     ../packages/dev/c.nix
-    ../packages/dev/container.nix
+    ../packages/dev/github.nix
+    ../packages/dev/virtualization.nix
     ../packages/dev/java.nix
     ../packages/dev/javascript.nix
     ../packages/dev/lua.nix

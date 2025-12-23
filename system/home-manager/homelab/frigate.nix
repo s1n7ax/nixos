@@ -11,6 +11,7 @@ let
   backyard_shower = config.sops.placeholder."frigate/backyard_shower/pass";
 
   data_path = "${config.home.homeDirectory}/.homelab/frigate";
+  storage_path = "${config.settings.storagePath}/.homelab/frigate";
   model = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/google-coral/test_data/master/efficientdet_lite3_512_ptq_edgetpu.tflite";
     sha256 = "sha256-T5jwmHJATZ4odE0/9pTYQnqWjdtGeprsCshhvZ89uhQ=";
@@ -27,6 +28,9 @@ with lib;
       "d %h/.homelab/frigate 0700 - - -"
       "d %h/.homelab/frigate/media 0700 - - -"
       "d %h/.homelab/frigate/config 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/frigate 0700 - - -"
+      "d ${config.settings.storagePath}/.homelab/frigate/media 0700 - - -"
     ];
 
     services.podman.networks.frigate-network = {
@@ -58,7 +62,7 @@ with lib;
       volumes = [
         "/etc/localtime:/etc/localtime:ro"
         "${data_path}/config:/config/db:Z"
-        "${data_path}/media:/media/frigate:Z"
+        "${storage_path}/media:/media/frigate:Z"
         "${model}:/data/models/model.tflite"
         "${model_label}:/data/models/labels.txt"
         "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
