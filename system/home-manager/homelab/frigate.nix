@@ -66,6 +66,8 @@ with lib;
         "${model}:/data/models/model.tflite"
         "${model_label}:/data/models/labels.txt"
         "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
+        "/home/s1n7ax/yolo_nas.onnx:/data/yolo_nas.onnx"
+        "/home/s1n7ax/labels.txt:/data/labels.txt"
       ];
 
       environment = {
@@ -134,15 +136,13 @@ with lib;
         #                               MODEL                                #
         #--------------------------------------------------------------------#
         model:
-          width: 300
-          height: 300
-          input_tensor: nhwc
+          model_type: yolonas
+          width: 320
+          height: 320
+          input_tensor: nchw
           input_pixel_format: bgr
-          path: /openvino-model/ssdlite_mobilenet_v2.xml
-          labelmap_path: /openvino-model/coco_91cl_bkgr.txt
-
-          # path: /data/models/model.tflite
-          # labelmap_path: /data/models/labels.txt
+          path: /data/yolo_nas.onnx
+          labelmap_path: /data/labels.txt
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
