@@ -3,8 +3,8 @@
     desktop.dconf.enable = true;
 
     virtualization = {
-      docker.enable = true;
-      podman.enable = false;
+      docker.enable = false;
+      podman.enable = true;
     };
 
     security.gpg.enable = true;
