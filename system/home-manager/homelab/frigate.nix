@@ -66,6 +66,8 @@ with lib;
         "${model}:/data/models/model.tflite"
         "${model_label}:/data/models/labels.txt"
         "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
+        "/home/s1n7ax/yolo_nas.onnx:/data/yolo_nas.onnx"
+        "/home/s1n7ax/labels.txt:/data/labels.txt"
       ];
 
       environment = {
@@ -98,9 +100,9 @@ with lib;
           hwaccel_args: preset-vaapi
 
         detectors:
-          coral:
-            type: edgetpu
-            device: pci
+          ov:
+            type: openvino
+            device: GPU
 
         database:
           path: /config/db/frigate.db
@@ -134,10 +136,13 @@ with lib;
         #                               MODEL                                #
         #--------------------------------------------------------------------#
         model:
-          path: /data/models/model.tflite
-          labelmap_path: /data/models/labels.txt
-          width: 512
-          height: 512
+          model_type: yolonas
+          width: 320
+          height: 320
+          input_tensor: nchw
+          input_pixel_format: bgr
+          path: /data/yolo_nas.onnx
+          labelmap_path: /data/labels.txt
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
