@@ -13,7 +13,7 @@
       size = 32;
     };
     font = {
-      name = "Iosevka Nerd Font Mono";
+      name = "Maple Mono NF";
       size = 18;
     };
     icon = {

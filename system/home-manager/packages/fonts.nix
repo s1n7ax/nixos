@@ -3,7 +3,6 @@
   fonts.fontconfig = {
     enable = true;
     defaultFonts = {
-
       emoji = [ "Noto Color Emoji" ];
       monospace = [
         "Iosevka Nerd Font Mono"

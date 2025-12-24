@@ -21,7 +21,7 @@
     };
 
     virtualization = {
-      docker.enable = false;
+      docker.enable = true;
       podman.enable = true;
       virtualbox.enable = true;
       virt-manager.enable = true;
