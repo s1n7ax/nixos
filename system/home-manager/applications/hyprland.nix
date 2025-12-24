@@ -139,7 +139,7 @@ in
 
         animation = [
           "workspaces, 1, 1, default"
-          "windows, 1, 1, default, slide"
+          "windows, 0"
           "fade, 0"
         ];
       };
