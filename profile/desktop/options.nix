@@ -21,8 +21,8 @@
     };
 
     virtualization = {
-      docker.enable = true;
-      podman.enable = false;
+      docker.enable = false;
+      podman.enable = true;
       virtualbox.enable = true;
       virt-manager.enable = true;
       waydroid.enable = true;

@@ -1,12 +1,16 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 with lib;
 {
-  config.virtualisation.podman = mkIf config.features.virtualization.podman.enable {
-    enable = true;
-    autoPrune.enable = true;
+  config = mkIf config.features.virtualization.podman.enable {
+    virtualisation.podman = {
+      enable = true;
+      autoPrune.enable = true;
+    };
+    environment.systemPackages = [ pkgs.podman-compose ];
   };
 }
