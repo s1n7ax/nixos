@@ -2,6 +2,7 @@
 {
   imports = [
     ../applications/mpv.nix
+    ../applications/eza.nix
     ../applications/fish.nix
     ../applications/hyprland.nix
 

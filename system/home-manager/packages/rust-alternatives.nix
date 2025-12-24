@@ -4,7 +4,6 @@
     bat
     difftastic
     ripgrep
-    eza
     fd
     sd
     ripgrep
