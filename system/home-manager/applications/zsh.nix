@@ -5,7 +5,7 @@
     autosuggestion.enable = true;
     enableCompletion = true;
     oh-my-zsh.enable = true;
-    programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
+    dotDir = "${config.xdg.configHome}/zsh";
     localVariables = {
       PATH = "/home/s1n7ax/.cargo/bin:$PATH";
     };
