@@ -54,7 +54,8 @@ with lib;
       ];
 
       devices = [
-        "/dev/apex_0:/dev/apex_0"
+        # following is for google coral
+        # "/dev/apex_0:/dev/apex_0"
         "/dev/dri/renderD128:/dev/dri/renderD128"
       ];
 
