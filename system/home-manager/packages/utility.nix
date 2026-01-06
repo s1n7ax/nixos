@@ -20,11 +20,11 @@
   services.kdeconnect.enable = true;
 
   home.packages = with pkgs; [
-
     pass
+
     # file managers
-    xfce.thunar
-    xfce.tumbler
+    thunar
+    tumbler
     vifm
 
     # audio controls

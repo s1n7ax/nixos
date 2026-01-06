@@ -66,6 +66,14 @@
         {
           on = [
             "'"
+            "a"
+          ];
+          run = "cd /run/media/s1n7ax";
+          desc = "Go mounts";
+        }
+        {
+          on = [
+            "'"
             "c"
           ];
           run = "cd ~/.config";
