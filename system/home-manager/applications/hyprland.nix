@@ -50,7 +50,7 @@ in
         "float, monitor:HDMI-A-1, class:(steam),title:(Friends List)"
         "float, monitor:HDMI-A-1, class:(Tor Browser)"
       ];
-      monitor = ",preferred,auto,1";
+      monitor = ",3440x1440@144.00Hz,auto,1.25";
       exec-once = [
         "swaybg -i .wallpaper/*"
         "xdg-open 'https://' &"
@@ -194,6 +194,10 @@ in
         "$mod, N, bringactivetotop,"
         "$mod, E, cyclenext, prev"
         "$mod, E, bringactivetotop,"
+        "$mod, M, cyclenext, prev"
+        "$mod, M, bringactivetotop,"
+        "$mod, I, cyclenext, next"
+        "$mod, I, bringactivetotop,"
 
         # Move focused window
         "$smod, M, movewindow, l"
