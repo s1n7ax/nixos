@@ -32,9 +32,6 @@
     pwvucontrol
     easyeffects
 
-    #bluetooth
-    blueman
-
     # downloaders
     axel
     yt-dlp

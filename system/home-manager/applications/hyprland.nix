@@ -29,32 +29,30 @@ in
         force_zero_scaling = true;
       };
 
-      windowrulev2 = [
-        "workspace 1, monitor:HDMI-A-1, class:(org.kde.digikam)"
-        "workspace 2, monitor:HDMI-A-1, class:(steam),floating:[0]"
-        "workspace 2, monitor:HDMI-A-1, title:(Steam),floating:[0]"
-        "workspace 3, monitor:HDMI-A-1, class:(Tor Browser)"
-        "workspace 3, monitor:HDMI-A-1, class:(obsidian)"
+      windowrule = [
+        "workspace 1, match:class org.kde.digikam"
+        "workspace 2, match:class steam, float on"
+        "workspace 2, match:title Steam, float on"
+        "workspace 3, match:class Tor Browser"
+        "workspace 3, match:class obsidian"
 
-        "workspace 4, monitor:HDMI-A-1, class:(firefox)"
-        "workspace 4, monitor:HDMI-A-1, class:(LibreWolf)"
+        "workspace 4, match:class firefox"
+        "workspace 4, match:class LibreWolf"
 
-        "workspace 5, monitor:HDMI-A-1, class:(com.obsproject.Studio)"
+        "workspace 5, match:class com.obsproject.Studio"
 
-        "workspace 8, class:(com.github.wwmm.easyeffects)"
-        "workspace 8, class:(pavucontrol)"
-        "workspace 8, class:(org.pulseaudio.pavucontrol)"
-        "workspace 8, class:(com.saivert.pwvucontrol)"
-        "workspace 8, class:(.blueman-manager-wrapped)"
+        "workspace 8, match:class com.github.wwmm.easyeffects"
+        "workspace 8, match:class pavucontrol"
+        "workspace 8, match:class org.pulseaudio.pavucontrol"
+        "workspace 8, match:class com.saivert.pwvucontrol"
 
-        "float, monitor:HDMI-A-1, class:(steam),title:(Friends List)"
-        "float, monitor:HDMI-A-1, class:(Tor Browser)"
+        "float on, match:class steam, match:title Friends List"
+        "float on, match:class Tor Browser"
       ];
       monitor = ",3440x1440@144.00Hz,auto,1.25";
       exec-once = [
         "swaybg -i .wallpaper/*"
         "xdg-open 'https://' &"
-        "blueman-manager& "
         "pwvucontrol &"
         "${config.settings.terminal} &"
       ];

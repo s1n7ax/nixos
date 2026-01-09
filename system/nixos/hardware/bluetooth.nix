@@ -5,5 +5,4 @@ with lib;
     enable = true;
     powerOnBoot = true;
   };
-  services.blueman.enable = mkIf config.features.hardware.bluetooth.enable true;
 }

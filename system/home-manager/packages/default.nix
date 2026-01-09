@@ -5,6 +5,7 @@
     ../applications/eza.nix
     ../applications/fish.nix
     ../applications/hyprland.nix
+    ../applications/bluetui.nix
 
     ../packages/dev/c.nix
     ../packages/dev/github.nix
