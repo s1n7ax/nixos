@@ -44,7 +44,6 @@ in
         "workspace 8, match:class com.github.wwmm.easyeffects"
         "workspace 8, match:class pavucontrol"
         "workspace 8, match:class org.pulseaudio.pavucontrol"
-        "workspace 8, match:class com.saivert.pwvucontrol"
 
         "float on, match:class steam, match:title Friends List"
         "float on, match:class Tor Browser"
@@ -53,7 +52,8 @@ in
       exec-once = [
         "swaybg -i .wallpaper/*"
         "xdg-open 'https://' &"
-        "pwvucontrol &"
+        "${config.settings.terminal} -e bluetui &"
+        "${config.settings.terminal} -e wiremix &"
         "${config.settings.terminal} &"
       ];
 

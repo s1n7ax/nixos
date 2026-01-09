@@ -29,7 +29,7 @@
 
     # audio controls
     #pavucontrol
-    pwvucontrol
+    wiremix
     easyeffects
 
     # downloaders
