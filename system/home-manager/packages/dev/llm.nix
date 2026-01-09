@@ -1,13 +1,13 @@
 {
   lib,
   config,
-  pkgs,
+  # pkgs,
   ...
 }:
 {
   config = lib.mkIf config.features.development.llm.enable {
-    home.packages = with pkgs; [
-      llm-ls
-    ];
+    # home.packages = with pkgs; [
+    # llm-ls
+    # ];
   };
 }

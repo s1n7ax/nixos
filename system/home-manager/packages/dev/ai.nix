@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 with lib;
@@ -21,8 +20,6 @@ with lib;
             "Bash(git push:*)"
           ];
           deny = [
-            "WebFetch"
-            "Bash(curl:*)"
             "Read(./.env)"
             "Read(./secrets/**)"
           ];
