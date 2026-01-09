@@ -50,7 +50,6 @@ in
       ];
       monitor = ",3440x1440@144.00Hz,auto,1.25";
       exec-once = [
-        "swaybg -i .wallpaper/*"
         "xdg-open 'https://' &"
         "${config.settings.terminal} -e bluetui &"
         "${config.settings.terminal} -e wiremix &"
