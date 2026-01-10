@@ -7,14 +7,11 @@ in
   services.hyprpaper = {
     enable = true;
     settings = {
-      ipc = "on";
-      splash = false;
-      splash_offset = 2.0;
-      preload = [ "~/.wallpaper/wallpaper" ];
-      wallpaper = [
-        "HDMI-A-1,~/.wallpaper/wallpaper"
-        "eDP-1,~/.wallpaper/wallpaper"
-      ];
+      wallpaper = {
+        monitor = "";
+        path = "~/.wallpaper/wallpaper";
+        fit_mode = "cover";
+      };
     };
   };
 
