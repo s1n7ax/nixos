@@ -7,6 +7,25 @@ with lib;
 
 {
   config = mkIf config.features.development.ai.enable {
+    programs.opencode = {
+      enable = config.features.development.ai.claude.enable;
+      enableMcpIntegration = true;
+      rules = ''
+        # Git rules
+
+        ## Commits
+
+        - Always use conventional commits https://www.conventionalcommits.org/en/v1.0.0/#specification
+        - Use git status or git diff to see what changed and add one or more commits based on the context. Ex:- If there are two types of changes, use two commits.
+
+        # Coding
+
+        ## Comments
+
+        - Never add single line comments for code you are adding. Only add doc comments only if it's a direct highlevel API we are exposing.
+      '';
+    };
+
     programs.claude-code = {
       enable = config.features.development.ai.claude.enable;
       settings = {
