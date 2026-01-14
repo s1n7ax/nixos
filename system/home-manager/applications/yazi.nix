@@ -4,7 +4,7 @@
     enable = true;
     enableFishIntegration = true;
     keymap = {
-      manager.prepend_keymap = [
+      mgr.prepend_keymap = [
         {
           on = "n";
           run = "arrow 1";
