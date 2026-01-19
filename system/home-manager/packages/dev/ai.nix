@@ -10,6 +10,9 @@ with lib;
     programs.opencode = {
       enable = config.features.development.ai.claude.enable;
       enableMcpIntegration = true;
+      settings = {
+
+      };
       rules = ''
         # Git rules
 
