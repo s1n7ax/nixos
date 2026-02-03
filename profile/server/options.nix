@@ -47,7 +47,7 @@
       homepage.enable = false;
 
       entertainment = {
-        enable = true;
+        enable = false;
         jellyfin.enable = true;
         prowlarr.enable = true;
         sonarr.enable = true;
