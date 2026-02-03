@@ -18,7 +18,11 @@ with lib;
 
     services.podman.containers.mqtt = {
       image = "eclipse-mosquitto:2.0";
-      network = [ "mqtt-network" ];
+      network = [
+        "z2m-network"
+        "mqtt-network"
+      ];
+
       volumes = [
         "${data_path}/config:/mosquitto/config"
         "${data_path}/data:/mosquitto/data"
