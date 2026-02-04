@@ -94,6 +94,9 @@ with lib;
         tls:
           enabled: false
 
+        auth:
+          session_length: 2592000
+
         audio:
           enabled: true
 
