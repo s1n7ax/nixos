@@ -33,7 +33,11 @@
     development = {
       nix.enable = true;
       javascript.enable = true;
-      ai.enable = true;
+      ai = {
+        enable = true;
+        opencode.enable = true;
+        claude.enable = false;
+      };
     };
 
     homelab = {

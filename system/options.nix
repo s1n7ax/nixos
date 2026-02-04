@@ -295,10 +295,17 @@ with lib;
       };
       ai = {
         enable = mkEnableOption "AI development tools and assistants";
+        opencode = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "OpenCode AI assistant";
+          };
+        };
         claude = {
           enable = mkOption {
             type = types.bool;
-            default = true;
+            default = false;
             description = "Claude Code AI assistant";
           };
         };

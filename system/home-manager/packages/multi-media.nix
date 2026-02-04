@@ -10,7 +10,7 @@
       digikam
       gimp
       handbrake
-      kdePackages.kdenlive
+      # kdePackages.kdenlive
     ];
   };
 }

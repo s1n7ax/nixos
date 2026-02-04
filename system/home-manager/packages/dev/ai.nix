@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs-unstable,
   ...
 }:
 with lib;
@@ -9,7 +8,7 @@ with lib;
 {
   config = mkIf config.features.development.ai.enable {
     programs.opencode = {
-      enable = config.features.development.ai.claude.enable;
+      enable = config.features.development.ai.opencode.enable;
       enableMcpIntegration = true;
       settings = {
 
