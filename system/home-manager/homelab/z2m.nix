@@ -47,7 +47,7 @@ with lib;
     };
 
     home.file."${data_path}/configuration.yaml".text = ''
-      version: 4
+      version: 5
       mqtt:
         base_topic: zigbee2mqtt
         server: mqtt://mqtt:1883
