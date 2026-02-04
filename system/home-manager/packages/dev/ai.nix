@@ -26,6 +26,15 @@ with lib;
         ## Comments
 
         - Never add single line comments for code you are adding. Only add doc comments only if it's a direct highlevel API we are exposing.
+
+        # Memory Management
+
+        ## 'to mem' Instruction
+
+        - When the user says 'to mem' in a prompt, update the AGENTS.md file (located at the repository root) with the provided information
+        - If the previous task completed doesn't follow the 'to mem' instructions, retroactively update that work as well to comply
+        - This is a directive to persist important context, patterns, or decisions for future reference
+
       '';
     };
 
