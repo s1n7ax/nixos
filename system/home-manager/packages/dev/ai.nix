@@ -76,6 +76,10 @@ with lib;
 
         # Coding
 
+        ## MCP
+
+        - Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+
         ## Comments
 
         - Never add single line comments for code you are adding. Only add doc comments only if it's a direct highlevel API we are exposing.
