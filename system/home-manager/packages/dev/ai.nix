@@ -7,11 +7,61 @@ with lib;
 
 {
   config = mkIf config.features.development.ai.enable {
+    programs.mcp = {
+      enable = true;
+      servers = {
+        svelte = {
+          command = "npx";
+          args = [
+            "-y"
+            "@sveltejs/mcp"
+          ];
+        };
+        nextjs = {
+          command = "npx";
+          args = [
+            "-y"
+            "next-devtools-mcp@latest"
+          ];
+        };
+        tailwindcss = {
+          command = "npx";
+          args = [
+            "-y"
+            "tailwindcss-mcp-server"
+          ];
+        };
+        chakra-ui = {
+          command = "npx";
+          args = [
+            "-y"
+            "@chakra-ui/react-mcp"
+          ];
+        };
+        context7 = {
+          command = "npx";
+          args = [
+            "-y"
+            "@upstash/context7-mcp"
+          ];
+        };
+      };
+    };
+
     programs.opencode = {
       enable = config.features.development.ai.opencode.enable;
       enableMcpIntegration = true;
       settings = {
-
+        model = "anthropic/claude-opus-4.6";
+        permission = {
+          webfetch = "ask";
+          websearch = "ask";
+        };
+        theme = "catppuccin";
+        keybinds = {
+          messages_half_page_up = "ctrl+u";
+          messages_half_page_down = "ctrl+d";
+        };
       };
       rules = ''
         # Git rules
@@ -20,6 +70,9 @@ with lib;
 
         - Always use conventional commits https://www.conventionalcommits.org/en/v1.0.0/#specification
         - Use git status or git diff to see what changed and add one or more commits based on the context. Ex:- If there are two types of changes, use two commits.
+        - Never ever commit/push without user's prompt to commit/push the changes
+        - When user asks to commit the changes, never make any change to the codebase. Just commit the changes as it is.
+        - Don’t add yourself as a co-author to git commits.
 
         # Coding
 
@@ -29,12 +82,23 @@ with lib;
 
         # Memory Management
 
+        ## Cache
+
+        - I most often update the files manually. So if your cache is out of date, update your cache.
+        - Never ever update the file to refact the cache changes. Just update the cache with the latest file changes.
+
         ## 'to mem' Instruction
 
         - When the user says 'to mem' in a prompt, update the AGENTS.md file (located at the repository root) with the provided information
         - If the previous task completed doesn't follow the 'to mem' instructions, retroactively update that work as well to comply
         - This is a directive to persist important context, patterns, or decisions for future reference
 
+        # Working relationship
+
+        - No sycophancy.
+        - Be direct, matter-of-fact, and concise.
+        - Be critical; challenge my reasoning.
+        - Don’t include timeline estimates in plans.
       '';
     };
 
