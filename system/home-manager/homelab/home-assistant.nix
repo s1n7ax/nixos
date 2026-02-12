@@ -15,7 +15,7 @@ with lib;
     };
 
     services.podman.containers.home-assistant = {
-      image = "ghcr.io/home-assistant/home-assistant:2026.1.1";
+      image = "ghcr.io/home-assistant/home-assistant:2026.2";
       # using this because of issue https://github.com/blakeblackshear/frigate-hass-integration/issues/790
       # image = "ghcr.io/home-assistant/home-assistant:2025.8.1";
       network = [
