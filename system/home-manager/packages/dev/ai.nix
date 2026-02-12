@@ -52,7 +52,7 @@ with lib;
       enable = config.features.development.ai.opencode.enable;
       enableMcpIntegration = true;
       settings = {
-        model = "anthropic/claude-opus-4-6";
+        model = "anthropic/claude-sonnet-4-5";
         permission = {
           webfetch = "ask";
           websearch = "ask";
