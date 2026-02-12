@@ -78,7 +78,11 @@ with lib;
 
         ## MCP
 
-        - Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+        - Always consult Svelte MCP docs for Svelte questions
+        - Always use Next.js MCP for Next.js development, diagnostics, and runtime inspection
+        - Always use TailwindCSS MCP for CSS-to-Tailwind conversions, component templates, and utility lookups
+        - Always use Chakra UI MCP for component examples, props reference, and theme customization
+        - Use Context7 MCP when we don't have a dedicated MCP but I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
         ## Comments
 
