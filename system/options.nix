@@ -50,7 +50,7 @@ with lib;
       };
       size = mkOption {
         type = types.int;
-        default = 18;
+        default = 16;
         description = "Font size for the terminal.";
       };
     };
