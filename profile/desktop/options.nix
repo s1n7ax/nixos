@@ -77,7 +77,7 @@
       ai = {
         enable = true;
         opencode.enable = true;
-        claude.enable = false;
+        claude.enable = true;
       };
       github.enable = true;
       c.enable = true;
