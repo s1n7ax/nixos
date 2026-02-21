@@ -138,6 +138,9 @@ in
 
             "Bash(* --version)"
             "Bash(* --help *)"
+
+            "Bash (find *)"
+            "Bash (ls *)"
           ];
           ask = [
             "Bash(git commit *)"
