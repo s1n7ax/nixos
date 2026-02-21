@@ -3,6 +3,7 @@
   programs.yazi = {
     enable = true;
     enableFishIntegration = true;
+    programs.yazi.shellWrapperName = "y";
     keymap = {
       mgr.prepend_keymap = [
         {
