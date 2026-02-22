@@ -102,8 +102,37 @@ in
       settings = {
         model = "anthropic/claude-sonnet-4-5";
         permission = {
+          bash = {
+            "*" = "ask";
+            "* -h" = "allow";
+            "* --version" = "allow";
+            "* --help" = "allow";
+
+            # GIT
+            "git diff *" = "allow";
+            "git push *" = "allow";
+            "git status *" = "allow";
+            "git branch *" = "allow";
+            "git switch *" = "allow";
+
+            # LINUX
+            "find *" = "allow";
+            "ls *" = "allow";
+            "ct *" = "allow";
+            "cat *" = "allow";
+            "rm *" = "ask";
+
+            # PNPM
+            "pnpm *" = "allow";
+            "pnpm install *" = "ask";
+          };
           webfetch = "ask";
           websearch = "ask";
+          edit = "ask";
+          read = {
+            ".env*" = "deny";
+            "secrets*" = "deny";
+          };
         };
         theme = "catppuccin";
         keybinds = {
@@ -126,11 +155,9 @@ in
         terminalProgressBarEnabled = true;
         permissions = {
           allow = [
-            "Bash(pnpm install *)"
-
-            "Bash(pnpm run lint)"
-            "Bash(pnpm run test *)"
-            "Bash(pnpm run dev *)"
+            "Bash(pnpm run *)"
+            "Bash(pnpm *)"
+            "Bash(npx tsc *)"
 
             "Bash(git add *)"
             "Bash(git diff *)"
@@ -141,9 +168,13 @@ in
 
             "Bash (find *)"
             "Bash (ls *)"
+            "Bash (ct *)"
+            "Bash (cat *)"
           ];
           ask = [
             "Bash(git commit *)"
+            "Bash(pnpm install*)"
+            "Bash(rm*)"
           ];
           deny = [
             "Read(./.env)"
