@@ -7,6 +7,7 @@
     ../applications/hyprland.nix
     ../applications/bluetui.nix
     ../applications/zellij.nix
+    ../applications/tmux.nix
 
     ../packages/dev/c.nix
     ../packages/dev/github.nix

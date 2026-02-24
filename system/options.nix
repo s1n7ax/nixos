@@ -290,6 +290,9 @@ with lib;
       zellij = {
         enable = mkEnableOption "Zellij terminal multiplexer";
       };
+      tmux = {
+        enable = mkEnableOption "tmux terminal multiplexer";
+      };
     };
 
     development = {

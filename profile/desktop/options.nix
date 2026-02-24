@@ -71,6 +71,7 @@
     tools = {
       downloading.enable = true;
       zellij.enable = true;
+      tmux.enable = true;
     };
 
     development = {
