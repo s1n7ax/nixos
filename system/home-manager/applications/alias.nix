@@ -17,6 +17,7 @@ let
     dde = "docker compose exec";
     ddb = "docker compose build";
 
+    t = "tmux new-session -A -s main";
     n = "nvim";
     nv = "neovide";
     f = "yazi";
