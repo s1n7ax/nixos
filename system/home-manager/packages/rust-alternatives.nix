@@ -8,7 +8,6 @@
     sd
     ripgrep
     starship
-    zellij
     xh
     dua
   ];

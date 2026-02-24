@@ -287,6 +287,9 @@ with lib;
       downloading = {
         enable = mkEnableOption "downloading tools like wget, curl";
       };
+      zellij = {
+        enable = mkEnableOption "Zellij terminal multiplexer";
+      };
     };
 
     development = {

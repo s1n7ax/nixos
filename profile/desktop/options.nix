@@ -70,6 +70,7 @@
 
     tools = {
       downloading.enable = true;
+      zellij.enable = true;
     };
 
     development = {
