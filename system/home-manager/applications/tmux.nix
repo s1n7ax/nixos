@@ -20,8 +20,18 @@
       shell = "${pkgs.fish}/bin/fish";
       extraConfig = ''
         unbind-key -a
+
         bind-key -n M-d detach-client
-        bind-key -n M-q kill-server
+        bind-key -n M-a select-window -t 1
+        bind-key -n M-r select-window -t 2
+        bind-key -n M-s select-window -t 3
+
+        set -g prefix M-t
+
+        bind q kill-server
+        bind t new-window
+        bind x kill-window
+
       '';
     };
   };
