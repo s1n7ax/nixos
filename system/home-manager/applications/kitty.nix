@@ -9,11 +9,12 @@
     };
     settings = {
       "ctrl+c" = "copy_or_interrupt";
-      "cursor_blink_interval" = 0;
-      "clear_all_shortcuts" = "no";
-      "cursor_trail" = 0;
-      "cursor_trail_decay" = "0 0.5";
-      "cursor_trail_start_threshold" = 0;
+      cursor_blink_interval = 0;
+      clear_all_shortcuts = "no";
+      cursor_trail = 0;
+      cursor_trail_decay = "0 0.5";
+      cursor_trail_start_threshold = 0;
+      confirm_os_window_close = 0;
     };
     themeFile = "Catppuccin-Mocha";
 
