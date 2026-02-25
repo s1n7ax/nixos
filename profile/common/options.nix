@@ -14,7 +14,7 @@
     };
     font = {
       name = "Maple Mono NF";
-      size = 18;
+      size = 14;
     };
     icon = {
       name = "Tela-circle-dark";
