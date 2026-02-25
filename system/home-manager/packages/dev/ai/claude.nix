@@ -1,18 +1,27 @@
 {
   config,
   lib,
+  inputs,
   ...
 }:
 let
   common = import ./common.nix;
 in
 {
+  imports = [
+    "${inputs.home-manager-claude}/modules/programs/claude-code.nix"
+  ];
+
+  disabledModules = [
+    "programs/claude-code.nix"
+  ];
+
   config = lib.mkIf config.features.development.ai.claude.enable {
     programs.claude-code = {
       enable = true;
       memory.text = common.rules;
+      skills = common.skills;
       settings = {
-        skils = common.skills;
         attribution = {
           commit = "";
           pr = "";
