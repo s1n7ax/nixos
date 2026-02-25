@@ -8,6 +8,8 @@ let
   common = import ./common.nix;
 in
 {
+  # TODO: Remove this pin once upstream fixes skill file structure bug
+  # https://github.com/s1n7ax/nixos/issues/7
   imports = [
     "${inputs.home-manager-claude}/modules/programs/claude-code.nix"
   ];

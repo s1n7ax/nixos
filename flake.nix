@@ -77,6 +77,8 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # TODO: Remove this pin once upstream fixes skill file structure bug
+    # https://github.com/s1n7ax/nixos/issues/7
     home-manager-claude = {
       url = "github:nix-community/home-manager/91be7cc";
       inputs.nixpkgs.follows = "nixpkgs";
