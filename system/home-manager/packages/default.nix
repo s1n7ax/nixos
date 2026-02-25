@@ -28,7 +28,7 @@
     ../packages/dev/ide.nix
     ../packages/dev/llm.nix
     ../packages/dev/ci.nix
-    ../packages/dev/ai.nix
+    ../packages/dev/ai
     ../packages/dev/network.nix
 
     ../packages/camera.nix
