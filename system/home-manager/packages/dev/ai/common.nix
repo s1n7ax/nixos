@@ -69,6 +69,30 @@
       ```
     '';
 
+    todo-comments = ''
+      ---
+      name: todo-comments
+      description: Add TODO comments to code with linked GitHub issues
+      ---
+
+      # TODO Comments
+
+      ## Steps
+
+      1. Create a GitHub issue first
+      2. Add the issue URL on the next line
+
+      ## Examples
+
+      TypeScript/JavaScript:
+      ```ts
+      /**
+       * TODO: Implement caching layer
+       * https://github.com/user/repo/issues/123
+       */
+      ```
+    '';
+
     git-commits = ''
       ---
       name: git-commits
