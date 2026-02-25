@@ -19,6 +19,7 @@
       vscode-langservers-extracted
       tailwindcss-language-server
       prettierd
+      nodePackages.prettier
       biome
       typescript
       eslint_d
