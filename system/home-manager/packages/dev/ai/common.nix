@@ -4,17 +4,11 @@
 
     ## MCP
 
-    - Always consult Svelte MCP docs for Svelte questions
-    - Always use Next.js MCP for Next.js development, diagnostics, and runtime inspection
-    - Always use TailwindCSS MCP for CSS-to-Tailwind conversions, component templates, and utility lookups
-    - Always use Chakra UI MCP for component examples, props reference, and theme customization
     - Use Context7 MCP when we don't have a dedicated MCP but I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
     ## 'to mem' Instruction
 
-    - When the user says 'to mem' in a prompt, update the AGENTS.md file (located at the repository root) with the provided information
-    - If the previous task completed doesn't follow the 'to mem' instructions, retroactively update that work as well to comply
-    - This is a directive to persist important context, patterns, or decisions for future reference
+    - When the user says 'to mem' in a prompt, update the AGENTS.md file with the provided information
 
     # Working relationship
 
