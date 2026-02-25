@@ -20,22 +20,59 @@
   '';
 
   skills = {
-    development = ''
+    single-line-code-comments = ''
       ---
-      name: development
-      description: Any kind of development related skills
+      name: single-line-code-comments
+      description: Skills related to adding single line code comments
       ---
 
       ## What NOT to Do
 
       - Never add single line comments. Only doc comments are allowed
-      - Never update the files to reflect your cache rather read the file again and update cache
     '';
 
-    git-version-control = ''
+    override-hm-module = ''
       ---
-      name: git-version-control
-      description: version control files in a git repository
+      name: override-hm-module
+      description: Override a home-manager module with a specific commit. Use when a module has bugs or missing features and you need a newer version without updating all flakes.
+      ---
+
+      # Override Home-Manager Module
+
+      ## Steps
+
+      1. Add pinned input in `flake.nix`:
+      ```nix
+      home-manager-<name> = {
+        url = "github:nix-community/home-manager/<COMMIT_HASH>";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
+      ```
+
+      2. In the module file:
+      ```nix
+      {
+        inputs,
+        ...
+      }:
+      {
+        imports = [
+          "''${inputs.home-manager-<name>}/modules/programs/<module>.nix"
+        ];
+
+        disabledModules = [
+          "programs/<module>.nix"
+        ];
+
+        # ... rest of config
+      }
+      ```
+    '';
+
+    git-commits = ''
+      ---
+      name: git-commits
+      description: Skills related to git creating git commits
       ---
 
       # Git Commit Skill
