@@ -28,6 +28,7 @@
 
     tools = {
       downloading.enable = true;
+      tmux.enable = true;
     };
 
     development = {
