@@ -36,8 +36,8 @@
       javascript.enable = true;
       ai = {
         enable = true;
-        opencode.enable = true;
-        claude.enable = false;
+        opencode.enable = false;
+        claude.enable = true;
       };
     };
 
