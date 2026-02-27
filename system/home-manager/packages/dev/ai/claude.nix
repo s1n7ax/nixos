@@ -61,7 +61,6 @@ in
         };
         env = {
           CLAUDE_CODE_ENABLE_TELEMETRY = "0";
-          OTEL_METRICS_EXPORTER = "otlp";
         };
         theme = "dark";
       };
