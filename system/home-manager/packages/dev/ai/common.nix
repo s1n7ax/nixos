@@ -1,4 +1,42 @@
 {
+  mcpServers = {
+    svelte = {
+      command = "npx";
+      args = [
+        "-y"
+        "@sveltejs/mcp"
+      ];
+    };
+    nextjs = {
+      command = "npx";
+      args = [
+        "-y"
+        "next-devtools-mcp@latest"
+      ];
+    };
+    tailwindcss = {
+      command = "npx";
+      args = [
+        "-y"
+        "tailwindcss-mcp-server"
+      ];
+    };
+    chakra-ui = {
+      command = "npx";
+      args = [
+        "-y"
+        "@chakra-ui/react-mcp"
+      ];
+    };
+    context7 = {
+      command = "npx";
+      args = [
+        "-y"
+        "@upstash/context7-mcp"
+      ];
+    };
+  };
+
   rules = ''
     # AGENTS.md
 
@@ -20,6 +58,19 @@
   '';
 
   skills = {
+    logging = ''
+      ---
+      name: logging
+      description: How to add logs, print messages in a project
+      ---
+
+      # Logging
+
+      - Before using standard output APIs, we should look if there is a logging API available in the project. 
+        For example, in JavaScript projects, we can use `console.log` or `console.error` to log messages but it's 
+        hightly likely that the project has `pino` or some other logger configured. We should always use that over standard output APIs of the language
+    '';
+
     single-line-code-comments = ''
       ---
       name: single-line-code-comments

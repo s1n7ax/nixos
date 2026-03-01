@@ -63,6 +63,7 @@ in
           CLAUDE_CODE_ENABLE_TELEMETRY = "0";
         };
         theme = "dark";
+        mcpServers = common.mcpServers;
       };
     };
   };
