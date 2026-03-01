@@ -21,6 +21,8 @@
       extraConfig = ''
         unbind-key -a
 
+        set -s extended-keys on
+
         set -sg terminal-overrides ",*:RGB"  # true color support
         set -g mouse on
         set -g renumber-windows on  # keep numbering sequential
