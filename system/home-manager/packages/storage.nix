@@ -1,0 +1,6 @@
+{ ... }:
+{
+  imports = [
+    ../applications/rclone.nix
+  ];
+}

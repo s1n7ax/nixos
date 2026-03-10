@@ -43,6 +43,7 @@
     ../packages/mobile.nix
     ../packages/web.nix
     ../packages/present.nix
+    ../packages/storage.nix
   ];
 
 }

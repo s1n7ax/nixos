@@ -69,7 +69,7 @@ in
     ../../system/nixos/hardware/openrgb.nix
     ../../system/nixos/hardware/coral.nix
 
-    ../../system/nixos/mounts/cloud-storages.nix
+    # ../../system/nixos/mounts/cloud-storages.nix
 
     ../../system/nixos/utils/applications.nix
     ../../system/nixos/utils/docker.nix

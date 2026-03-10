@@ -161,6 +161,12 @@ with lib;
       cloud = {
         enable = mkEnableOption "cloud storage mounts";
       };
+      dropbox = {
+        enable = mkEnableOption "Dropbox cloud storage";
+      };
+      googlePhotos = {
+        enable = mkEnableOption "Google Photos cloud storage";
+      };
     };
 
     network = {

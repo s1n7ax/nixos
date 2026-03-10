@@ -34,6 +34,8 @@
 
     storage = {
       cloud.enable = true;
+      dropbox.enable = true;
+      googlePhotos.enable = true;
     };
 
     network = {
