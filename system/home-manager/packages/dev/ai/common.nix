@@ -222,5 +222,17 @@
 
       - When user asks to commit the changes, never make any change to the codebase. Just commit the changes as it is.
     '';
+
+    home-manager-options = ''
+      ---
+      name: home-manager-options
+      description: Finding home-manager available options and their description
+      ---
+
+      # Home-Manager Options
+
+      - Use `man home-configuration.nix | grep -C10 'programs.rclone'` command to find available options
+      - We can adjust  the -C10 flag to expand more or less lines before or after the match 
+    '';
   };
 }
