@@ -51,6 +51,16 @@
         terminal = false;
         categories = [ "Network" "Utility" ];
       };
+      wiremix = {
+        name = "WireMix";
+        exec = "${pkgs.wiremix}/bin/wiremix";
+        terminal = true;
+        comment = "PipeWire audio mixer and volume control";
+        categories = [ "AudioVideo" "Audio" "Mixer" ];
+        settings = {
+          Keywords = "pipewire;audio;mixer;volume;sound;pulse;";
+        };
+      };
     };
     mimeApps = {
       enable = true;
