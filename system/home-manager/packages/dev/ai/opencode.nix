@@ -19,15 +19,18 @@ in
             "* --version" = "allow";
             "* --help" = "allow";
 
-            "git diff *" = "allow";
-            "git push *" = "allow";
-            "git status *" = "allow";
-            "git branch *" = "allow";
-            "git switch *" = "allow";
+            ## git
+            "git diff*" = "allow";
+            "git push*" = "allow";
+            "git status*" = "allow";
+            "git branch*" = "allow";
+            "git switch*" = "allow";
+            "git log*" = "allow";
+            # "git*" = "ask";
 
             "find *" = "allow";
-            "ls *" = "allow";
-            "ct *" = "allow";
+            "ls*" = "allow";
+            "cd*" = "allow";
             "cat *" = "allow";
             "rm *" = "ask";
 
@@ -36,7 +39,7 @@ in
           };
           webfetch = "ask";
           websearch = "ask";
-          edit = "ask";
+          edit = "allow";
           read = {
             ".env*" = "deny";
             "secrets*" = "deny";
