@@ -58,6 +58,52 @@
   '';
 
   skills = {
+    github-prs = ''
+      ---
+      name: github-prs
+      description: Skills related to creating GitHub pull requests
+      ---
+
+      # GitHub Pull Requests
+
+      ## PR Title
+
+      - Use conventional commit message syntax for PR titles (same convention as git commits)
+      - Syntax: `<type>[scope]: <description>`
+
+      ## PR Description
+
+      - Summarize the changes in 1-3 bullet points
+
+      ## Review Bot Comments
+
+      - Projects may have Copilot review bots enabled
+      - After creating the PR, check for review comments using `gh pr view --json reviews`
+      - The review bot may take time to publish comments; if no comments yet, inform the user they can ask you to check again later
+      - When review comments exist:
+        1. Read every comment carefully
+        2. Critically evaluate each one — challenge the suggestion to verify it is valid and applicable
+        3. Discard comments that are false positives, stylistic nitpicks with no real impact, or incorrect
+        4. Present only the valid comments to the user as a numbered list with file, line, and the suggestion
+        5. Ask the user which ones to fix
+    '';
+
+    errors = ''
+      ---
+      name: errors
+      description: How to throw errors in a project
+      ---
+
+      # Errors
+
+      - Create custom error types to distinguish expected errors from unexpected errors
+      - Expected errors are errors that are part of the normal flow of the application (e.g. validation errors, not found errors)
+      - Unexpected errors are errors that are not part of the normal flow of the application (e.g. network errors, database errors)
+      - Never throw generic `Error` or language equivalent. Always use a custom error type
+      - Custom error types should extend the base error class of the language (e.g. `Error` in JavaScript, `Exception` in Java)
+      - Name custom error types descriptively (e.g. `ValidationError`, `NotFoundError`, `AuthenticationError`)
+    '';
+
     logging = ''
       ---
       name: logging
