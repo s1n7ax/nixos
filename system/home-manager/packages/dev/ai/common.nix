@@ -309,6 +309,27 @@
       ## Error Handling
 
       - Log the original error message before throwing known errors
+
+      ## MCP Usage
+
+      - Always use available MCPs for library/framework documentation and code generation
+      - If no dedicated MCP exists for a library/framework, use Context7 MCP instead
+      - Never guess at API usage - always consult documentation via MCPs
+
+      ## Post-Implementation Checks
+
+      - After completing implementation, run all checks defined in package.json:
+        - Format check (e.g., `npm run format:check` or equivalent)
+        - Lint check (e.g., `npm run lint`)
+        - Typecheck (e.g., `npm run typecheck` or `tsc --noEmit`)
+        - Build check (e.g., `npm run build`)
+      - Fix all issues properly - never use hacky workarounds to make checks pass
+      - Do not consider the task complete until all checks pass
+
+      ## Code Review
+
+      - After implementation and checks pass, run `/review` command to review the changes
+      - Address any issues identified during the review
     '';
   };
 }
