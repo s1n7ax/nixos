@@ -20,11 +20,14 @@ in
             "* --help" = "allow";
 
             ## git
+            "git add*" = "allow";
             "git diff*" = "allow";
             "git push*" = "allow";
             "git status*" = "allow";
             "git branch*" = "allow";
             "git switch*" = "allow";
+            "git stash*" = "allow";
+            "git checkout*" = "allow";
             "git log*" = "allow";
             # "git*" = "ask";
 

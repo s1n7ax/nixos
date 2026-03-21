@@ -102,6 +102,8 @@
       - Never throw generic `Error` or language equivalent. Always use a custom error type
       - Custom error types should extend the base error class of the language (e.g. `Error` in JavaScript, `Exception` in Java)
       - Name custom error types descriptively (e.g. `ValidationError`, `NotFoundError`, `AuthenticationError`)
+      - Document thrown errors in doc comments using the language's convention (e.g. `@throws` in JavaScript/TypeScript, `@throws` in Java/Kotlin)
+      - When modifying a function's error behavior, update the doc comment to reflect the change
     '';
 
     logging = ''
@@ -279,6 +281,34 @@
 
       - Use `man home-configuration.nix | grep -C10 'programs.rclone'` command to find available options
       - We can adjust  the -C10 flag to expand more or less lines before or after the match 
+    '';
+
+    general-coding-standards = ''
+      ---
+      name: general-coding-standards
+      description: General coding standards for all coding, planning, and implementation tasks
+      ---
+
+      # General Coding Standards
+
+      ## Type Safety
+
+      - Always prioritize type safety in all implementations
+      - Avoid using weak types like `any` in TypeScript - use strong, explicit types instead
+      - When given a choice between typed and untyped implementations (e.g., TypeScript vs JavaScript in Svelte), always choose the typed option
+      - Define interfaces/types for all data structures, function parameters, and return values
+      - Use type inference where appropriate, but prefer explicit types for public APIs
+
+      ## Logging
+
+      - Add info-level logs at the beginning and end of high-level user-facing APIs
+      - Log when an API operation starts to confirm invocation
+      - Log when an API operation completes successfully
+      - Use the project's existing logging framework rather than standard output APIs
+
+      ## Error Handling
+
+      - Log the original error message before throwing known errors
     '';
   };
 }
