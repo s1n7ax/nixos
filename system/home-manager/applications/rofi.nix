@@ -1,11 +1,15 @@
 {
   config,
+  pkgs,
   ...
 }:
 {
   programs.rofi = {
     enable = true;
-    pass.enable = true;
+    pass = {
+      enable = true;
+      package = pkgs.rofi-pass-wayland;
+    };
 
     extraConfig = {
       modi = "drun,run";
