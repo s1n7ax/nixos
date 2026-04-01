@@ -24,7 +24,7 @@ let
     lg = "lazygit";
     ld = "lazydocker";
     yt = "yt-dlp";
-    h = "start-hyprland";
+    h = "Hyprland";
     rm = "trash";
     p = "pnpm";
     px = "pnpm dlx";
