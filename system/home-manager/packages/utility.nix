@@ -23,8 +23,8 @@
     pass
 
     # file managers
-    thunar
-    tumbler
+    xfce.thunar
+    xfce.tumbler
     vifm
 
     # audio controls

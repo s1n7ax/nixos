@@ -4,6 +4,7 @@
   outputs =
     {
       nixpkgs,
+      nixpkgs-unstable,
       home-manager,
       sops-nix,
       quadlet-nix,
@@ -17,8 +18,13 @@
         config.allowUnfree = true;
       };
 
+      pkgs-unstable = import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
       args = {
-        inherit inputs;
+        inherit inputs pkgs-unstable;
       };
       specialArgs = args;
       extraSpecialArgs = args;
@@ -68,13 +74,14 @@
     };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     hardware.url = "github:nixos/nixos-hardware";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
 
     home-manager = {
-      url = "github:nix-community/home-manager/master";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # TODO: Remove this pin once upstream fixes skill file structure bug

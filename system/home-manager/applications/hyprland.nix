@@ -28,24 +28,24 @@ in
         force_zero_scaling = true;
       };
 
-      windowrule = [
-        "workspace 1, match:class org.kde.digikam"
-        "workspace 2, match:class steam, float on"
-        "workspace 2, match:title Steam, float on"
-        "workspace 3, match:class Tor Browser"
-        "workspace 3, match:class obsidian"
+      windowrulev2 = [
+        "workspace 1, class:(org.kde.digikam)"
+        "workspace 2, class:(steam), floating:[0]"
+        "workspace 2, title:(Steam), floading:[0]"
+        "workspace 3, class:(Tor Browser)"
+        "workspace 3, class:(obsidian)"
 
-        "workspace 4, match:class firefox"
-        "workspace 4, match:class LibreWolf"
+        "workspace 4, class:(firefox)"
+        "workspace 4, class:(LibreWolf)"
 
-        "workspace 5, match:class com.obsproject.Studio"
+        "workspace 5, class:(com.obsproject.Studio)"
 
-        "workspace 8, match:class com.github.wwmm.easyeffects"
-        "workspace 8, match:class pavucontrol"
-        "workspace 8, match:class org.pulseaudio.pavucontrol"
+        "workspace 8, class:(com.github.wwmm.easyeffects)"
+        "workspace 8, class:(pavucontrol)"
+        "workspace 8, class:(org.pulseaudio.pavucontrol)"
 
-        "float on, match:class steam, match:title Friends List"
-        "float on, match:class Tor Browser"
+        "float, class:(steam), title:(Friends List)"
+        "float, class:(Tor Browser)"
       ];
       monitor = ",3440x1440@144.00Hz,auto,1.25";
       exec-once = [
