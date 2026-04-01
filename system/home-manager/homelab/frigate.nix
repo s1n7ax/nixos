@@ -178,18 +178,21 @@ with lib;
           enabled: true
           timestamp: true
           retain:
-            default: 30 # Keep snapshots for 2 days
+            default: 90
 
         #--------------------------------------------------------------------#
         #                               RECORD                               #
         #--------------------------------------------------------------------#
         record:
           enabled: true
-          retain:
-            days: 2
+          continuous:
+            days: 30
+          detections:
+            retain:
+              days: 60
           alerts:
             retain:
-              days: 10
+              days: 60
 
         semantic_search:
           enabled: true
