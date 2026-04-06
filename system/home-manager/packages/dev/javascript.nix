@@ -2,6 +2,7 @@
   lib,
   config,
   pkgs,
+  pkgs-unstable,
   ...
 }:
 {
@@ -25,8 +26,8 @@
       eslint_d
       nodePackages.typescript-language-server
       supabase-cli
-      typescript-go
-      svelte-language-server
+      pkgs-unstable.typescript-go
+      pkgs-unstable.svelte-language-server
       vtsls
     ];
   };
