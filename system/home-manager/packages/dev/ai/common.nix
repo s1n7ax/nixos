@@ -66,6 +66,13 @@
 
       # GitHub Pull Requests
 
+      ## Steps
+
+      - Make sure we are not in the default branch or always create a dedicated branch for each PR
+      - Commit the changes in the PR branch
+      - Push the changes
+      - Create a PR from the branch
+
       ## PR Title
 
       - Use conventional commit message syntax for PR titles (same convention as git commits)
