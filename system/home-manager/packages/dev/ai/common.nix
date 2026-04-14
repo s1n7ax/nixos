@@ -290,6 +290,36 @@
       - We can adjust  the -C10 flag to expand more or less lines before or after the match 
     '';
 
+    nvim-headless-test = ''
+      ---
+      name: nvim-headless-test
+      description: Test Neovim configuration changes using headless mode. Use when modifying window management, autocmds, or any UI-related Neovim Lua code.
+      ---
+
+      # Neovim Headless Testing
+
+      ## How to run
+
+      ```bash
+      nvim --headless -u init.lua -c "luafile test_file.lua" 2>&1
+      ```
+
+      ## Writing a test script
+
+      1. Set a known screen size: `vim.o.columns = 160; vim.o.lines = 40`
+      2. Create windows/buffers programmatically with `nvim_create_buf`, `nvim_open_win`
+      3. Set filetypes to trigger autocmd rules: `vim.bo[buf].filetype = 'name'`
+      4. Switch focus with `vim.api.nvim_set_current_win(win)`
+      5. Use `vim.wait(200, function() return false end)` after focus changes to let `vim.schedule` callbacks execute
+      6. Log state to stdout with `io.write()` / `io.flush()`
+      7. Exit with `vim.cmd('qa!')`
+
+      ## Important notes
+
+      - Do NOT use `vim.cmd('doautocmd WinEnter')` — `nvim_set_current_win` already fires WinEnter. Doubling it causes stale state bugs.
+      - Always clean up the test file after debugging is done.
+    '';
+
     general-coding-standards = ''
       ---
       name: general-coding-standards

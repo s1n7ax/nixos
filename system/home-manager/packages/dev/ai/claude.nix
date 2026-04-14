@@ -24,6 +24,7 @@ in
       memory.text = common.rules;
       skills = common.skills;
       settings = {
+        model = "claude-opus-4-6";
         attribution = {
           commit = "";
           pr = "";
@@ -47,6 +48,9 @@ in
             "Bash (ls *)"
             "Bash (ct *)"
             "Bash (cat *)"
+            "Bash (gh pr list*)"
+            "Bash (gh pr view*)"
+            "Bash (gh pr diff*)"
           ];
           ask = [
             "Bash(git commit *)"
