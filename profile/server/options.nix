@@ -52,7 +52,7 @@
       homepage.enable = false;
 
       entertainment = {
-        enable = false;
+        enable = true;
         jellyfin.enable = true;
         prowlarr.enable = true;
         sonarr.enable = true;
