@@ -17,6 +17,7 @@ with lib;
     ./frigate.nix
     ./homepage.nix
     ./pairdrop.nix
+    ./node-red.nix
     ./entertainment
   ];
 }

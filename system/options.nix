@@ -215,6 +215,10 @@ with lib;
         enable = mkEnableOption "Homepage dashboard";
       };
 
+      node-red = {
+        enable = mkEnableOption "Node-RED flow-based automation";
+      };
+
       entertainment = {
         enable = mkEnableOption "Entertainment services";
 
