@@ -39,7 +39,7 @@ with lib;
     };
 
     services.podman.containers.frigate = {
-      image = "ghcr.io/blakeblackshear/frigate:stable";
+      image = "ghcr.io/blakeblackshear/frigate:0.16.4";
 
       network = [
         "frigate-network"
