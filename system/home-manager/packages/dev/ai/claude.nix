@@ -24,7 +24,7 @@ in
       memory.text = common.rules;
       skills = common.skills;
       settings = {
-        model = "claude-opus-4-6";
+        model = "claude-opus-4-7";
         attribution = {
           commit = "";
           pr = "";
