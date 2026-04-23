@@ -200,7 +200,7 @@
       fi
 
       if [ $(get_device_count) -gt 1 ]; then
-        PICKED_DEVICE=$(echo "$(get_device_names)" | wofi --dmenu)
+        PICKED_DEVICE=$(echo "$(get_device_names)" | rofi -dmenu)
       else
         PICKED_DEVICE="$(get_device_names)"
       fi

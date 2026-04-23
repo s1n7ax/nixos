@@ -72,7 +72,7 @@
 
     tools = {
       downloading.enable = true;
-      zellij.enable = true;
+      zellij.enable = false;
       tmux.enable = true;
     };
 
