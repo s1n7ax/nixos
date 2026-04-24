@@ -24,6 +24,13 @@ in
       memory.text = common.rules;
       skills = common.skills;
       settings = {
+        enabledPlugins = {
+          "frontend-design@claude-plugins-official" = true;
+          "feature-dev@claude-plugins-official" = true;
+          "code-review@claude-plugins-official" = true;
+          "code-simplifier@claude-plugins-official" = true;
+          "skill-creator@claude-plugins-official" = true;
+        };
         model = "claude-opus-4-7";
         attribution = {
           commit = "";
@@ -33,24 +40,21 @@ in
         terminalProgressBarEnabled = true;
         permissions = {
           allow = [
-            "Bash(pnpm run *)"
-            "Bash(pnpm *)"
-            "Bash(npx tsc *)"
-
+            "Bash(* --help *)"
+            "Bash(* --version)"
+            "Bash(cat *)"
+            "Bash(ct *)"
+            "Bash(find *)"
+            "Bash(gh pr diff*)"
+            "Bash(gh pr list*)"
+            "Bash(gh pr view*)"
             "Bash(git add *)"
             "Bash(git diff *)"
             "Bash(git push *)"
-
-            "Bash(* --version)"
-            "Bash(* --help *)"
-
-            "Bash (find *)"
-            "Bash (ls *)"
-            "Bash (ct *)"
-            "Bash (cat *)"
-            "Bash (gh pr list*)"
-            "Bash (gh pr view*)"
-            "Bash (gh pr diff*)"
+            "Bash(ls *)"
+            "Bash(npx tsc *)"
+            "Bash(pnpm *)"
+            "Bash(pnpm run *)"
           ];
           ask = [
             "Bash(git commit *)"
@@ -58,9 +62,15 @@ in
             "Bash(rm*)"
           ];
           deny = [
-            "Read(./.env)"
-            "Read(./.env.*)"
-            "Read(./secrets/**)"
+            "Read(**/.env)"
+            "Read(**/.env.*)"
+            "Read(.env)"
+            "Read(.env.*)"
+            "Read(**/secrets/**)"
+            "Bash(cat *.env*)"
+            "Bash(cat *secrets*)"
+            "Bash(*.env*)"
+            "Bash(*secrets/*)"
           ];
         };
         env = {
