@@ -35,6 +35,10 @@
         "@upstash/context7-mcp"
       ];
     };
+    browsermcp = {
+      command = "npx";
+      args = [ "@browsermcp/mcp@latest" ];
+    };
   };
 
   rules = ''
@@ -61,80 +65,111 @@
     github-prs = ''
       ---
       name: github-prs
-      description: Skills related to creating GitHub pull requests
+      description: Use whenever the user asks to create, open, push, or submit a PR / pull request, or mentions merging changes via GitHub. Covers branch strategy, PR title/description conventions, and triaging Copilot review-bot comments.
       ---
 
       # GitHub Pull Requests
 
       ## Steps
 
-      - Make sure we are not in the default branch or always create a dedicated branch for each PR
-      - Commit the changes in the PR branch
-      - Push the changes
-      - Create a PR from the branch
+      - Never commit directly to the default branch; create a dedicated branch per PR
+      - Commit the changes on the PR branch
+      - Push the branch
+      - Open the PR from that branch
 
       ## PR Title
 
-      - Use conventional commit message syntax for PR titles (same convention as git commits)
-      - Syntax: `<type>[scope]: <description>`
+      Use conventional-commit syntax (same convention as git commits):
+
+      `<type>[scope]: <description>`
 
       ## PR Description
 
-      - Summarize the changes in 1-3 bullet points
+      Summarize the changes in 1–3 bullet points.
 
       ## Review Bot Comments
 
-      - Projects may have Copilot review bots enabled
-      - After creating the PR, check for review comments using `gh pr view --json reviews`
-      - The review bot may take time to publish comments; if no comments yet, inform the user they can ask you to check again later
-      - When review comments exist:
-        1. Read every comment carefully
-        2. Critically evaluate each one — challenge the suggestion to verify it is valid and applicable
-        3. Discard comments that are false positives, stylistic nitpicks with no real impact, or incorrect
-        4. Present only the valid comments to the user as a numbered list with file, line, and the suggestion
-        5. Ask the user which ones to fix
+      Projects may have Copilot or similar review bots enabled. These bots mix valid findings with low-signal nits, so filter before surfacing anything to the user.
+
+      After creating the PR:
+
+      1. Check for review comments with `gh pr view --json reviews`
+      2. If none yet, tell the user the bot may still be processing and they can ask you to recheck later
+      3. When comments exist:
+         - Read each one carefully
+         - Challenge every suggestion — decide whether it is correct and applicable before presenting it
+         - Discard false positives and pure stylistic nits with no real impact
+         - Present only valid comments as a numbered list with file, line, and the suggestion
+         - Ask the user which ones to fix
     '';
 
     errors = ''
       ---
       name: errors
-      description: How to throw errors in a project
+      description: Use when writing code that throws, raises, or creates errors/exceptions, when defining custom error types, or when reviewing error-handling code. Covers which type to throw, expected-vs-unexpected classification, and doc-comment conventions.
       ---
 
       # Errors
 
-      - Create custom error types to distinguish expected errors from unexpected errors
-      - Expected errors are errors that are part of the normal flow of the application (e.g. validation errors, not found errors)
-      - Unexpected errors are errors that are not part of the normal flow of the application (e.g. network errors, database errors)
-      - Never throw generic `Error` or language equivalent. Always use a custom error type
-      - Custom error types should extend the base error class of the language (e.g. `Error` in JavaScript, `Exception` in Java)
-      - Name custom error types descriptively (e.g. `ValidationError`, `NotFoundError`, `AuthenticationError`)
-      - Document thrown errors in doc comments using the language's convention (e.g. `@throws` in JavaScript/TypeScript, `@throws` in Java/Kotlin)
-      - When modifying a function's error behavior, update the doc comment to reflect the change
+      ## Rules
+
+      - Never throw the language's generic error type (`Error` in JS/TS, `Exception` in Java, etc.). Always throw a named custom type.
+      - Custom error types extend the language's base error class.
+      - Distinguish **expected** errors (normal flow: validation, not-found, auth) from **unexpected** errors (network, DB, infra). Give each an appropriate named type so callers can react differently.
+      - Name types after the failure mode, not the layer: `ValidationError`, `NotFoundError`, `AuthenticationError` — not `ServiceError` or `UtilError`.
+      - Before throwing a wrapped or translated error, log the original cause, otherwise it disappears up the stack.
+      - Document thrown errors in doc comments using the language's convention (`@throws` for JSDoc / Javadoc / KDoc).
+      - When a function's error behavior changes, update its doc comment to match.
+
+      ## Why
+
+      Generic error types force callers to string-match messages to handle different failure modes. Named types let callers pattern-match on type, make the failure surface visible in type-checkers and IDEs, and prevent "one catch swallows everything" anti-patterns.
     '';
 
     logging = ''
       ---
       name: logging
-      description: How to add logs, print messages in a project
+      description: Use whenever the user asks to add logs, print messages, emit debug output, or trace execution — and when writing new code that should emit logs. Ensures the project's existing logger is used instead of raw stdout/stderr APIs.
       ---
 
       # Logging
 
-      - Before using standard output APIs, we should look if there is a logging API available in the project. 
-        For example, in JavaScript projects, we can use `console.log` or `console.error` to log messages but it's 
-        hightly likely that the project has `pino` or some other logger configured. We should always use that over standard output APIs of the language
+      ## Rule
+
+      Before reaching for raw stdout APIs (`console.log`, `println!`, `print`, `fmt.Println`, etc.), check whether the project has a configured logger (e.g. `pino`, `winston`, `tracing`, `slog`, `logback`). If one exists, use it.
+
+      ## What to log
+
+      - At the start of high-level user-facing APIs: an info-level log confirming invocation (with key params, minus secrets)
+      - On successful completion of those APIs: an info-level log
+      - Before throwing a known error: log the original cause so it is not erased by wrapping
+
+      ## Why
+
+      Configured loggers route through the project's level filtering, formatting, redaction, and sinks (files, aggregators, structured output). Raw stdout bypasses all of that, so logs added via `console.log` either get lost, duplicated, or leak sensitive data in production.
     '';
 
     single-line-code-comments = ''
       ---
       name: single-line-code-comments
-      description: Skills related to adding single line code comments
+      description: Use whenever adding, editing, or asked to write comments in code. This project forbids inline single-line comments (`//`, `#`, `--`) — only doc comments (`/** */`, docstrings, `///`) are permitted.
       ---
 
-      ## What NOT to Do
+      # Comment Policy
 
-      - Never add single line comments. Only doc comments are allowed
+      ## Rule
+
+      Do not add single-line comments (`//`, `#`, `--`, etc.). Only doc comments (`/** */`, `"""..."""`, `///`, or the language equivalent) are allowed.
+
+      ## Why
+
+      Single-line comments tend to accumulate as stale narration of what the next line does ("increment counter", "loop over items"). They decay quickly as code changes and rarely carry information the code itself doesn't already express. Doc comments, by contrast, describe contracts and intent at API boundaries — callers depend on them, so they stay maintained.
+
+      ## How to apply
+
+      - If logic genuinely isn't self-evident, extract a well-named function or variable instead of commenting.
+      - If context is required (a non-obvious workaround, a link to an issue), put it in the doc comment on the enclosing function or type.
+      - `TODO:` markers follow the `todo-comments` skill and use doc-comment form there as well.
     '';
 
     override-hm-module = ''
@@ -178,44 +213,70 @@
     todo-comments = ''
       ---
       name: todo-comments
-      description: Add TODO comments to code with linked GitHub issues
+      description: Use whenever writing or requested to add a TODO, FIXME, or HACK marker in code. Ensures every TODO is backed by a GitHub issue link and written as a doc comment in the host language's convention.
       ---
 
       # TODO Comments
 
       ## Steps
 
-      1. Create a GitHub issue first
-      2. Add the issue URL on the next line
+      1. Create a GitHub issue for the work first
+      2. Write the TODO as a doc comment (per the `single-line-code-comments` policy) with the issue URL on the next line
+
+      ## Why
+
+      A TODO without a tracked issue is almost always a TODO forever — nobody greps through source to find them. Linking to an issue puts the context (why it matters, priority, owner) somewhere searchable and actionable.
 
       ## Examples
 
-      TypeScript/JavaScript:
+      TypeScript / JavaScript:
       ```ts
       /**
        * TODO: Implement caching layer
        * https://github.com/user/repo/issues/123
        */
       ```
+
+      Python:
+      ```python
+      def fetch():
+          """
+          TODO: Add retries with backoff.
+          https://github.com/user/repo/issues/123
+          """
+      ```
+
+      Rust:
+      ```rust
+      /// TODO: Replace with async impl once tokio 2.0 lands.
+      /// https://github.com/user/repo/issues/123
+      fn fetch() { }
+      ```
+
+      For other languages, use the idiomatic doc-comment form.
     '';
 
     git-commits = ''
       ---
       name: git-commits
-      description: Skills related to git creating git commits
+      description: Use whenever the user asks to commit, stage commits, write a commit message, or split work into multiple commits. Enforces conventional-commit syntax and the "commit what's there, do not edit code" rule.
       ---
 
-      # Git Commit Skill
+      # Git Commits
 
-      ## Commits
+      ## Critical rule
 
-      - If changes are not related, break them down into smaller commits
+      When the user asks to commit, **do not modify the codebase**. Commit what is already staged or present. Any "while we're at it" fix must be a separate, explicit request.
 
-      ## Git Commit Message Skill
+      **Why:** the user has already decided what belongs in this commit. Silent edits mix reviewable change with unrelated noise and cannot be undone from the commit alone.
 
-      1. Conventional commit messages
+      ## Splitting commits
 
-      Syntax:
+      If staged changes span unrelated concerns, split them into smaller commits that each stand on their own.
+
+      ## Message format
+
+      Conventional-commit syntax:
 
       ```
       <type>[scope]: <description>
@@ -225,75 +286,64 @@
       [optional footer(s)]
       ```
 
-      Types:
+      ### Types
 
-      - fix: fixes an issue
-      - feat: introduces a new feature
-      - chore: housekeeping changes (linting, formatting, etc.)
-      - ci: changes to the CI configuration files and scripts
-      - docs: changes to the documentation
-      - style: changes the appearance of the application
-      - refactor: changing existing behavior or functionality
-      - test: adding missing tests or correcting existing tests
+      - `fix`: fixes an issue
+      - `feat`: introduces a new feature
+      - `chore`: housekeeping (deps, tooling, formatting-only)
+      - `ci`: CI config / pipeline changes
+      - `docs`: documentation
+      - `style`: visual/UI appearance only
+      - `refactor`: behavior-preserving restructure
+      - `test`: tests added or corrected
 
-      ---
+      ### Scope
 
-      Scope:
+      Scope is project-specific. Pick it from the area actually touched in the diff; do not invent a new scope casually.
 
-      Scopes are most of the time project specific
+      Illustrative examples (not exhaustive):
 
-      For example:
+      - Neovim config: `keymap`, `autocmd`, `plugin`
+      - React project: `router`, `api`
+      - Nix / home-manager: `hm`, `flake`, `module`
 
-      In a neovim configuration
-
-      - keymap: adds/removes keyboard shortcuts
-      - autocmd: adds/removes autocommands
-
-      In a react project
-
-      - router: changes the routing system
-
-      However, we can have generic scopes as well
-
-      - core: changes to the core functionality
-      - ui: changes to the user interface
-      - ux: changes to the user experience
-      - api: changes to the API
-      - auth: changes to the authentication system
+      Generic fallbacks: `core`, `ui`, `ux`, `api`, `auth`.
 
       ### Breaking changes
 
-      BREAKING CHANGE: a commit that has a footer BREAKING CHANGE:, or appends a ! after the type/scope, introduces a breaking API change
+      Either append `!` after the type/scope, or include a `BREAKING CHANGE:` footer. Both together is fine.
 
       Examples:
 
-      - feat!: adds a new feature but breaks compatibility
-      - fix!: fixes a bug but breaks compatibility
-      - refactor!: remove a code change that neither fixes a bug nor adds a feature that breaks compatibility
-
-      ---
-
-      ## What NOT to Do
-
-      - When user asks to commit the changes, never make any change to the codebase. Just commit the changes as it is.
+      - `feat!: drop support for Node 18`
+      - `refactor(api)!: rename /users to /accounts`
     '';
 
     home-manager-options = ''
       ---
       name: home-manager-options
-      description: Finding home-manager available options and their description
+      description: Use when looking up available home-manager options, their types, defaults, or descriptions — e.g. "what options does programs.X expose", "how do I configure X in home-manager", or when unsure whether an option exists.
       ---
 
       # Home-Manager Options
 
-      - Use `man home-configuration.nix | grep -C10 'programs.rclone'` command to find available options
-      - We can adjust  the -C10 flag to expand more or less lines before or after the match 
+      Run:
+
+      ```bash
+      man home-configuration.nix | grep -C10 'programs.rclone'
+      ```
+
+      Replace the pattern with the option path of interest. Adjust `-C10` up or down to widen or narrow the surrounding context.
+
+      ## Why
+
+      The `home-configuration.nix` manpage is the authoritative, locally-installed source — faster and more accurate than a web search, and it matches the exact home-manager version on this system rather than whatever version the internet is talking about.
     '';
 
     nvim-headless-test = ''
       ---
       name: nvim-headless-test
-      description: Test Neovim configuration changes using headless mode. Use when modifying window management, autocmds, or any UI-related Neovim Lua code.
+      description: Use when modifying Neovim Lua configuration that affects window management, autocmds, buffer behavior, statusline, or any UI-observable behavior — and when debugging why an autocmd or window event fires unexpectedly. Runs the real config in a headless nvim so assertions reflect actual behavior.
       ---
 
       # Neovim Headless Testing
@@ -307,66 +357,18 @@
       ## Writing a test script
 
       1. Set a known screen size: `vim.o.columns = 160; vim.o.lines = 40`
-      2. Create windows/buffers programmatically with `nvim_create_buf`, `nvim_open_win`
-      3. Set filetypes to trigger autocmd rules: `vim.bo[buf].filetype = 'name'`
+      2. Create windows/buffers programmatically via `nvim_create_buf`, `nvim_open_win`
+      3. Trigger autocmds by setting filetypes: `vim.bo[buf].filetype = 'name'`
       4. Switch focus with `vim.api.nvim_set_current_win(win)`
-      5. Use `vim.wait(200, function() return false end)` after focus changes to let `vim.schedule` callbacks execute
-      6. Log state to stdout with `io.write()` / `io.flush()`
+      5. After focus changes, call `vim.wait(200, function() return false end)` so `vim.schedule` callbacks execute
+      6. Emit state with `io.write()` / `io.flush()` to inspect it
       7. Exit with `vim.cmd('qa!')`
 
-      ## Important notes
+      ## Gotchas
 
-      - Do NOT use `vim.cmd('doautocmd WinEnter')` — `nvim_set_current_win` already fires WinEnter. Doubling it causes stale state bugs.
-      - Always clean up the test file after debugging is done.
+      - Do **not** call `vim.cmd('doautocmd WinEnter')` after `nvim_set_current_win` — the API call already fires `WinEnter`. Doubling it causes stale-state bugs that look like race conditions.
+      - Delete the test script once debugging is done; leaving scratch `.lua` files around clutters the config.
     '';
 
-    general-coding-standards = ''
-      ---
-      name: general-coding-standards
-      description: General coding standards for all coding, planning, and implementation tasks
-      ---
-
-      # General Coding Standards
-
-      ## Type Safety
-
-      - Always prioritize type safety in all implementations
-      - Avoid using weak types like `any` in TypeScript - use strong, explicit types instead
-      - When given a choice between typed and untyped implementations (e.g., TypeScript vs JavaScript in Svelte), always choose the typed option
-      - Define interfaces/types for all data structures, function parameters, and return values
-      - Use type inference where appropriate, but prefer explicit types for public APIs
-
-      ## Logging
-
-      - Add info-level logs at the beginning and end of high-level user-facing APIs
-      - Log when an API operation starts to confirm invocation
-      - Log when an API operation completes successfully
-      - Use the project's existing logging framework rather than standard output APIs
-
-      ## Error Handling
-
-      - Log the original error message before throwing known errors
-
-      ## MCP Usage
-
-      - Always use available MCPs for library/framework documentation and code generation
-      - If no dedicated MCP exists for a library/framework, use Context7 MCP instead
-      - Never guess at API usage - always consult documentation via MCPs
-
-      ## Post-Implementation Checks
-
-      - After completing implementation, run all checks defined in package.json:
-        - Format check (e.g., `npm run format:check` or equivalent)
-        - Lint check (e.g., `npm run lint`)
-        - Typecheck (e.g., `npm run typecheck` or `tsc --noEmit`)
-        - Build check (e.g., `npm run build`)
-      - Fix all issues properly - never use hacky workarounds to make checks pass
-      - Do not consider the task complete until all checks pass
-
-      ## Code Review
-
-      - After implementation and checks pass, run `/review` command to review the changes
-      - Address any issues identified during the review
-    '';
   };
 }
