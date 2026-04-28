@@ -1,3 +1,12 @@
+{ }:
+let
+  agent-browser-skill = builtins.readFile (
+    builtins.fetchurl {
+      url = "https://raw.githubusercontent.com/vercel-labs/agent-browser/refs/heads/main/skills/agent-browser/SKILL.md";
+      sha256 = "086km6mgsalf5d3igkxrwka68qwi77g60631i73385sqhjklzrdj";
+    }
+  );
+in
 {
   mcpServers = {
     svelte = {
@@ -44,7 +53,6 @@
 
     - Use Context7 MCP when we don't have a dedicated MCP but I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
-
     # Working relationship
 
     - No sycophancy.
@@ -55,6 +63,7 @@
   '';
 
   skills = {
+    agent-browser-skill = agent-browser-skill;
     github-prs = ''
       ---
       name: github-prs

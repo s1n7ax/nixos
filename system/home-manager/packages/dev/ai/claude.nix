@@ -1,11 +1,12 @@
 {
+  pkgs-unstable,
   config,
   lib,
   inputs,
   ...
 }:
 let
-  common = import ./common.nix;
+  common = import ./common.nix { };
 in
 {
   # TODO: Remove this pin once upstream fixes skill file structure bug
@@ -19,6 +20,7 @@ in
   ];
 
   config = lib.mkIf config.features.development.ai.claude.enable {
+    home.packages = [ pkgs-unstable.agent-browser ];
     programs.claude-code = {
       enable = true;
       memory.text = common.rules;
@@ -57,6 +59,7 @@ in
             "Bash(npx tsc *)"
             "Bash(pnpm *)"
             "Bash(pnpm run *)"
+            "Bash(agent-browser*)"
           ];
           ask = [
             "Bash(git commit *)"

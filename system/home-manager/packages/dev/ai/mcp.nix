@@ -4,7 +4,7 @@
   ...
 }:
 let
-  common = import ./common.nix;
+  common = import ./common.nix { };
 in
 {
   config = lib.mkIf config.features.development.ai.enable {
