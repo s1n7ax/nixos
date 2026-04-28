@@ -1,12 +1,3 @@
-{ }:
-let
-  agent-browser-skill = builtins.readFile (
-    builtins.fetchurl {
-      url = "https://raw.githubusercontent.com/vercel-labs/agent-browser/refs/heads/main/skills/agent-browser/SKILL.md";
-      sha256 = "086km6mgsalf5d3igkxrwka68qwi77g60631i73385sqhjklzrdj";
-    }
-  );
-in
 {
   mcpServers = {
     svelte = {
@@ -63,11 +54,12 @@ in
   '';
 
   skills = {
-    agent-browser-skill = agent-browser-skill;
-    github-prs = ''
+    task = ./skills/task.md;
+
+    pull-request = ''
       ---
-      name: github-prs
-      description: Use whenever the user asks to create, open, push, or submit a PR / pull request, or mentions merging changes via GitHub. Covers branch strategy, PR title/description conventions, and triaging Copilot review-bot comments.
+      name: pull-request
+      description: Use whenever the user asks to create, open, push, or submit a PR / pull request. Covers branch strategy, PR title/description conventions, and triaging Copilot review-bot comments.
       ---
 
       # GitHub Pull Requests
@@ -261,7 +253,7 @@ in
     git-commits = ''
       ---
       name: git-commits
-      description: Use whenever the user asks to commit, stage commits, write a commit message, or split work into multiple commits. Enforces conventional-commit syntax and the "commit what's there, do not edit code" rule.
+      description: Use whenever you git commit, write a commit message, or split work into multiple commits. Enforces conventional-commit syntax and the "commit what's there, do not edit code" rule.
       ---
 
       # Git Commits
@@ -371,6 +363,5 @@ in
       - Do **not** call `vim.cmd('doautocmd WinEnter')` after `nvim_set_current_win` — the API call already fires `WinEnter`. Doubling it causes stale-state bugs that look like race conditions.
       - Delete the test script once debugging is done; leaving scratch `.lua` files around clutters the config.
     '';
-
   };
 }
