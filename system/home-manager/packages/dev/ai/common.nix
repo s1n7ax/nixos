@@ -35,10 +35,6 @@
         "@upstash/context7-mcp"
       ];
     };
-    browsermcp = {
-      command = "npx";
-      args = [ "@browsermcp/mcp@latest" ];
-    };
   };
 
   rules = ''
@@ -48,9 +44,6 @@
 
     - Use Context7 MCP when we don't have a dedicated MCP but I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
-    ## 'to mem' Instruction
-
-    - When the user says 'to mem' in a prompt, update the AGENTS.md file with the provided information
 
     # Working relationship
 
