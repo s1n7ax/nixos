@@ -1,5 +1,5 @@
 {
-  pkgs-unstable,
+  # pkgs-unstable,
   config,
   lib,
   inputs,
@@ -20,7 +20,7 @@ in
   ];
 
   config = lib.mkIf config.features.development.ai.claude.enable {
-    home.packages = [ pkgs-unstable.agent-browser ];
+    # home.packages = [ pkgs-unstable.sox ];
     programs.claude-code = {
       enable = true;
       memory.text = common.rules;
@@ -33,6 +33,12 @@ in
           "code-simplifier@claude-plugins-official" = true;
           "skill-creator@claude-plugins-official" = true;
         };
+
+        # voiceEnabled = true;
+        # voice = {
+        #   enabled = true;
+        #   mode = "tap";
+        # };
         model = "claude-opus-4-7";
         attribution = {
           commit = "";
@@ -40,6 +46,15 @@ in
         };
         alwaysThinkingEnabled = true;
         terminalProgressBarEnabled = true;
+        # bindings = [
+        #   {
+        #     context = "Chat";
+        #     bindings = {
+        #       "meta+k" = "voice:pushToTalk";
+        #       "space" = null;
+        #     };
+        #   }
+        # ];
         permissions = {
           allow = [
             "Bash(* --help *)"
