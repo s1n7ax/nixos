@@ -2,6 +2,7 @@
   inputs,
   pkgs,
   config,
+  lib,
   ...
 }:
 let
@@ -22,7 +23,6 @@ in
       "docker"
       "libvirtd"
       "network"
-      "networkmanager"
       "pipewire"
       "plugdev"
       "podman"
@@ -31,7 +31,7 @@ in
       "adbusers"
       "disk"
       "coral" # for google coral
-    ];
+    ] ++ lib.optional (config.settings.network.backend == "networkmanager") "networkmanager";
   };
 
   users.groups.${username} = { };
@@ -58,7 +58,7 @@ in
     ./firewall.nix
 
     ../../system/nixos/core/boot.nix
-    ../../system/nixos/core/network-manager.nix
+    ../../system/nixos/core/network.nix
     ../../system/nixos/core/pipewire.nix
     ../../system/nixos/core/polkit.nix
     ../../system/nixos/core/ssh.nix

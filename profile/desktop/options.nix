@@ -1,4 +1,8 @@
 {
+  settings = {
+    network.backend = "networkmanager";
+  };
+
   features = {
     desktop = {
       dconf.enable = true;

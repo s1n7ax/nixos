@@ -76,6 +76,16 @@ with lib;
       default = null;
       description = "Path to the large storage mount point (e.g., /storage for HDD). Set to null if not using external storage.";
     };
+    network = {
+      backend = mkOption {
+        type = types.enum [
+          "networkmanager"
+          "iwd"
+        ];
+        default = "networkmanager";
+        description = "Network backend to use (NetworkManager or iwd).";
+      };
+    };
   };
 
   options.features = {
