@@ -1,5 +1,6 @@
 {
-  # pkgs-unstable,
+  pkgs,
+  pkgs-unstable,
   config,
   lib,
   inputs,
@@ -20,7 +21,10 @@ in
   ];
 
   config = lib.mkIf config.features.development.ai.claude.enable {
-    # home.packages = [ pkgs-unstable.sox ];
+    home.packages = with pkgs; [
+      bubblewrap
+      pkgs-unstable.sandbox-runtime
+    ];
     programs.claude-code = {
       enable = true;
       memory.text = common.rules;
@@ -46,6 +50,12 @@ in
         };
         alwaysThinkingEnabled = true;
         terminalProgressBarEnabled = true;
+        sandbox = {
+          enabled = true;
+          filesystem = {
+            allowWrite = [ ];
+          };
+        };
         # bindings = [
         #   {
         #     context = "Chat";
