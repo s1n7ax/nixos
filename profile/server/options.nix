@@ -1,6 +1,7 @@
+{ config, ... }:
 {
   settings = {
-    storagePath = "/storage";
+    storagePath = "${config.home.homeDirectory}";
   };
 
   features = {
