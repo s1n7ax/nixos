@@ -65,5 +65,6 @@
     git-commits = ./skills/git-commits.md;
     home-manager-options = ./skills/home-manager-options.md;
     nvim-headless-test = ./skills/nvim-headless-test.md;
+    grill-me = ./skills/grill-me.md;
   };
 }
