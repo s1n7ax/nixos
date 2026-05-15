@@ -10,6 +10,7 @@
 
   imports = [
     ./options.nix
+    ./gitleaks.nix
     ../../system/options.nix
 
     # sops
