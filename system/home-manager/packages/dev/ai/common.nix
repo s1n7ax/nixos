@@ -54,17 +54,4 @@
     - Minimal explanations. Senior engineer context assumed.
   '';
 
-  skills = {
-    task = ./skills/task.md;
-    pull-request = ./skills/pull-request.md;
-    errors = ./skills/errors.md;
-    logging = ./skills/logging.md;
-    single-line-code-comments = ./skills/single-line-code-comments.md;
-    override-hm-module = ./skills/override-hm-module.md;
-    todo-comments = ./skills/todo-comments.md;
-    git-commits = ./skills/git-commits.md;
-    home-manager-options = ./skills/home-manager-options.md;
-    nvim-headless-test = ./skills/nvim-headless-test.md;
-    grill-me = ./skills/grill-me.md;
-  };
 }
