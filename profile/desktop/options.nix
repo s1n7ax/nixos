@@ -30,6 +30,7 @@
       virtualbox.enable = true;
       virt-manager.enable = true;
       waydroid.enable = true;
+      microvm.enable = true;
     };
 
     services = {

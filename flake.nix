@@ -8,6 +8,7 @@
       home-manager,
       sops-nix,
       quadlet-nix,
+      microvm,
       ...
     }@inputs:
     let
@@ -39,6 +40,7 @@
             ./system/options.nix
             ./profile/desktop/configuration.nix
             quadlet-nix.nixosModules.quadlet
+            microvm.nixosModules.host
             home-manager.nixosModules.home-manager
             {
               home-manager = {
@@ -79,15 +81,13 @@
     hardware.url = "github:nixos/nixos-hardware";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    microvm = {
+      url = "github:microvm-nix/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    # TODO: Remove this pin once upstream fixes skill file structure bug
-    # https://github.com/s1n7ax/nixos/issues/7
-    home-manager-claude = {
-      url = "github:nix-community/home-manager/91be7cc";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sops-nix = {

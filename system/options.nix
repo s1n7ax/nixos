@@ -161,6 +161,10 @@ with lib;
       waydroid = {
         enable = mkEnableOption "Waydroid Android container";
       };
+
+      microvm = {
+        enable = mkEnableOption "microvm.nix host (lightweight NixOS VMs)";
+      };
     };
 
     services = {
