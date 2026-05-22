@@ -11,4 +11,6 @@ in
   networking.wireless.iwd = lib.mkIf (backend == "iwd") {
     enable = true;
   };
+
+  networking.enableIPv6 = false;
 }
