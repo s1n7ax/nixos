@@ -77,6 +77,7 @@ in
     ../../system/nixos/utils/podman.nix
     ../../system/nixos/utils/services.nix
     ../../system/nixos/utils/virt-manager.nix
+    ../../system/nixos/utils/microvm.nix
     ../../system/nixos/utils/virtualbox.nix
     ../../system/nixos/utils/waydroid.nix
     ../../system/nixos/utils/xdg.nix
