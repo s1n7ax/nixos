@@ -100,6 +100,10 @@ with lib;
         enable = mkEnableOption "Hyprland window manager";
       };
 
+      hyprwhspr = {
+        enable = mkEnableOption "hyprwhspr-rs speech-to-text dictation";
+      };
+
       xdg = {
         enable = mkEnableOption "XDG desktop portals";
       };

@@ -7,6 +7,7 @@
     desktop = {
       dconf.enable = true;
       hyprland.enable = true;
+      hyprwhspr.enable = true;
       xdg.enable = true;
       kdeconnect.enable = true;
     };
