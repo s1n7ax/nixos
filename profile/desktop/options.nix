@@ -28,7 +28,7 @@
     virtualization = {
       docker.enable = true;
       podman.enable = true;
-      virtualbox.enable = true;
+      virtualbox.enable = false;
       virt-manager.enable = true;
       waydroid.enable = true;
       microvm.enable = true;
