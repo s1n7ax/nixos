@@ -228,6 +228,13 @@ in
         # Scroll through existing workspaces with mod + scroll
         "$mod, mouse_down, workspace, e+1"
         "$mod, mouse_up, workspace, e-1"
+
+        # hyprwhspr-rs: hold ALT+N to dictate
+        "ALT, N, exec, hyprwhspr-rs record start"
+      ];
+
+      bindr = [
+        "ALT, N, exec, hyprwhspr-rs record stop"
       ];
 
       bindm = [
