@@ -11,6 +11,10 @@
       downloading.enable = true;
     };
 
+    virtualization = {
+      docker.enable = true;
+    };
+
     development = {
       llm.enable = true;
       ai = {

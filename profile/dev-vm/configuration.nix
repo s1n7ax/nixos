@@ -18,6 +18,7 @@
       "audio"
       "video"
       "users"
+      "docker"
     ];
     password = "s1n7ax";
     createHome = true;
