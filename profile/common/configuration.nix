@@ -72,6 +72,7 @@ in
     # ../../system/nixos/mounts/cloud-storages.nix
 
     ../../system/nixos/utils/applications.nix
+    ../../system/nixos/utils/hyprwhspr.nix
     ../../system/nixos/utils/docker.nix
     ../../system/utils/downloading.nix
     ../../system/nixos/utils/podman.nix
