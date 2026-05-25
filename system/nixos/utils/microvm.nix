@@ -25,6 +25,7 @@ with lib;
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
+          backupFileExtension = "hm-backup";
           extraSpecialArgs = { inherit inputs pkgs-unstable; };
           users.${config.settings.username} = import ../../../profile/dev-vm/home.nix;
         };
@@ -33,14 +34,24 @@ with lib;
           hypervisor = "qemu";
           vcpu = 4;
           mem = 8192;
+          writableStoreOverlay = "/nix/.rw-store";
 
-          volumes = [{
-            mountPoint = "/home";
-            image = "/var/lib/microvms/dev-vm/home.img";
-            size = 51200;
-            fsType = "ext4";
-            autoCreate = true;
-          }];
+          volumes = [
+            {
+              mountPoint = "/home";
+              image = "/var/lib/microvms/dev-vm/home.img";
+              size = 51200;
+              fsType = "ext4";
+              autoCreate = true;
+            }
+            {
+              mountPoint = "/nix/.rw-store";
+              image = "/var/lib/microvms/dev-vm/nix-store.img";
+              size = 20480;
+              fsType = "ext4";
+              autoCreate = true;
+            }
+          ];
 
           shares = [{
             proto = "virtiofs";
