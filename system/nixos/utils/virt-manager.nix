@@ -3,8 +3,12 @@
 with lib;
 
 {
-  virtualisation = mkIf config.features.virtualization.virt-manager.enable {
-    libvirtd.enable = true;
-    spiceUSBRedirection.enable = true;
+  config = mkIf config.features.virtualization.virt-manager.enable {
+    virtualisation = {
+      libvirtd.enable = true;
+      spiceUSBRedirection.enable = true;
+    };
+
+    programs.virt-manager.enable = true;
   };
 }
