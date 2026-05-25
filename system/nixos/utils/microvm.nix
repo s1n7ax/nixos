@@ -68,6 +68,7 @@ with lib;
 
           forwardPorts = [
             { from = "host"; host.port = 2222; guest.port = 22; }
+            { from = "host"; host.port = 5173; guest.port = 5173; }
           ] ++ map (p: {
             from = "host";
             host.port = p;
