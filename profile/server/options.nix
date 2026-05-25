@@ -33,6 +33,7 @@
     };
 
     development = {
+      git.enable = true;
       nix.enable = true;
       javascript.enable = true;
       ai = {

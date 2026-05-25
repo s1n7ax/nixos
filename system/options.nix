@@ -344,6 +344,9 @@ with lib;
           };
         };
       };
+      git = {
+        enable = mkEnableOption "Git version control";
+      };
       github = {
         enable = mkEnableOption "GitHub CLI";
       };

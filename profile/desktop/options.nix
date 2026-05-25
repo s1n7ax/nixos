@@ -89,6 +89,7 @@
         opencode.enable = true;
         claude.enable = true;
       };
+      git.enable = true;
       github.enable = true;
       c.enable = true;
       virtualization.enable = true;
