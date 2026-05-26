@@ -15,6 +15,13 @@
         hostname = "64.225.84.64";
         identityFile = "~/.ssh/digitalocean";
       };
+
+      "dev" = {
+        user = "s1n7ax";
+        hostname = "localhost";
+        port = 2222;
+        identityFile = "~/.ssh/id_ed25519";
+      };
     };
   };
 }
