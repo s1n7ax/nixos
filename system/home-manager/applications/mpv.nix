@@ -1,4 +1,5 @@
-{ ... }: {
+{ ... }:
+{
   programs.mpv = {
     enable = true;
     bindings = {

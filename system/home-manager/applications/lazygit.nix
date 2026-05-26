@@ -1,4 +1,5 @@
-{ ... }: {
+{ ... }:
+{
   programs.lazygit = {
     enable = true;
     settings = {
@@ -23,11 +24,17 @@
           edit = "E";
         };
 
-        files = { ignoreFile = "I"; };
+        files = {
+          ignoreFile = "I";
+        };
 
-        branches = { viewGitFlowOptions = "I"; };
+        branches = {
+          viewGitFlowOptions = "I";
+        };
 
-        submodules = { init = "I"; };
+        submodules = {
+          init = "I";
+        };
       };
     };
   };

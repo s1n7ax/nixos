@@ -1,4 +1,9 @@
-{ pkgs, config, lib, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 {
   xdg = {
     enable = true;
@@ -14,49 +19,71 @@
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://web.whatsapp.com";
         icon = "whatsapp";
         terminal = false;
-        categories = [ "Network" "InstantMessaging" ];
+        categories = [
+          "Network"
+          "InstantMessaging"
+        ];
       };
       facebook = {
         name = "Facebook";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://facebook.com";
         icon = "facebook";
         terminal = false;
-        categories = [ "Network" "Chat" ];
+        categories = [
+          "Network"
+          "Chat"
+        ];
       };
       youtube = {
         name = "YouTube";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://youtube.com";
         icon = "youtube";
         terminal = false;
-        categories = [ "Network" "AudioVideo" ];
+        categories = [
+          "Network"
+          "AudioVideo"
+        ];
       };
       chatgpt = {
         name = "ChatGPT";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://chat.openai.com";
         icon = "openai";
         terminal = false;
-        categories = [ "Network" "Utility" ];
+        categories = [
+          "Network"
+          "Utility"
+        ];
       };
       github = {
         name = "GitHub";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com";
         icon = "github";
         terminal = false;
-        categories = [ "Network" "Development" ];
+        categories = [
+          "Network"
+          "Development"
+        ];
       };
       sinhala-unicode = {
         name = "Sinhala Unicode";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://www.sinhalaunicode.org/";
         icon = "preferences-desktop-locale";
         terminal = false;
-        categories = [ "Network" "Utility" ];
+        categories = [
+          "Network"
+          "Utility"
+        ];
       };
       wiremix = {
         name = "WireMix";
         exec = "${pkgs.wiremix}/bin/wiremix";
         terminal = true;
         comment = "PipeWire audio mixer and volume control";
-        categories = [ "AudioVideo" "Audio" "Mixer" ];
+        categories = [
+          "AudioVideo"
+          "Audio"
+          "Mixer"
+        ];
         settings = {
           Keywords = "pipewire;audio;mixer;volume;sound;pulse;";
         };
@@ -99,7 +126,8 @@
           "video/x-matroska" = players;
         };
     };
-  } // lib.optionalAttrs config.features.desktop.xdg.enable {
+  }
+  // lib.optionalAttrs config.features.desktop.xdg.enable {
     portal = {
       enable = true;
       configPackages = [ config.settings.wm.package ];

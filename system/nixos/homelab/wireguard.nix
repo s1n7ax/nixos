@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   ip = config.sops.placeholder."wireguard/spoke_homelab/ip";
   port = config.sops.placeholder."wireguard/spoke_homelab/port";
@@ -43,71 +48,71 @@ with lib;
     networking.firewall.trustedInterfaces = [ "wg0" ];
 
     virtualisation.quadlet =
-    let
-      inherit (config.virtualisation.quadlet) containers;
-    in
-    {
-      containers.nginx = {
-        autoStart = true;
-        serviceConfig = {
-          RestartSec = "30";
-          Restart = "always";
+      let
+        inherit (config.virtualisation.quadlet) containers;
+      in
+      {
+        containers.nginx = {
+          autoStart = true;
+          serviceConfig = {
+            RestartSec = "30";
+            Restart = "always";
+          };
+          unitConfig = {
+            Requires = [ containers.wireguard.ref ];
+            After = [ containers.wireguard.ref ];
+          };
+          containerConfig = {
+            image = "docker.io/library/nginx:latest";
+            networks = [ "container:wireguard" ];
+            noNewPrivileges = true;
+            volumes = [ "${nginx_config}:/etc/nginx/nginx.conf:ro" ];
+          };
         };
-        unitConfig = {
-          Requires = [ containers.wireguard.ref ];
-          After = [ containers.wireguard.ref ];
-        };
-        containerConfig = {
-          image = "docker.io/library/nginx:latest";
-          networks = [ "container:wireguard" ];
-          noNewPrivileges = true;
-          volumes = [ "${nginx_config}:/etc/nginx/nginx.conf:ro" ];
+
+        containers.wireguard = {
+          autoStart = true;
+          serviceConfig = {
+            RestartSec = "30";
+            Restart = "always";
+          };
+          containerConfig = {
+            image = "lscr.io/linuxserver/wireguard:latest";
+            addCapabilities = [
+              "NET_ADMIN"
+              "NET_RAW"
+            ];
+            environments = {
+              PUID = "1000";
+              PGID = "1000";
+              TZ = "Etc/UTC";
+            };
+            sysctl = {
+              "net.ipv4.conf.all.src_valid_mark" = "1";
+            };
+            volumes = [
+              "${config.sops.templates."wg0.conf".path}:/config/wg_confs/wg0.conf"
+            ];
+            publishPorts = [ "51820:51820/udp" ];
+          };
         };
       };
 
-      containers.wireguard = {
-        autoStart = true;
-        serviceConfig = {
-          RestartSec = "30";
-          Restart = "always";
-        };
-        containerConfig = {
-          image = "lscr.io/linuxserver/wireguard:latest";
-          addCapabilities = [
-            "NET_ADMIN"
-            "NET_RAW"
-          ];
-          environments = {
-            PUID = "1000";
-            PGID = "1000";
-            TZ = "Etc/UTC";
-          };
-          sysctl = {
-            "net.ipv4.conf.all.src_valid_mark" = "1";
-          };
-          volumes = [
-            "${config.sops.templates."wg0.conf".path}:/config/wg_confs/wg0.conf"
-          ];
-          publishPorts = [ "51820:51820/udp" ];
-        };
-      };
-    };
+    sops.templates."wg0.conf" = {
+      content = ''
+        [Interface]
+        Address = 10.0.0.2/32
+        PrivateKey = ${private_key}
+        ListenPort = 51820
+        DNS = 10.0.0.1
 
-  sops.templates."wg0.conf" = {
-    content = ''
-      [Interface]
-      Address = 10.0.0.2/32
-      PrivateKey = ${private_key}
-      ListenPort = 51820
-      DNS = 10.0.0.1
-
-      [Peer]
-      PublicKey = dKIqkl8S34b5Gg4FfiThyZ69c7Rm5Y1Umwy8SRQM/zc=
-      PresharedKey = ${preshared_key}
-      Endpoint = ${ip}:${port}
-      AllowedIPs = 0.0.0.0/0
-      PersistentKeepalive = 25
-    '';
+        [Peer]
+        PublicKey = dKIqkl8S34b5Gg4FfiThyZ69c7Rm5Y1Umwy8SRQM/zc=
+        PresharedKey = ${preshared_key}
+        Endpoint = ${ip}:${port}
+        AllowedIPs = 0.0.0.0/0
+        PersistentKeepalive = 25
+      '';
     };
   };
 }

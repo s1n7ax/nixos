@@ -31,7 +31,8 @@ in
       "adbusers"
       "disk"
       "coral" # for google coral
-    ] ++ lib.optional (config.settings.network.backend == "networkmanager") "networkmanager";
+    ]
+    ++ lib.optional (config.settings.network.backend == "networkmanager") "networkmanager";
   };
 
   users.groups.${username} = { };

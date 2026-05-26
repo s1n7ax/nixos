@@ -15,7 +15,10 @@
       exec = "${pkgs.bluetui}/bin/bluetui";
       terminal = true;
       type = "Application";
-      categories = [ "Settings" "HardwareSettings" ];
+      categories = [
+        "Settings"
+        "HardwareSettings"
+      ];
     };
   };
 }

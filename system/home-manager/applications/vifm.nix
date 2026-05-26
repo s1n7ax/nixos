@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   home.file = {
     ".config/vifm/colors".source = pkgs.fetchgit {
       url = "https://github.com/vifm/vifm-colors.git";

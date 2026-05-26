@@ -23,7 +23,7 @@
       ];
       # version controlled config file
       configFile = writeText "config.def.h" (builtins.readFile ./config.h);
-      postPatch = oldAttrs.postPatch + ''cp ${configFile} config.def.h'';
+      postPatch = oldAttrs.postPatch + "cp ${configFile} config.def.h";
     }))
   ];
 
