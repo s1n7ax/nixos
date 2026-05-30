@@ -93,7 +93,7 @@ let
 
     # nixos
     nixos = "cd ~/Workspace/nixos && sudo nix flake update && sudo nixos-rebuild switch --upgrade --flake ./#desktop";
-    nixos-clean = "nix-collect-garbage -d && sudo nix-collect-garbage -d && sudo /run/current-system/bin/switch-to-configuration boot";
+    nixos-clean = "nix-collect-garbage -d && sudo nix-collect-garbage -d && sudo /run/current-system/bin/switch-to-configuration boot && sudo nix-store --optimise";
   };
 in
 {
