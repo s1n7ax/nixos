@@ -42,7 +42,6 @@ hl.bind(mod .. " + G", hl.dsp.window.close())
 hl.bind(mod .. " + K", hl.dsp.window.pin())
 
 -- Layout (dwindle leftovers)
-hl.bind(mod .. " + H", hl.dsp.window.pseudo())
 hl.bind(mod .. " + J", hl.dsp.layout("togglesplit"))
 
 -- Cycle focus + bring to top
