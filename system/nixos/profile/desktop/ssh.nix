@@ -9,7 +9,7 @@
 
       "codeberg.org ssh-ed25519" = {
         hostName = [ "codeberg.org" ];
-        publicKey = "SHA256:mIlxA9k46MmM6qdJOdMnAQpzGxF4WIVVL+fj+wZbw0g";
+        publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVIC02vnjFyL+I4RHfvIGNtOgJMe769VTF1VR4EB3ZB";
       };
 
       "192.168.1.110 ssh-ed25519" = {
