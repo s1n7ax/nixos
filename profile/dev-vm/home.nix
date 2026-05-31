@@ -4,7 +4,6 @@
 
   imports = [
     ./options.nix
-    ./neovim.nix
     ../common/home.nix
   ];
 }
