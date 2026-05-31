@@ -59,6 +59,13 @@ with lib;
                 fsType = "ext4";
                 autoCreate = true;
               }
+              {
+                mountPoint = "/persist/ssh-host-keys";
+                image = "/var/lib/microvms/dev-vm/ssh-host-keys.img";
+                size = 64;
+                fsType = "ext4";
+                autoCreate = true;
+              }
             ];
 
             shares = [
