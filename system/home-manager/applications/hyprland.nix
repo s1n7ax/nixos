@@ -143,6 +143,15 @@ in
             end'')
         ];
       };
+
+      bind = [
+        {
+          _args = [
+            "SUPER + Return"
+            (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("${config.settings.terminal}")'')
+          ];
+        }
+      ];
     };
 
     extraConfig = builtins.readFile ./hyprland/binds.lua;
