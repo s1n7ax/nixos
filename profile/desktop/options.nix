@@ -1,6 +1,8 @@
+{ pkgs-unstable, lib, ... }:
 {
   settings = {
     network.backend = "networkmanager";
+    wm.package = lib.mkForce pkgs-unstable.hyprland;
   };
 
   features = {

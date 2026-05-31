@@ -132,7 +132,6 @@
       enable = true;
       configPackages = [ config.settings.wm.package ];
       extraPortals = with pkgs; [
-        xdg-desktop-portal-hyprland
         xdg-desktop-portal-gtk
       ];
     };
