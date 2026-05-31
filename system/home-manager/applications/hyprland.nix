@@ -2,6 +2,7 @@
   config,
   lib,
   inputs,
+  pkgs,
   ...
 }:
 let
@@ -146,4 +147,12 @@ in
 
     extraConfig = builtins.readFile ./hyprland/binds.lua;
   };
+
+  home.file."Workspace/nixos/system/home-manager/applications/hyprland/.luarc.json".source =
+    pkgs.writeText "hyprland-luarc.json" (builtins.toJSON {
+      "$schema" = "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json";
+      "workspace.library" = [
+        "${config.settings.wm.package}/share/hypr/stubs"
+      ];
+    });
 }

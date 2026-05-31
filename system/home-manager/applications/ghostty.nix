@@ -5,7 +5,7 @@
     enableFishIntegration = true;
 
     settings = {
-      theme = "catppuccin-mocha";
+      theme = "Catppuccin Mocha";
       font-family = config.settings.font.name;
       font-size = config.settings.font.size;
       cursor-style = "block";
