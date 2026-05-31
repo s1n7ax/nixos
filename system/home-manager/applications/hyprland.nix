@@ -20,12 +20,8 @@ in
     enable = true;
     settings = {
       splash = false;
-
-      wallpaper = {
-        monitor = "";
-        path = "~/.wallpaper/wallpaper";
-        fit_mode = "cover";
-      };
+      preload = [ "~/.wallpaper/wallpaper" ];
+      wallpaper = [ ",~/.wallpaper/wallpaper" ];
     };
   };
 
