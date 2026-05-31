@@ -113,5 +113,5 @@ hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- hyprwhspr-rs: hold ALT+N to dictate
-hl.bind("ALT + N", hl.dsp.exec_cmd("hyprwhspr-rs record start"))
-hl.bind("ALT + N", hl.dsp.exec_cmd("hyprwhspr-rs record stop"), { release = true })
+hl.bind("ALT + K", hl.dsp.exec_cmd("hyprwhspr-rs record start"))
+hl.bind("ALT + K", hl.dsp.exec_cmd("hyprwhspr-rs record stop"), { release = true })
