@@ -120,7 +120,7 @@ in
           leaf = "workspaces";
           enabled = true;
           speed = 1;
-          curve = "default";
+          bezier = "default";
         }
         {
           leaf = "windows";
