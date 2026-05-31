@@ -1,11 +1,42 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/z2m";
   network_key = config.sops.placeholder."z2m/network_key";
+  permit_join_forever = pkgs.writeText "permit_join_forever.js" ''
+    /**
+     * This extension is NOT recommended but unfortunately necessary
+     * for some devices to work properly (like Livolo). Use with caution
+     * as this will make it very easy for someone to hack your Zigbee network!
+     * https://github.com/Koenkk/zigbee2mqtt/issues/25626
+     */
+    const NS = 'ext:permit-join-forever';
+
+    class PermitJoinForeverExtension {
+        constructor(zigbee, mqtt, state, publishEntityState, eventBus, enableDisableExtension, restartCallback, addExtension, settings, logger) {
+            this.logger = logger;
+            this.zigbee = zigbee;
+        }
+
+        start() {
+            this.logger.warning('Permitting joining forever, only use this extension when strictly necessary!', NS);
+            this.zigbee.permitJoin(254);
+            this.interval = setInterval(() => {
+                this.zigbee.permitJoin(254);
+            }, 240 * 1000);
+        }
+
+        stop() {
+            clearInterval(this.interval);
+        }
+    }
+
+    module.exports = PermitJoinForeverExtension;
+  '';
 in
 with lib;
 {
@@ -46,35 +77,9 @@ with lib;
       '';
     };
 
-    home.file."${data_path}/extension/permit_join_forever.js".text = ''
-      /**
-       * This extension is NOT recommended but unfortunately necessary
-       * for some devices to work properly (like Livolo). Use with caution
-       * as this will make it very easy for someone to hack your Zigbee network!
-       * https://github.com/Koenkk/zigbee2mqtt/issues/25626
-       */
-      const NS = 'ext:permit-join-forever';
-
-      class PermitJoinForeverExtension {
-          constructor(zigbee, mqtt, state, publishEntityState, eventBus, enableDisableExtension, restartCallback, addExtension, settings, logger) {
-              this.logger = logger;
-              this.zigbee = zigbee;
-          }
-
-          start() {
-              this.logger.warning('Permitting joining forever, only use this extension when strictly necessary!', NS);
-              this.zigbee.permitJoin(254);
-              this.interval = setInterval(() => {
-                  this.zigbee.permitJoin(254);
-              }, 240 * 1000);
-          }
-
-          stop() {
-              clearInterval(this.interval);
-          }
-      }
-
-      module.exports = PermitJoinForeverExtension;
+    home.activation.z2mExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD mkdir -p ${data_path}/external_extensions
+      $DRY_RUN_CMD cp -f ${permit_join_forever} ${data_path}/external_extensions/permit_join_forever.js
     '';
 
     home.file."${data_path}/configuration.yaml".text = ''
