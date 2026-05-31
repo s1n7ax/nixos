@@ -20,6 +20,5 @@
       name = "Tela-circle-dark";
       package = pkgs.tela-circle-icon-theme;
     };
-    terminal = "kitty";
   };
 }

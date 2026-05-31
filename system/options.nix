@@ -68,7 +68,7 @@ with lib;
     };
     terminal = mkOption {
       type = types.str;
-      default = "ghostty";
+      default = "kitty";
       description = "Default terminal emulator to use.";
     };
     storagePath = mkOption {

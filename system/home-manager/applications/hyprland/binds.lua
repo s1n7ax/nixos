@@ -37,7 +37,6 @@ hl.bind(
 	)
 )
 hl.bind(smod .. " + Q", hl.dsp.exit())
-hl.bind(mod .. " + Return", hl.dsp.exec_cmd("ghostty"))
 
 -- Floating overlay toggle
 hl.bind(
