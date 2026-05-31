@@ -61,6 +61,7 @@
             ./system/options.nix
             ./profile/server/configuration.nix
             quadlet-nix.nixosModules.quadlet
+            microvm.nixosModules.host
             home-manager.nixosModules.home-manager
             {
               home-manager = {
