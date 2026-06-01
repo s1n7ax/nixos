@@ -58,6 +58,7 @@ with lib;
       ];
       extraPodmanArgs = [
         "--group-add=keep-groups"
+        "--tz=local"
       ];
       devices = [
         "/dev/ttyUSB0:/dev/ttyUSB0"

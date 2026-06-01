@@ -27,6 +27,7 @@ with lib;
         "${data_path}/config:/mosquitto/config"
         "${data_path}/data:/mosquitto/data"
       ];
+      extraPodmanArgs = [ "--tz=local" ];
       exec = "mosquitto -c /mosquitto-no-auth.conf";
     };
   };

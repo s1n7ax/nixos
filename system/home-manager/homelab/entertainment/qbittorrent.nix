@@ -35,6 +35,7 @@ with lib;
       ];
 
       extraPodmanArgs = [
+        "--tz=local"
         "--read-only"
         "--tmpfs /tmp:ro"
         "--stop-timeout 1800"

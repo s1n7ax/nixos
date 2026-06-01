@@ -18,8 +18,8 @@ with lib;
       environment = {
         PUID = "1000";
         PGID = "1000";
-        TZ = config.home.timeZone or "UTC";
       };
+      extraPodmanArgs = [ "--tz=local" ];
       volumes = [
         "${config.home.homeDirectory}/.homelab/pairdrop:/config:Z"
       ];

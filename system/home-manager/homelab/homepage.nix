@@ -307,6 +307,8 @@ with lib;
 
       ports = [ "3001:3000" ];
 
+      extraPodmanArgs = [ "--tz=local" ];
+
       environment = {
         HOMEPAGE_ALLOWED_HOSTS = "192.168.1.110:3001,localhost:3001,gethomepage.dev";
         PUID = "1000";
