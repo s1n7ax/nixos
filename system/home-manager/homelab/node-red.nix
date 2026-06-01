@@ -19,11 +19,9 @@ with lib;
       ports = [
         "1880:1880"
       ];
-      environment = {
-        TZ = config.home.timeZone or "UTC";
-      };
       extraPodmanArgs = [
         "--userns=keep-id"
+        "--tz=local"
       ];
       volumes = [
         "${config.home.homeDirectory}/.homelab/node-red:/data:Z"

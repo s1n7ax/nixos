@@ -61,7 +61,6 @@ with lib;
 
       # Volume mounts
       volumes = [
-        "/etc/localtime:/etc/localtime:ro"
         "${data_path}/config:/config/db:Z"
         "${storage_path}/media:/media/frigate:Z"
         "${model}:/data/models/model.tflite"
@@ -71,11 +70,8 @@ with lib;
         "/home/s1n7ax/labels.txt:/data/labels.txt"
       ];
 
-      environment = {
-        TZ = "Asia/Colombo";
-      };
-
       extraPodmanArgs = [
+        "--tz=local"
         "--shm-size=1024m"
         "--mount=type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000"
         "--group-add=keep-groups"

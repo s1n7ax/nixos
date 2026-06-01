@@ -21,8 +21,9 @@ with lib;
       environment = {
         PUID = 1000;
         PGID = 1000;
-        TZ = Etc/UTC;
       };
+
+      extraPodmanArgs = [ "--tz=local" ];
 
       ports = [
         "9696:9696"
@@ -37,8 +38,9 @@ with lib;
         LOG_LEVEL = "info";
         LOG_HTML = "false";
         CAPTCHA_SOLVER = "none";
-        TZ = "Etc/UTC";
       };
+
+      extraPodmanArgs = [ "--tz=local" ];
     };
   };
 }

@@ -25,9 +25,9 @@ with lib;
       ];
       volumes = [
         "${data_path}:/config"
-        "/etc/localtime:/etc/localtime:ro"
         "/run/dbus:/run/dbus:ro"
       ];
+      extraPodmanArgs = [ "--tz=local" ];
       ports = [ "8124:8123" ];
       addCapabilities = [
         "NET_ADMIN"

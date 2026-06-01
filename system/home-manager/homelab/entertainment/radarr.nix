@@ -28,8 +28,9 @@ with lib;
       environment = {
         PUID = 1000;
         PGID = 1000;
-        TZ = Etc/UTC;
       };
+
+      extraPodmanArgs = [ "--tz=local" ];
 
       ports = [
         "7878:7878"
