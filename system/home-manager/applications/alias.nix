@@ -20,6 +20,8 @@ let
     dde = "docker compose exec";
     ddb = "docker compose build";
 
+    dev = "ssh dev";
+
     t = "tmux new-session -A -s main";
     n = "nvim";
     nv = "neovide";
