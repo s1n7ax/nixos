@@ -1,6 +1,9 @@
 { ... }:
 let
   alias = {
+    # ssh
+    dev = "kitty +kitten ssh dev";
+
     # kubectl
     k = "kubectl";
     kgg = "kubectl get all";
