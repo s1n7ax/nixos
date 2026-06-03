@@ -39,12 +39,26 @@ hl.bind(
 hl.bind(smod .. " + Q", hl.dsp.exit())
 
 -- Floating overlay toggle
-hl.bind(
-	mod .. " + H",
-	hl.dsp.exec_cmd(
-		[[if [ "$(hyprctl activewindow -j | jq -r '.floating')" = "false" ]; then hyprctl dispatch togglefloating active && hyprctl dispatch resizeactive exact 35% 35% && hyprctl dispatch movewindow r && hyprctl dispatch movewindow d && hyprctl dispatch pin active; else hyprctl dispatch togglefloating active && hyprctl dispatch pin active; fi]]
-	)
-)
+hl.bind(mod .. " + H", function()
+	local win = hl.get_active_window()
+	if not win then
+		return
+	end
+
+	if win.floating then
+		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+		hl.dispatch(hl.dsp.window.pin({ action = "toggle" }))
+	else
+		local mon = hl.get_active_monitor()
+		local w = math.floor((mon and mon.width or 1920) * 0.20)
+		local h = math.floor(w * 9 / 16)
+		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+		hl.dispatch(hl.dsp.window.resize({ x = w, y = h }))
+		hl.dispatch(hl.dsp.window.move({ direction = "r" }))
+		hl.dispatch(hl.dsp.window.move({ direction = "d" }))
+		hl.dispatch(hl.dsp.window.pin({ action = "toggle" }))
+	end
+end)
 
 -- Fullscreen / window state
 hl.bind(mod .. " + Q", hl.dsp.window.fullscreen_state({ internal = 2, client = 0 }))
