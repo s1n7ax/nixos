@@ -4,7 +4,7 @@
     force = true;
     settings = [
       {
-        name = "Self Hosted";
+        name = "Homelab";
         bookmarks = [
           {
             name = "Home Assistant";
@@ -70,6 +70,36 @@
             name = "Deye local";
             tags = [ "self-hosted" ];
             url = "http://192.168.1.112/";
+          }
+          {
+            name = "Backyard Shower Cam";
+            tags = [ "camera" ];
+            url = "http://192.168.1.121";
+          }
+          {
+            name = "Backyard Roof Cam";
+            tags = [ "camera" ];
+            url = "http://192.168.1.122";
+          }
+          {
+            name = "House Front Kitchen Cam";
+            tags = [ "camera" ];
+            url = "http://192.168.1.123";
+          }
+          {
+            name = "House Front Road Cam";
+            tags = [ "camera" ];
+            url = "http://192.168.1.124";
+          }
+          {
+            name = "TP-Link Extender";
+            tags = [ "router" ];
+            url = "http://192.168.1.130";
+          }
+          {
+            name = "Solarman Logger";
+            tags = [ "solar" ];
+            url = "http://192.168.1.131";
           }
         ];
       }
