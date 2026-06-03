@@ -50,7 +50,7 @@ hl.bind(mod .. " + H", function()
 		hl.dispatch(hl.dsp.window.pin({ action = "toggle" }))
 	else
 		local mon = hl.get_active_monitor()
-		local w = math.floor((mon and mon.width or 1920) * 0.25)
+		local w = math.floor((mon and mon.width or 1920) * 0.20)
 		local h = math.floor(w * 9 / 16)
 		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
 		hl.dispatch(hl.dsp.window.resize({ x = w, y = h }))
