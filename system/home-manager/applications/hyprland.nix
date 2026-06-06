@@ -8,8 +8,11 @@
 let
   cursor_name = config.settings.cursor.name;
   cursor_size = config.settings.cursor.size;
+  voice-indicator = pkgs.callPackage ./hyprland/voice-indicator { };
 in
 {
+  home.packages = [ voice-indicator ];
+
   disabledModules = [ "services/window-managers/hyprland.nix" ];
 
   imports = [

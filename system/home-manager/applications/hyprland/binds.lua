@@ -126,6 +126,13 @@ hl.bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- hyprwhspr-rs: hold ALT+N to dictate
-hl.bind("ALT + K", hl.dsp.exec_cmd("hyprwhspr-rs record start"))
-hl.bind("ALT + K", hl.dsp.exec_cmd("hyprwhspr-rs record stop"), { release = true })
+-- hyprwhspr-rs: hold ALT+K to dictate, with on-screen waveform indicator
+hl.bind(
+	"ALT + K",
+	hl.dsp.exec_cmd("sh -c 'pkill -x voice-indicator; voice-indicator & hyprwhspr-rs record start'")
+)
+hl.bind(
+	"ALT + K",
+	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -x voice-indicator'"),
+	{ release = true }
+)
