@@ -22,10 +22,6 @@ window { background: transparent; }
     border: 1px solid rgba(255, 80, 80, 0.55);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
 }
-.mic {
-    font-size: 22px;
-    margin-right: 14px;
-}
 """
 
 WAVE_WIDTH = 240
@@ -94,9 +90,6 @@ def on_activate(app: Gtk.Application) -> None:
     box.set_halign(Gtk.Align.CENTER)
     box.set_valign(Gtk.Align.CENTER)
 
-    mic = Gtk.Label(label="\U0001f3a4")
-    mic.add_css_class("mic")
-    box.append(mic)
     box.append(Waveform())
 
     win.set_child(box)
