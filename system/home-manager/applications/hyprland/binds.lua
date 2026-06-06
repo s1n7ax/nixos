@@ -129,10 +129,12 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 -- hyprwhspr-rs: hold ALT+K to dictate, with on-screen waveform indicator
 hl.bind(
 	"ALT + K",
-	hl.dsp.exec_cmd("sh -c 'pkill -x voice-indicator; voice-indicator & hyprwhspr-rs record start'")
+	hl.dsp.exec_cmd(
+		"sh -c 'pkill -f \"[v]oice-indicator/main.py\"; voice-indicator & hyprwhspr-rs record start'"
+	)
 )
 hl.bind(
 	"ALT + K",
-	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -x voice-indicator'"),
+	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -f \"[v]oice-indicator/main.py\"'"),
 	{ release = true }
 )
