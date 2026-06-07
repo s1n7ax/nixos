@@ -24,6 +24,8 @@ in
 with lib;
 {
   config = mkIf config.features.homelab.frigate.enable {
+    sops.secrets."frigate/plus/api_key" = { };
+
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/frigate 0700 - - -"
       "d %h/.homelab/frigate/media 0700 - - -"
@@ -75,8 +77,15 @@ with lib;
         "--shm-size=1024m"
         "--mount=type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000"
         "--group-add=keep-groups"
+        "--env-file=${config.sops.templates."frigate.env".path}"
       ];
       autoStart = true;
+    };
+
+    sops.templates."frigate.env" = {
+      content = ''
+        PLUS_API_KEY=${config.sops.placeholder."frigate/plus/api_key"}
+      '';
     };
 
     sops.templates."frigate-config.yml" = {
