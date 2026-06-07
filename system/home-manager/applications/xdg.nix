@@ -64,6 +64,16 @@
           "Development"
         ];
       };
+      github-pulls = {
+        name = "GitHub Pull Requests";
+        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com/pulls";
+        icon = "github";
+        terminal = false;
+        categories = [
+          "Network"
+          "Development"
+        ];
+      };
       sinhala-unicode = {
         name = "Sinhala Unicode";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://www.sinhalaunicode.org/";
