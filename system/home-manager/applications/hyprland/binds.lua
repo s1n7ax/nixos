@@ -20,6 +20,7 @@ hl.window_rule({ match = { class = "Tor Browser" }, float = true })
 -- App launchers
 hl.bind(mod .. " + P", hl.dsp.exec_cmd("rofi -show drun"))
 hl.bind(amod .. " + T", hl.dsp.exec_cmd("firefox"))
+hl.bind(amod .. " + N", hl.dsp.exec_cmd("google-chrome-stable --app=https://github.com/pulls"))
 hl.bind(amod .. " + S", hl.dsp.exec_cmd("kitty -e vifm"))
 hl.bind(amod .. " + R", hl.dsp.exec_cmd("thunar"))
 hl.bind(amod .. " + Z", hl.dsp.exec_cmd("slurp | grim -g - - | wl-copy -t image/png"))
