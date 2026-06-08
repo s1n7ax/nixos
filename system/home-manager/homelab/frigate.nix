@@ -68,6 +68,8 @@ with lib;
         "${model}:/data/models/model.tflite"
         "${model_label}:/data/models/labels.txt"
         "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
+        # "/home/s1n7ax/yolo_nas.onnx:/data/yolo_nas.onnx"
+        # "/home/s1n7ax/labels.txt:/data/labels.txt"
       ];
 
       extraPodmanArgs = [
