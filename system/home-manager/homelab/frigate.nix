@@ -68,8 +68,6 @@ with lib;
         "${model}:/data/models/model.tflite"
         "${model_label}:/data/models/labels.txt"
         "${config.sops.templates."frigate-config.yml".path}:/config/config.yaml:ro"
-        "/home/s1n7ax/yolo_nas.onnx:/data/yolo_nas.onnx"
-        "/home/s1n7ax/labels.txt:/data/labels.txt"
       ];
 
       extraPodmanArgs = [
@@ -145,13 +143,7 @@ with lib;
         #                               MODEL                                #
         #--------------------------------------------------------------------#
         model:
-          model_type: yolonas
-          width: 320
-          height: 320
-          input_tensor: nchw
-          input_pixel_format: bgr
-          path: /data/yolo_nas.onnx
-          labelmap_path: /data/labels.txt
+          path: plus://ed95518dfd5207502f94650c55993fb0
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
