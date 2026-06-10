@@ -96,6 +96,12 @@ with lib;
                 host.port = 5173;
                 guest.port = 5173;
               }
+              {
+                from = "host";
+                host.address = "127.0.0.1";
+                host.port = 8787;
+                guest.port = 8787;
+              }
             ]
             ++ map (p: {
               from = "host";

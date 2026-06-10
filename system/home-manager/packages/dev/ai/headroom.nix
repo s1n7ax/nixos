@@ -18,7 +18,7 @@ in
     services.podman.containers.headroom-proxy = {
       image = "ghcr.io/chopratejas/headroom:latest";
       ports = [
-        "127.0.0.1:${toString cfg.port}:8787"
+        "${toString cfg.port}:8787"
       ];
       volumes = [
         "${config.home.homeDirectory}/.headroom:/data:Z"
