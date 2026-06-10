@@ -90,6 +90,7 @@
         enable = true;
         opencode.enable = true;
         claude.enable = true;
+        headroom.enable = true;
       };
       git.enable = true;
       github.enable = true;

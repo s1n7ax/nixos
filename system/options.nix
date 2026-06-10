@@ -343,6 +343,18 @@ with lib;
             description = "Claude Code AI assistant";
           };
         };
+        headroom = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Headroom context-compression proxy in front of Claude Code (requires features.virtualization.podman)";
+          };
+          port = mkOption {
+            type = types.port;
+            default = 8787;
+            description = "Loopback port the Headroom proxy listens on";
+          };
+        };
       };
       git = {
         enable = mkEnableOption "Git version control";
