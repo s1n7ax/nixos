@@ -14,17 +14,17 @@
     home.packages = with pkgs; [
       deno
       nodejs_22
-      nodePackages.pnpm
+      pnpm
       yarn
       emmet-language-server
       vscode-langservers-extracted
       tailwindcss-language-server
       prettierd
-      nodePackages.prettier
+      prettier
       biome
       typescript
       eslint_d
-      nodePackages.typescript-language-server
+      typescript-language-server
       supabase-cli
       pkgs-unstable.typescript-go
       pkgs-unstable.svelte-language-server

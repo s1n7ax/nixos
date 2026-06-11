@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 let
   dunstConf = pkgs.fetchgit {
     url = "https://github.com/catppuccin/dunst.git";
@@ -56,7 +56,7 @@ in
         icon_position = "left";
         min_icon_size = 32;
         max_icon_size = 128;
-        icon_path = "$HOME/.icons/Tela-circle-dracula/16/actions:$HOME/.icons/Tela-circle-dracula/16/apps:$HOME/.icons/Tela-circle-dracula/16/devices:$HOME/.icons/Tela-circle-dracula/16/mimetypes:$HOME/.icons/Tela-circle-dracula/16/panel:$HOME/.icons/Tela-circle-dracula/16/places:$HOME/.icons/Tela-circle-dracula/16/status";
+        icon_path = lib.mkForce "$HOME/.icons/Tela-circle-dracula/16/actions:$HOME/.icons/Tela-circle-dracula/16/apps:$HOME/.icons/Tela-circle-dracula/16/devices:$HOME/.icons/Tela-circle-dracula/16/mimetypes:$HOME/.icons/Tela-circle-dracula/16/panel:$HOME/.icons/Tela-circle-dracula/16/places:$HOME/.icons/Tela-circle-dracula/16/status";
         sticky_history = "yes";
         history_length = 20;
         dmenu = ''/usr/bin/rofi -config "$HOME/.config/rofi/notification.rasi" -dmenu -p dunst:'';
