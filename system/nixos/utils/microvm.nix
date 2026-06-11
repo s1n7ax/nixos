@@ -60,6 +60,13 @@ with lib;
                 autoCreate = true;
               }
               {
+                mountPoint = "/var/lib/docker";
+                image = "/var/lib/microvms/dev-vm/docker.img";
+                size = 20480;
+                fsType = "ext4";
+                autoCreate = true;
+              }
+              {
                 mountPoint = "/persist/ssh-host-keys";
                 image = "/var/lib/microvms/dev-vm/ssh-host-keys.img";
                 size = 64;
