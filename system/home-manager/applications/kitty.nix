@@ -28,6 +28,7 @@ in
       cursor_trail_decay = "0 0.5";
       cursor_trail_start_threshold = 0;
       confirm_os_window_close = 0;
+      clipboard_control = "write-clipboard write-primary read-clipboard read-primary";
     };
 
     themeFile = "Catppuccin-Mocha";
