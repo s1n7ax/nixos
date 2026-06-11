@@ -22,7 +22,6 @@ in
     };
 
     settings = {
-      "ctrl+c" = "copy_or_interrupt";
       cursor_blink_interval = 0;
       clear_all_shortcuts = "no";
       cursor_trail = 0;
@@ -37,6 +36,7 @@ in
     shellIntegration.enableFishIntegration = config.settings.shell == "fish";
 
     keybindings = {
+      "ctrl+c" = "copy_or_interrupt";
       "alt+s>n" = "goto_session ${neovim_session}";
       "alt+s>t" = "goto_session ${homelab_session}";
       "alt+s>e" = "goto_session ${nix_session}";
