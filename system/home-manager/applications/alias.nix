@@ -4,7 +4,7 @@ let
     # ssh
     # allow silent OSC 52 clipboard reads only in this window so "+p works in
     # remote nvim; other kitty windows keep the default read-clipboard-ask
-    dev = "kitty -o clipboard_control='write-clipboard write-primary read-clipboard read-primary' +kitten ssh dev";
+    dev = "kitty -o clipboard_control='write-clipboard write-primary read-clipboard read-primary' kitten ssh dev";
 
     # kubectl
     k = "kubectl";
