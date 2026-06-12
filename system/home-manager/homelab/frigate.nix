@@ -153,8 +153,8 @@ with lib;
         detect:
           enabled: true
           width: 640
-          height: 360
-          fps: 5
+          height: 480
+          fps: 6
 
         #--------------------------------------------------------------------#
         #                               REVIEW                               #
