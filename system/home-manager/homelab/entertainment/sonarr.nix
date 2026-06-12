@@ -21,7 +21,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config:Z"
-        "${storage_path}/tv:/tv"
+        "${storage_path}/tv:/tv:z"
         "${download_path}:/downloads:z"
       ];
 
