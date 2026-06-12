@@ -22,7 +22,7 @@ with lib;
       volumes = [
         "${data_path}/config:/config:Z"
         "${storage_path}/tv:/tv"
-        "${download_path}:/downloads"
+        "${download_path}:/downloads:z"
       ];
 
       environment = {

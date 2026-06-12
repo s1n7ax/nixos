@@ -29,7 +29,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config"
-        "${storage_path}/downloads:/downloads"
+        "${storage_path}/downloads:/downloads:z"
       ];
 
       ports = [
