@@ -15,18 +15,22 @@ with lib;
     ];
 
     services.podman.containers.qbittorrent = {
-      image = "qbittorrentofficial/qbittorrent-nox:5.1.0-1";
+      image = "lscr.io/linuxserver/qbittorrent:latest";
       network = [ "entertainment-network" ];
+
+      environment = {
+        PUID = "1000";
+        PGID = "1000";
+        # if you want to change the host port, make sure the container port is the same
+        # just mapping host to a different container port won't work
+        WEBUI_PORT = "8001";
+        TORRENTING_PORT = "6881";
+      };
 
       volumes = [
         "${data_path}/config:/config"
         "${storage_path}/downloads:/downloads"
       ];
-
-      environment = {
-        QBT_LEGAL_NOTICE = "confirm";
-        QBT_WEBUI_PORT = "8001";
-      };
 
       ports = [
         "8001:8001"
@@ -36,9 +40,7 @@ with lib;
 
       extraPodmanArgs = [
         "--tz=local"
-        "--read-only"
-        "--tmpfs /tmp:ro"
-        "--stop-timeout 1800"
+        "--stop-timeout 10"
       ];
     };
   };
