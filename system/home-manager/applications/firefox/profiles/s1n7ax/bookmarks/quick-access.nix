@@ -43,6 +43,14 @@
             ];
             url = "https://www.typescriptlang.org/play/";
           }
+          {
+            name = "Drizzle Studio";
+            tags = [
+              "local"
+              "database"
+            ];
+            url = "https://local.drizzle.studio/?host=127.0.0.1&port=3001";
+          }
         ];
       }
       {
