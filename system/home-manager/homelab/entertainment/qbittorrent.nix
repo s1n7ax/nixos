@@ -9,9 +9,6 @@ with lib;
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/qbittorrent 0700 - - -"
       "d %h/.homelab/qbittorrent/config 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/qbittorrent 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/qbittorrent/downloads 0700 - - -"
     ];
 
     services.podman.containers.qbittorrent = {

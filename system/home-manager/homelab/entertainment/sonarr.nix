@@ -10,9 +10,6 @@ with lib;
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/sonarr 0700 - - -"
       "d %h/.homelab/sonarr/config 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/sonarr 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/sonarr/tv 0700 - - -"
     ];
 
     services.podman.containers.sonarr = {

@@ -30,9 +30,6 @@ with lib;
       "d %h/.homelab/frigate 0700 - - -"
       "d %h/.homelab/frigate/media 0700 - - -"
       "d %h/.homelab/frigate/config 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/frigate 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/frigate/media 0700 - - -"
     ];
 
     services.podman.networks.frigate-network = {

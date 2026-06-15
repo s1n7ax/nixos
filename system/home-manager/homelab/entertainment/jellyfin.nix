@@ -17,9 +17,9 @@ with lib;
       network = [ "entertainment-network" ];
 
       volumes = [
-        "${data_path}/config:/config"
-        "${movie_path}:/movies"
-        "${tv_path}:/tv"
+        "${data_path}/config:/config:Z"
+        "${movie_path}:/movies:z"
+        "${tv_path}:/tv:z"
       ];
 
       environment = {
