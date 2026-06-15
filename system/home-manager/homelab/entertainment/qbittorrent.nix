@@ -8,7 +8,7 @@ with lib;
   config = mkIf config.features.homelab.entertainment.qbittorrent.enable {
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/qbittorrent 0700 - - -"
-      "d %h/.homelab/qbittorrent/config 0700 - - -"
+      "d %h/.homelab/qbittorrent/config 0755 - - -"
     ];
 
     services.podman.containers.qbittorrent = {
@@ -36,6 +36,7 @@ with lib;
       ];
 
       extraPodmanArgs = [
+        "--userns=keep-id"
         "--tz=local"
         "--stop-timeout 10"
       ];
