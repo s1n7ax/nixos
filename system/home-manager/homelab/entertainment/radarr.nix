@@ -10,9 +10,6 @@ with lib;
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/radarr 0700 - - -"
       "d %h/.homelab/radarr/config 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/radarr 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/radarr/movies 0700 - - -"
     ];
 
     services.podman.containers.radarr = {
@@ -21,8 +18,8 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config:Z"
-        "${storage_path}/movies:/movies"
-        "${download_path}:/downloads"
+        "${storage_path}/movies:/movies:z"
+        "${download_path}:/downloads:z"
       ];
 
       environment = {

@@ -30,9 +30,6 @@ with lib;
       "d %h/.homelab/frigate 0700 - - -"
       "d %h/.homelab/frigate/media 0700 - - -"
       "d %h/.homelab/frigate/config 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/frigate 0700 - - -"
-      "d ${config.settings.storagePath}/.homelab/frigate/media 0700 - - -"
     ];
 
     services.podman.networks.frigate-network = {
@@ -145,7 +142,7 @@ with lib;
         #                               MODEL                                #
         #--------------------------------------------------------------------#
         model:
-          path: plus://ed95518dfd5207502f94650c55993fb0
+          path: plus://3468817eacc0ca053c0256a2113b1c04
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
@@ -154,7 +151,7 @@ with lib;
           enabled: true
           width: 640
           height: 360
-          fps: 5
+          fps: 6
 
         #--------------------------------------------------------------------#
         #                               REVIEW                               #
@@ -209,11 +206,6 @@ with lib;
                   roles: [record]
                 - path: rtsp://viewer:${front_road}@192.168.1.124:554/Streaming/Channels/102/
                   roles: [detect, audio]
-
-            objects:
-              mask:
-                - 0.691,0.2,0.391,0.419,0,0.846,0,0,0.695,0
-                - 0.82,0.131,0.684,0.398,0.691,0.621,1,1,1,0,0.826,0
 
           #--------------------------------------------------------------------#
           #                                CAR                                 #
