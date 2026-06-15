@@ -27,7 +27,10 @@ with lib;
         PGID = 1000;
       };
 
-      extraPodmanArgs = [ "--tz=local" ];
+      extraPodmanArgs = [
+        "--userns=keep-id"
+        "--tz=local"
+      ];
 
       ports = [
         "8989:8989"
