@@ -3,24 +3,24 @@
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
-    matchBlocks = {
+    settings = {
       "192.168.1.110" = {
-        user = "s1n7ax";
-        hostname = "192.168.1.110";
-        identityFile = "~/.ssh/home_server";
+        User = "s1n7ax";
+        HostName = "192.168.1.110";
+        IdentityFile = "~/.ssh/home_server";
       };
 
       "64.225.84.64" = {
-        user = "root";
-        hostname = "64.225.84.64";
-        identityFile = "~/.ssh/digitalocean";
+        User = "root";
+        HostName = "64.225.84.64";
+        IdentityFile = "~/.ssh/digitalocean";
       };
 
       "dev" = {
-        user = "s1n7ax";
-        hostname = "localhost";
-        port = 2222;
-        identityFile = "~/.ssh/id_ed25519";
+        User = "s1n7ax";
+        HostName = "localhost";
+        Port = 2222;
+        IdentityFile = "~/.ssh/id_ed25519";
       };
     };
   };
