@@ -3,6 +3,7 @@ let
   data_path = "${config.home.homeDirectory}/.homelab/jellyfin";
   movie_path = "${config.settings.storagePath}/.homelab/radarr/movies";
   tv_path = "${config.settings.storagePath}/.homelab/sonarr/tv";
+  hdd = config.settings.storageHddPath;
 in
 with lib;
 {
@@ -20,6 +21,10 @@ with lib;
         "${data_path}/config:/config:Z"
         "${movie_path}:/movies:z"
         "${tv_path}:/tv:z"
+      ]
+      ++ optionals (hdd != null) [
+        "${hdd}/.homelab/radarr/movies:/movies-hdd:z"
+        "${hdd}/.homelab/sonarr/tv:/tv-hdd:z"
       ];
 
       environment = {

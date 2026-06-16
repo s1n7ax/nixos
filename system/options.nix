@@ -76,6 +76,11 @@ with lib;
       default = null;
       description = "Path to the large storage mount point (e.g., /storage for HDD). Set to null if not using external storage.";
     };
+    storageHddPath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Path to a secondary storage mount point (e.g., /storage-hdd RAID enclosure) used as additional ARR-stack media storage. Set to null if not using a second drive.";
+    };
     network = {
       backend = mkOption {
         type = types.enum [
