@@ -2,6 +2,7 @@
 {
   settings = {
     storagePath = "/storage";
+    storageHddPath = "/storage-hdd";
   };
 
   features = {
