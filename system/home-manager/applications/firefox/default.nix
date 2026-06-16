@@ -29,6 +29,7 @@
 
   programs.firefox = {
     enable = config.features.web.enable;
+    configPath = ".mozilla/firefox";
 
     # ---- POLICIES ----
     # Check about:policies#documentation for options.
