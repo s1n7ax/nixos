@@ -10,6 +10,7 @@
     userDirs = {
       enable = true;
       createDirectories = false;
+      setSessionVariables = true;
     };
     mime.enable = true;
     portal.enable = lib.mkForce (config.features.desktop.xdg.enable);

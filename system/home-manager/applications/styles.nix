@@ -10,6 +10,8 @@
       package = pkgs.kdePackages.breeze-gtk;
     };
 
+    gtk4.theme = config.gtk.theme;
+
     cursorTheme = {
       inherit (config.settings.cursor) name package size;
     };

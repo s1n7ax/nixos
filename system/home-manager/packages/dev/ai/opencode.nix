@@ -48,13 +48,15 @@ in
             "secrets*" = "deny";
           };
         };
+      };
+      tui = {
         theme = "catppuccin";
         keybinds = {
           messages_half_page_up = "ctrl+u";
           messages_half_page_down = "ctrl+d";
         };
       };
-      rules = common.rules;
+      context = common.rules;
     };
   };
 }
