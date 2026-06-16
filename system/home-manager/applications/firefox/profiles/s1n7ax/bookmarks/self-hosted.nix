@@ -24,7 +24,7 @@
           {
             name = "Jellifin";
             tags = [ "self-hosted" ];
-            url = "http://192.168.1.110:8000/";
+            url = "http://192.168.1.110:8096";
           }
           {
             name = "qBittorrent";
