@@ -49,6 +49,9 @@
     ];
   };
 
+  # The external RAID enclosure HDD is a *second* drive mounted at /storage-hdd
+  # with resilient, non-blocking options; see ./storage-hdd.nix.
+
   swapDevices = [
     { device = "/dev/disk/by-uuid/3d30ed3c-9547-4c4c-ae81-87d95b8861f6"; }
   ];
