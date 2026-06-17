@@ -7,12 +7,6 @@
   programs.firefox.policies.ExtensionSettings = {
     "*".installation_mode = "blocked"; # blocks all addons except the ones specified below
 
-    # Dark theme
-    "firefox-compact-dark@mozilla.org" = {
-      install_url = "https://addons.mozilla.org/firefox/downloads/latest/vimium-ff/latest.xpi";
-      installation_mode = "force_installed";
-    };
-
     # ublock
     "uBlock0@raymondhill.net" = {
       install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
@@ -46,11 +40,6 @@
     # Svelte Devtools
     "{a0370179-acc3-452f-9530-246b6adb2768}" = {
       install_url = "https://addons.mozilla.org/firefox/downloads/latest/svelte-devtools/latest.xpi";
-      installation_mode = "force_installed";
-    };
-
-    "{f6ba91b3-f237-4add-bf0f-11598d163298}" = {
-      install_url = "https://addons.mozilla.org/firefox/downloads/latest/new-tab-s1n7ax/latest.xpi";
       installation_mode = "force_installed";
     };
   };
