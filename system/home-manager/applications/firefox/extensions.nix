@@ -5,7 +5,7 @@
   # Valid strings for installation_mode are "allowed", "blocked",
   # "force_installed" and "normal_installed".
   programs.firefox.policies.ExtensionSettings = {
-    "*".installation_mode = "blocked"; # blocks all addons except the ones specified below
+    # "*".installation_mode = "blocked";
 
     # ublock
     "uBlock0@raymondhill.net" = {
@@ -40,6 +40,12 @@
     # Svelte Devtools
     "{a0370179-acc3-452f-9530-246b6adb2768}" = {
       install_url = "https://addons.mozilla.org/firefox/downloads/latest/svelte-devtools/latest.xpi";
+      installation_mode = "force_installed";
+    };
+
+    # simple tab group
+    "simple-tab-groups@drive4ik" = {
+      install_url = "https://addons.mozilla.org/firefox/downloads/latest/simple-tab-groups/latest.xpi";
       installation_mode = "force_installed";
     };
   };
