@@ -1,6 +1,10 @@
 { ... }:
 {
   mcpServers = {
+    nixos = {
+      command = "mcp-nixos";
+      args = [ ];
+    };
     svelte = {
       command = "npx";
       args = [
