@@ -29,6 +29,7 @@
 
   programs.firefox = {
     enable = config.features.web.enable;
+    configPath = "${config.xdg.configHome}/mozilla/firefox";
 
     # ---- POLICIES ----
     # Check about:policies#documentation for options.
