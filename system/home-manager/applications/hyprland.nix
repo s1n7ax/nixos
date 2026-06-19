@@ -3,6 +3,7 @@
   lib,
   inputs,
   pkgs,
+  pkgs-unstable,
   ...
 }:
 let
@@ -21,6 +22,11 @@ in
 
   services.hyprpaper = {
     enable = true;
+    # Must come from the same nixpkgs channel as the Hyprland compositor
+    # (pkgs-unstable). A stable hyprpaper links a different libhyprwire /
+    # libhyprtoolkit than the unstable compositor and crashes with
+    # "Disconnected from pollfd id 0" (Backend.cpp:367).
+    package = pkgs-unstable.hyprpaper;
     settings = {
       splash = false;
       preload = [ "${config.home.homeDirectory}/.wallpaper/wallpaper" ];
