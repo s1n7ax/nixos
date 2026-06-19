@@ -23,8 +23,8 @@ in
     enable = true;
     settings = {
       splash = false;
-      preload = [ "~/.wallpaper/wallpaper" ];
-      wallpaper = [ ",~/.wallpaper/wallpaper" ];
+      preload = [ "${config.home.homeDirectory}/.wallpaper/wallpaper" ];
+      wallpaper = [ ",${config.home.homeDirectory}/.wallpaper/wallpaper" ];
     };
   };
 
