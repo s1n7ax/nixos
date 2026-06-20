@@ -17,6 +17,11 @@
             url = "http://192.168.1.110:8971";
           }
           {
+            name = "Frigate+";
+            tags = [ "self-hosted" ];
+            url = "https://plus.frigate.video/dashboard/";
+          }
+          {
             name = "Portainer";
             tags = [ "self-hosted" ];
             url = "http://192.168.1.110:9000/";
