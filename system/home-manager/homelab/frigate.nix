@@ -121,9 +121,6 @@ with lib;
             - person
             - bicycle
             - car
-            - motorcycle
-            - bus
-            - truck
             - umbrella
           filters:
             all:
@@ -144,6 +141,13 @@ with lib;
         #--------------------------------------------------------------------#
         model:
           path: plus://c1354d18901d272603262bd2743cc69e
+          # Merge all vehicle types into the "car" class.
+          # COCO indices: 3=motorcycle, 5=bus, 7=truck (truck->car is the
+          # Frigate default, listed here to be explicit).
+          labelmap:
+            3: car
+            5: car
+            7: car
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
@@ -163,9 +167,6 @@ with lib;
               - person
               - bicycle
               - car
-              - motorcycle
-              - bus
-              - truck
               - umbrella
 
         #--------------------------------------------------------------------#
