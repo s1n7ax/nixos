@@ -126,7 +126,7 @@ with lib;
             - truck
             - umbrella
           filters:
-            person:
+            all:
               min_score: 0.3
               threshold: 0.4
 
