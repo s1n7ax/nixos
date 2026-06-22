@@ -119,15 +119,13 @@ with lib;
         objects:
           track:
             - person
-            - bicycle
             - car
             - motorcycle
-            - bus
-            - truck
             - umbrella
           filters:
-            person:
-              threshold: 0.6
+            all:
+              min_score: 0.3
+              threshold: 0.4
 
         #--------------------------------------------------------------------#
         #                               MOTION                               #
@@ -143,6 +141,18 @@ with lib;
         #--------------------------------------------------------------------#
         model:
           path: plus://c1354d18901d272603262bd2743cc69e
+          # Relabel bicycle as motorcycle, and merge every other vehicle
+          # (motorcycle, airplane, bus, train, truck, boat) into car.
+          # COCO indices: 1=bicycle, 3=motorcycle, 4=airplane, 5=bus,
+          # 6=train, 7=truck, 8=boat.
+          labelmap:
+            1: motorcycle
+            3: car
+            4: car
+            5: car
+            6: car
+            7: car
+            8: car
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
@@ -160,11 +170,8 @@ with lib;
           alerts:
             labels:
               - person
-              - bicycle
               - car
               - motorcycle
-              - bus
-              - truck
               - umbrella
 
         #--------------------------------------------------------------------#
