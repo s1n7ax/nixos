@@ -35,6 +35,7 @@
 
     development = {
       git.enable = true;
+      github.enable = true;
       nix.enable = true;
       javascript.enable = true;
       ai = {
