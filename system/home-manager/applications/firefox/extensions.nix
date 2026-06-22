@@ -5,13 +5,7 @@
   # Valid strings for installation_mode are "allowed", "blocked",
   # "force_installed" and "normal_installed".
   programs.firefox.policies.ExtensionSettings = {
-    "*".installation_mode = "blocked"; # blocks all addons except the ones specified below
-
-    # Dark theme
-    "firefox-compact-dark@mozilla.org" = {
-      install_url = "https://addons.mozilla.org/firefox/downloads/latest/vimium-ff/latest.xpi";
-      installation_mode = "force_installed";
-    };
+    # "*".installation_mode = "blocked";
 
     # ublock
     "uBlock0@raymondhill.net" = {
@@ -49,8 +43,9 @@
       installation_mode = "force_installed";
     };
 
-    "{f6ba91b3-f237-4add-bf0f-11598d163298}" = {
-      install_url = "https://addons.mozilla.org/firefox/downloads/latest/new-tab-s1n7ax/latest.xpi";
+    # simple tab group
+    "simple-tab-groups@drive4ik" = {
+      install_url = "https://addons.mozilla.org/firefox/downloads/latest/simple-tab-groups/latest.xpi";
       installation_mode = "force_installed";
     };
   };
