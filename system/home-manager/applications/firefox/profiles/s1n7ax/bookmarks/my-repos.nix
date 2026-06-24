@@ -67,7 +67,7 @@
             url = "https://github.com/orgs/nvim-java/projects/1/views/2";
           }
           {
-            name = "s1n7ax/notes";
+            name = "my-notes";
             url = "https://github.com/s1n7ax/notes";
           }
           {
