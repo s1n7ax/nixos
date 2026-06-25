@@ -68,7 +68,7 @@
           }
           {
             name = "my-notes";
-            url = "https://github.com/s1n7ax/notes";
+            url = "https://github.com/s1n7ax/my-notes";
           }
           {
             name = "dotfiles/nvim/lua/plugins/dap.lua at master · gonstoll/dotfiles";
