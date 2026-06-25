@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 {
   imports = [
     ../applications/dunst.nix
@@ -17,47 +22,49 @@
     ../applications/pet.nix
   ];
 
-  services.kdeconnect.enable = true;
+  config = lib.mkIf config.features.cli.utilities.enable {
+    services.kdeconnect.enable = true;
 
-  home.packages = with pkgs; [
-    pass
+    home.packages = with pkgs; [
+      pass
 
-    # file managers
-    thunar
-    tumbler
-    vifm
+      # file managers
+      thunar
+      tumbler
+      vifm
 
-    # audio controls
-    #pavucontrol
-    wiremix
-    easyeffects
+      # audio controls
+      #pavucontrol
+      wiremix
+      easyeffects
 
-    # downloaders
-    axel
-    yt-dlp
+      # downloaders
+      axel
+      yt-dlp
 
-    # compress de-compress
-    p7zip
-    unzip
+      # compress de-compress
+      p7zip
+      unzip
 
-    # sync
-    rclone
-    sshfs
+      # sync
+      rclone
+      sshfs
 
-    # image
-    ffmpeg_6-full
-    nsxiv
-    kdePackages.gwenview
+      # image
+      ffmpeg_6-full
+      nsxiv
+      kdePackages.gwenview
 
-    # other
-    wl-clipboard
-    trash-cli
-    appimage-run
-    xdg-utils
-    tldr
+      # other
+      wl-clipboard
+      trash-cli
+      appimage-run
+      xdg-utils
+      tldr
 
-    # networking
-    dig
-    traceroute
-  ];
+      # networking
+      dig
+      traceroute
+    ];
+  };
 }

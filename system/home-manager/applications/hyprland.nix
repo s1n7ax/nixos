@@ -11,15 +11,16 @@ let
   voice-indicator = pkgs.callPackage ./hyprland/voice-indicator { };
 in
 {
-  home.packages = [ voice-indicator ];
-
   disabledModules = [ "services/window-managers/hyprland.nix" ];
 
   imports = [
     "${inputs.home-manager-master}/modules/services/window-managers/hyprland.nix"
   ];
 
-  services.hyprpaper = {
+  config = lib.mkIf config.features.desktop.hyprland.enable {
+    home.packages = [ voice-indicator ];
+
+    services.hyprpaper = {
     enable = true;
     settings = {
       splash = false;
@@ -163,4 +164,5 @@ in
         "${config.settings.wm.package}/share/hypr/stubs"
       ];
     });
+  };
 }

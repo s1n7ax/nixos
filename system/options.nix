@@ -116,6 +116,26 @@ with lib;
       kdeconnect = {
         enable = mkEnableOption "KDE Connect";
       };
+
+      dunst = {
+        enable = mkEnableOption "Dunst notification daemon";
+      };
+
+      rofi = {
+        enable = mkEnableOption "Rofi application launcher";
+      };
+
+      fuzzel = {
+        enable = mkEnableOption "Fuzzel application launcher";
+      };
+
+      cursor = {
+        enable = mkEnableOption "Pointer cursor theme";
+      };
+
+      styles = {
+        enable = mkEnableOption "GTK/Qt theming";
+      };
     };
 
     security = {
@@ -417,6 +437,63 @@ with lib;
       };
       virtualization = {
         enable = mkEnableOption "Virtualization development tools";
+      };
+      editorconfig = {
+        enable = mkEnableOption "EditorConfig settings";
+      };
+    };
+
+    terminal = {
+      kitty.enable = mkEnableOption "Kitty terminal emulator";
+      ghostty.enable = mkEnableOption "Ghostty terminal emulator";
+      alacritty.enable = mkEnableOption "Alacritty terminal emulator";
+      wezterm.enable = mkEnableOption "WezTerm terminal emulator";
+      st.enable = mkEnableOption "st (suckless terminal)";
+    };
+
+    shell = {
+      fish.enable = mkEnableOption "Fish shell";
+      zsh.enable = mkEnableOption "Zsh shell";
+      nushell.enable = mkEnableOption "Nushell";
+    };
+
+    editor = {
+      neovim.enable = mkEnableOption "Neovim editor";
+    };
+
+    cli = {
+      eza.enable = mkEnableOption "eza (ls replacement)";
+      fzf.enable = mkEnableOption "fzf fuzzy finder";
+      zoxide.enable = mkEnableOption "zoxide directory jumper";
+      starship.enable = mkEnableOption "Starship prompt";
+      htop.enable = mkEnableOption "htop process viewer";
+      lazygit.enable = mkEnableOption "lazygit TUI";
+      pet.enable = mkEnableOption "pet snippet manager";
+      direnv.enable = mkEnableOption "direnv environment loader";
+      yazi.enable = mkEnableOption "Yazi file manager";
+      vifm.enable = mkEnableOption "vifm file manager";
+      nnn.enable = mkEnableOption "nnn file manager";
+      zathura.enable = mkEnableOption "Zathura document viewer";
+      mpv.enable = mkEnableOption "mpv media player";
+      scripts.enable = mkEnableOption "personal shell scripts";
+      alias.enable = mkEnableOption "shell aliases";
+      utilities.enable = mkEnableOption "general CLI utilities and desktop helpers";
+      rustAlternatives.enable = mkEnableOption "Rust-based CLI alternatives (bat, fd, rg, ...)";
+    };
+
+    fonts = {
+      enable = mkEnableOption "font packages and fontconfig";
+    };
+
+    xdg = {
+      enable = mkEnableOption "XDG user dirs, MIME associations and desktop entries";
+    };
+
+    core = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Core home-manager bootstrap (programs.home-manager self-management).";
       };
     };
   };

@@ -1,5 +1,5 @@
-{ pkgs, ... }:
-{
+{ pkgs, lib, config, ... }:
+lib.mkIf config.features.fonts.enable {
   fonts.fontconfig = {
     enable = true;
     defaultFonts = {

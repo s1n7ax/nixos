@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.storage.cloud.enable {
   systemd.user.services = {
     "rclone@" = {
       Unit = {

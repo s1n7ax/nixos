@@ -4,7 +4,7 @@
   lib,
   ...
 }:
-{
+lib.mkIf config.features.xdg.enable {
   xdg = {
     enable = true;
     userDirs = {

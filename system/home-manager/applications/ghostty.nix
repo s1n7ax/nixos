@@ -1,5 +1,5 @@
-{ config, ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.terminal.ghostty.enable {
   programs.ghostty = {
     enable = true;
     enableFishIntegration = true;

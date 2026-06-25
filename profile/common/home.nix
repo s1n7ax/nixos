@@ -10,6 +10,7 @@
 
   imports = [
     ./options.nix
+    ./features.nix
     ./gitleaks.nix
     ../../system/options.nix
 

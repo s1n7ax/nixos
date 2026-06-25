@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.development.editorconfig.enable {
   editorconfig = {
     enable = true;
     settings = {

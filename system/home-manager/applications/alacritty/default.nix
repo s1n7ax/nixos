@@ -1,6 +1,6 @@
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 
-{
+lib.mkIf config.features.terminal.alacritty.enable {
   home.file = {
     ".config/alacritty/keys.toml".source = ./config/keys.toml;
   };

@@ -1,9 +1,10 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
-{
+lib.mkIf config.features.desktop.rofi.enable {
   programs.rofi = {
     enable = true;
     pass = {

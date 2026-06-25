@@ -1,5 +1,5 @@
-{ pkgs, inputs, ... }:
-{
+{ pkgs, lib, config, inputs, ... }:
+lib.mkIf config.features.editor.neovim.enable {
   programs.neovim = {
     enable = true;
     package = inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatform.system}.default;

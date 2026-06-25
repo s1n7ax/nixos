@@ -1,10 +1,11 @@
 {
   pkgs,
   inputs,
+  lib,
   config,
   ...
 }:
-{
+lib.mkIf config.features.terminal.wezterm.enable {
   programs.wezterm = {
     enable = true;
     enableZshIntegration = true;
