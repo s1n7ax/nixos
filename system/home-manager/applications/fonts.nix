@@ -1,4 +1,4 @@
-{ pkgs, lib, config, ... }:
+{ lib, config, ... }:
 lib.mkIf config.features.fonts.enable {
   fonts.fontconfig = {
     enable = true;
@@ -14,17 +14,4 @@ lib.mkIf config.features.fonts.enable {
 
     };
   };
-
-  home.packages = with pkgs; [
-    noto-fonts
-    noto-fonts-cjk-sans
-    noto-fonts-cjk-serif
-    noto-fonts-color-emoji
-    # use nerd.fonts.<font_name> where font_name is any one of the fonts name from
-    # https://www.nerdfonts.com/font-downloads
-    nerd-fonts.fira-code
-    nerd-fonts.monaspace
-    nerd-fonts.iosevka
-    maple-mono.NF
-  ];
 }
