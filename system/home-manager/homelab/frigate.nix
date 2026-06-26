@@ -207,6 +207,9 @@ with lib;
           enabled: true
           model_size: large
 
+        lpr:
+          enabled: true
+
         cameras:
           #--------------------------------------------------------------------#
           #                                ROAD                                #
