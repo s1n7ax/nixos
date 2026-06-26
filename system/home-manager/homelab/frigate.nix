@@ -140,7 +140,7 @@ with lib;
         #                               MODEL                                #
         #--------------------------------------------------------------------#
         model:
-          path: plus://e4c1bf74138abd711d5fbea44058b5f8
+          path: plus://062ae1e0ab694333027353df0d4eb982
           # Relabel bicycle as motorcycle, and merge every other vehicle
           # (motorcycle, airplane, bus, train, truck, boat) into car.
           # COCO indices: 1=bicycle, 3=motorcycle, 4=airplane, 5=bus,
