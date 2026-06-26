@@ -6,12 +6,19 @@
   };
 
   features = {
+    # Desktop home-manager + system features: window manager, launcher,
+    # notifications, cursor theme, GTK styles. Profiles with a display set this;
+    # the headless server profile does not.
     desktop = {
       dconf.enable = true;
       hyprland.enable = true;
       hyprwhspr.enable = true;
       xdg.enable = true;
       kdeconnect.enable = true;
+      dunst.enable = true;
+      rofi.enable = true;
+      cursor.enable = true;
+      styles.enable = true;
     };
 
     security = {

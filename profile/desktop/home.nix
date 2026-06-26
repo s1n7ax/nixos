@@ -5,7 +5,6 @@
 
   imports = [
     ./options.nix
-    ./features.nix
     ../common/home.nix
     ../../system/home-manager/profile/desktop
     # ../../system/home-manager/self-hosted-services
