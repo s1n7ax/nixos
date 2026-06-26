@@ -131,8 +131,9 @@ with lib;
         #                               MOTION                               #
         #--------------------------------------------------------------------#
         motion:
-          mask: 0,0.103,0.297,0.103,0.3,0,0,0
-          threshold: 30
+          mask:
+            - 0,0.103,0.297,0.103,0.3,0,0,0
+            - 0.719,0.889,0.839,0.89,0.839,0.929,0.72,0.929
           contour_area: 10
           improve_contrast: true
 
@@ -202,11 +203,19 @@ with lib;
           reindex: false
           model_size: large
 
+        face_recognition:
+          enabled: true
+          model_size: large
+
         cameras:
           #--------------------------------------------------------------------#
           #                                ROAD                                #
           #--------------------------------------------------------------------#
           front_road:
+            lpr:
+              enabled: true
+            motion:
+              threshold: 40
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${front_road}@192.168.1.124:554/Streaming/Channels/101/
@@ -218,6 +227,8 @@ with lib;
           #                                CAR                                 #
           #--------------------------------------------------------------------#
           front_car:
+            motion:
+              threshold: 40
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${front_car}@192.168.1.123:554/Streaming/Channels/101/
@@ -228,6 +239,8 @@ with lib;
           #                                ROOF                                #
           #--------------------------------------------------------------------#
           backyard_roof:
+            motion:
+              threshold: 35
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${backyard_roof}@192.168.1.122:554/Streaming/Channels/101/
@@ -239,6 +252,8 @@ with lib;
           #                               SHOWER                               #
           #--------------------------------------------------------------------#
           backyard_shower:
+            motion:
+              threshold: 35
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${backyard_shower}@192.168.1.121:554/Streaming/Channels/101/
