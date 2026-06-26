@@ -33,6 +33,7 @@ sudo nixos-rebuild switch --upgrade --flake ./#desktop
 This configuration supports multiple profiles:
 - **desktop**: Full desktop environment with gaming, multimedia, and development tools
 - **server**: Minimal server profile with most desktop features disabled
+- **macbook**: nix-darwin profile for Apple Silicon macOS (built with `darwin-rebuild`, not `nixos-rebuild`)
 
 ### Rebuild Commands
 
@@ -59,6 +60,30 @@ sudo nixos-rebuild test --flake ./#server
 # Build server configuration without switching
 sudo nixos-rebuild build --flake ./#server
 ```
+
+#### macOS (macbook profile)
+
+The `macbook` profile is a [nix-darwin](https://github.com/nix-darwin/nix-darwin)
+configuration for Apple Silicon (`aarch64-darwin`) and is built with
+`darwin-rebuild` instead of `nixos-rebuild`.
+
+```shell
+# 1. Install Nix (the Determinate Systems installer enables flakes by default)
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+# 2. Bootstrap nix-darwin (first build, before darwin-rebuild exists on PATH)
+sudo nix run nix-darwin/nix-darwin-26.05#darwin-rebuild -- switch --flake ./#macbook
+
+# 3. Subsequent rebuilds
+sudo darwin-rebuild switch --flake ./#macbook
+
+# Build without switching
+sudo darwin-rebuild build --flake ./#macbook
+```
+
+> The profile expects the `s1n7ax` user at `/Users/s1n7ax`; adjust
+> `profile/macbook/configuration.nix` and the flake's `darwinConfigurations`
+> for a different username.
 
 ### Additional Commands
 
