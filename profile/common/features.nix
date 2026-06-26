@@ -1,15 +1,14 @@
 { ... }:
 {
-  # Behavior-preserving baseline for the Linux profiles (desktop, server, dev-vm).
+  # Feature flags shared by every Linux profile (desktop, server, dev-vm).
   #
-  # The shared home-manager tree used to force-import these modules
-  # unconditionally via packages/default.nix. They are now each gated behind a
-  # `features.*.enable` option that defaults off, so enabling them here keeps the
-  # Linux profiles' home-manager output identical. The macbook profile does not
-  # import this file (or packages/default.nix), so it stays minimal.
-  #
-  # PR 2 moves these flags into the individual profiles and prunes what a headless
-  # server never needed.
+  # The shared home-manager tree gates each module behind a `features.*.enable`
+  # option that defaults off. This file enables the modules a headless box still
+  # wants (terminals, shell, editor, CLI tooling, fonts, xdg). Desktop-only
+  # modules (a window manager, launcher, notifications, cursor, GTK styles) are
+  # *not* enabled here — profiles with a display opt into them via their own
+  # `features.nix` (see profile/desktop and profile/dev-vm). The server profile
+  # imports nothing extra, so it never pulls in a desktop environment.
   features = {
     terminal = {
       kitty.enable = true;
@@ -41,14 +40,6 @@
       pet.enable = true;
       utilities.enable = true;
       rustAlternatives.enable = true;
-    };
-
-    desktop = {
-      dunst.enable = true;
-      rofi.enable = true;
-      cursor.enable = true;
-      styles.enable = true;
-      hyprland.enable = true;
     };
 
     fonts.enable = true;
