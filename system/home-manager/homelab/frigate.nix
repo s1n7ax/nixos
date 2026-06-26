@@ -202,11 +202,17 @@ with lib;
           reindex: false
           model_size: large
 
+        face_recognition:
+          enabled: true
+          model_size: large
+
         cameras:
           #--------------------------------------------------------------------#
           #                                ROAD                                #
           #--------------------------------------------------------------------#
           front_road:
+            lpr:
+              enabled: true
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${front_road}@192.168.1.124:554/Streaming/Channels/101/
