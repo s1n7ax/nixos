@@ -134,7 +134,6 @@ with lib;
           mask:
             - 0,0.103,0.297,0.103,0.3,0,0,0
             - 0.719,0.889,0.839,0.89,0.839,0.929,0.72,0.929
-          threshold: 30
           contour_area: 10
           improve_contrast: true
 
