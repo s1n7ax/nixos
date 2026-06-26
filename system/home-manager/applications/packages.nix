@@ -24,7 +24,6 @@ in
         # file managers
         thunar
         tumbler
-        vifm
 
         # audio controls
         #pavucontrol
@@ -69,34 +68,10 @@ in
         fd
         sd
         ripgrep
-        starship
         xh
         dua
       ]
     )
-
-    # fonts
-    ++ lib.optionals f.fonts.enable (
-      with pkgs;
-      [
-        noto-fonts
-        noto-fonts-cjk-sans
-        noto-fonts-cjk-serif
-        noto-fonts-color-emoji
-        # use nerd.fonts.<font_name> where font_name is any one of the fonts name from
-        # https://www.nerdfonts.com/font-downloads
-        nerd-fonts.fira-code
-        nerd-fonts.monaspace
-        nerd-fonts.iosevka
-        maple-mono.NF
-      ]
-    )
-
-    # browsers
-    ++ lib.optionals f.web.enable (with pkgs; [ chromium ])
-
-    # terminal
-    ++ lib.optionals f.terminal.alacritty.enable (with pkgs; [ alacritty-theme ])
 
     # multimedia
     ++ lib.optionals f.multimedia.enable (
@@ -117,7 +92,6 @@ in
       with pkgs;
       [
         marp-cli
-        presenterm
       ]
     )
 
@@ -129,17 +103,6 @@ in
         darktable
       ]
     )
-    ++ lib.optionals f.productivity.video-production.screen-capture.enable (
-      with pkgs;
-      [
-        grim
-        slurp
-      ]
-    )
-
-    # hardware
-    ++ lib.optionals f.hardware.bluetooth.enable (with pkgs; [ bluetui ])
-
     # network
     ++ lib.optionals f.network.monitoring.enable (
       with pkgs;
@@ -274,6 +237,5 @@ in
       ]
     )
     ++ lib.optionals f.development.ide.enable (with pkgs; [ vscode ])
-    ++ lib.optionals f.development.ci.enable (with pkgs; [ act ])
-    ++ lib.optionals f.development.ai.enable (with pkgs; [ mcp-nixos ]);
+    ++ lib.optionals f.development.ci.enable (with pkgs; [ act ]);
 }

@@ -6,6 +6,10 @@
 }:
 {
   config = lib.mkIf config.features.hardware.bluetooth.enable {
+    home.packages = with pkgs; [
+      bluetui
+    ];
+
     xdg.desktopEntries.bluetui = {
       name = "BlueTUI";
       exec = "${pkgs.bluetui}/bin/bluetui";
