@@ -14,14 +14,14 @@
     # are disabled.
     inputs.sops-nix.homeManagerModules.sops
 
-    # Full package/application aggregator (all leaves gated).
-    ./packages
+    # Full application aggregator (all leaves gated).
+    ./applications
 
-    # Server homelab containers (gated behind virtualization.podman + per-service).
-    ./homelab
+    # Server self-hosted-service containers (gated behind virtualization.podman + per-service).
+    ./self-hosted-services
 
-    # Applications not pulled in by ./packages, made available here so any profile
-    # can enable them.
+    # Applications not pulled in by ./applications, made available here so any
+    # profile can enable them.
     ./applications/nnn.nix
     ./applications/nushell
     ./applications/wezterm.nix

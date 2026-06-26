@@ -6,7 +6,7 @@
 }:
 {
   imports = [
-    ../applications/presenterm/default.nix
+    ./presenterm/default.nix
   ];
 
   config = lib.mkIf config.features.presentation.enable {

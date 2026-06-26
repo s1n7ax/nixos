@@ -6,20 +6,20 @@
 }:
 {
   imports = [
-    ../applications/dunst.nix
-    ../applications/home-manager.nix
-    ../applications/vifm.nix
-    ../applications/yazi.nix
-    ../applications/rofi.nix
-    ../applications/xdg.nix
-    ../applications/zathura.nix
-    ../applications/neovim.nix
-    ../applications/cursor.nix
-    ../applications/styles.nix
-    ../applications/htop.nix
-    ../applications/alias.nix
-    ../applications/ssh.nix
-    ../applications/pet.nix
+    ./dunst.nix
+    ./home-manager.nix
+    ./vifm.nix
+    ./yazi.nix
+    ./rofi.nix
+    ./xdg.nix
+    ./zathura.nix
+    ./neovim.nix
+    ./cursor.nix
+    ./styles.nix
+    ./htop.nix
+    ./alias.nix
+    ./ssh.nix
+    ./pet.nix
   ];
 
   config = lib.mkIf config.features.cli.utilities.enable {

@@ -18,7 +18,7 @@
     inputs.sops-nix.homeManagerModules.sops
     "${inputs.secrets}/modules/home-manager.nix"
 
-    ../../system/home-manager/packages
+    ../../system/home-manager/applications
   ];
 
 }
