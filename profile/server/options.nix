@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 {
   settings = {
     storagePath = "/storage";
