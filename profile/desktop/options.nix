@@ -37,11 +37,6 @@
     };
 
     virtualization = {
-      docker.enable = true;
-      podman.enable = true;
-      virtualbox.enable = false;
-      virt-manager.enable = true;
-      waydroid.enable = true;
       microvm.enable = true;
     };
 
@@ -90,35 +85,21 @@
 
     tools = {
       downloading.enable = true;
-      zellij.enable = false;
-      tmux.enable = true;
     };
 
     development = {
-      llm.enable = true;
       ai = {
         enable = true;
-        opencode.enable = true;
         claude.enable = true;
       };
       git.enable = true;
       github.enable = true;
-      c.enable = true;
-      virtualization.enable = true;
-      java.enable = true;
       javascript.enable = true;
       lua.enable = true;
       markdown.enable = true;
       nix.enable = true;
-      python.enable = true;
-      rust.enable = true;
       sh.enable = true;
-      toml.enable = true;
-      yaml.enable = true;
-      database.enable = true;
       web.enable = true;
-      ide.enable = true;
-      ci.enable = true;
     };
   };
 }
