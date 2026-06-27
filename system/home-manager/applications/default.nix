@@ -37,5 +37,4 @@
     ./systemd.nix
     ./zed/zed.nix
   ];
-
 }
