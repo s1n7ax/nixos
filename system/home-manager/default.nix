@@ -20,11 +20,5 @@
     # Server self-hosted-service containers (gated behind virtualization.podman + per-service).
     ./self-hosted-services
 
-    # Applications not pulled in by ./applications, made available here so any
-    # profile can enable them.
-    ./applications/nnn.nix
-    ./applications/nushell
-    ./applications/wezterm.nix
-    ./applications/st/st.nix
   ];
 }

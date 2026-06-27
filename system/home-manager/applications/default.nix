@@ -28,6 +28,10 @@
     ./web.nix
     ./presenterm
     ./storage.nix
+    ./nnn.nix
+    ./nushell
+    ./wezterm.nix
+    ./st/st.nix
   ];
 
 }
