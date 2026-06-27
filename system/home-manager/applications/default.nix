@@ -20,7 +20,9 @@
     ./dev/env.nix
     ./dev/llm.nix
     ./dev/ai
+    ./dev/editorconfig.nix
 
+    ./fuzzel.nix
     ./screen-capture.nix
     ./fonts.nix
     ./utility.nix
@@ -32,6 +34,8 @@
     ./nushell
     ./wezterm.nix
     ./st/st.nix
+    ./systemd.nix
+    ./zed/zed.nix
   ];
 
 }
