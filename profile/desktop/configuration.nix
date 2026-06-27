@@ -20,7 +20,7 @@
         };
 
         "192.168.1.110 ssh-ed25519" = {
-          hostNames = [ "192.168.1.110 " ];
+          hostNames = [ "192.168.1.110" ];
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHAsksMYthB3wMx9p1PQU/WNtVdfVt3dNXIE/CXUKB45";
         };
 

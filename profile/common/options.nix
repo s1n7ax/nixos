@@ -47,6 +47,7 @@
       direnv.enable = true;
       fzf.enable = true;
       yazi.enable = true;
+      vifm.enable = true;
       htop.enable = true;
       alias.enable = true;
       pet.enable = true;
