@@ -1,5 +1,5 @@
 { lib, config, ... }:
-lib.mkIf config.features.cli.zathura.enable {
+lib.mkIf config.features.desktop.zathura.enable {
   programs.zathura = {
     enable = true;
     mappings = {

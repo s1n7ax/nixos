@@ -136,6 +136,10 @@ with lib;
       styles = {
         enable = mkEnableOption "GTK/Qt theming";
       };
+
+      zathura = {
+        enable = mkEnableOption "Zathura document viewer";
+      };
     };
 
     security = {
@@ -305,6 +309,7 @@ with lib;
 
       video = {
         enable = mkEnableOption "Video playback and editing tools";
+        mpv.enable = mkEnableOption "mpv media player";
       };
 
       audio = {
@@ -473,8 +478,6 @@ with lib;
       yazi.enable = mkEnableOption "Yazi file manager";
       vifm.enable = mkEnableOption "vifm file manager";
       nnn.enable = mkEnableOption "nnn file manager";
-      zathura.enable = mkEnableOption "Zathura document viewer";
-      mpv.enable = mkEnableOption "mpv media player";
       scripts.enable = mkEnableOption "personal shell scripts";
       alias.enable = mkEnableOption "shell aliases";
       utilities.enable = mkEnableOption "general CLI utilities and desktop helpers";

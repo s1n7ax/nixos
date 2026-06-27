@@ -47,7 +47,6 @@
 
     cli = {
       eza.enable = true;
-      mpv.enable = true;
       lazygit.enable = true;
       scripts.enable = true;
       starship.enable = true;
@@ -56,13 +55,16 @@
       fzf.enable = true;
       vifm.enable = true;
       yazi.enable = true;
-      zathura.enable = true;
       htop.enable = true;
       alias.enable = true;
       pet.enable = true;
       utilities.enable = true;
       rustAlternatives.enable = true;
     };
+
+    multimedia.video.mpv.enable = true;
+
+    desktop.zathura.enable = true;
 
     fonts.enable = true;
 
