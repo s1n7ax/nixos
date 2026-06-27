@@ -56,8 +56,6 @@ in
     inputs.sops-nix.nixosModules.sops
     "${inputs.secrets}/modules/nixos.nix"
 
-    ./firewall.nix
-
     ../../system/nixos
   ];
 

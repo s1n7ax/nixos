@@ -8,6 +8,7 @@
 
     ./mpv.nix
     ./eza.nix
+    ./gitleaks.nix
     ./fish.nix
     ./hyprland.nix
     ./bluetui.nix
