@@ -6,9 +6,10 @@
   };
 
   features = {
-    # Desktop home-manager + system features: window manager, launcher,
-    # notifications, cursor theme, GTK styles. Profiles with a display set this;
-    # the headless server profile does not.
+    terminal = {
+      kitty.enable = true;
+    };
+
     desktop = {
       dconf.enable = true;
       hyprland.enable = true;
@@ -19,6 +20,7 @@
       rofi.enable = true;
       cursor.enable = true;
       styles.enable = true;
+      zathura.enable = true;
     };
 
     security = {
@@ -70,6 +72,7 @@
     multimedia = {
       enable = true;
       video.enable = true;
+      video.mpv.enable = true;
       audio.enable = true;
       gaming.enable = true;
       mobile.enable = true;

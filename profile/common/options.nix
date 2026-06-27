@@ -32,15 +32,8 @@
   # profile/desktop and profile/dev-vm). The server profile imports nothing extra,
   # so it never pulls in a desktop environment.
   features = {
-    terminal = {
-      kitty.enable = true;
-      alacritty.enable = true;
-      ghostty.enable = true;
-    };
-
     shell = {
       fish.enable = true;
-      zsh.enable = true;
     };
 
     editor.neovim.enable = true;
@@ -53,7 +46,6 @@
       zoxide.enable = true;
       direnv.enable = true;
       fzf.enable = true;
-      vifm.enable = true;
       yazi.enable = true;
       htop.enable = true;
       alias.enable = true;
@@ -62,12 +54,7 @@
       rustAlternatives.enable = true;
     };
 
-    multimedia.video.mpv.enable = true;
-
-    desktop.zathura.enable = true;
-
     fonts.enable = true;
-
     xdg.enable = true;
   };
 }
