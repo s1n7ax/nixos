@@ -10,13 +10,9 @@
 
   imports = [
     ./options.nix
-    ../../system/options.nix
-
-    # sops
-    inputs.sops-nix.homeManagerModules.sops
     "${inputs.secrets}/modules/home-manager.nix"
 
-    ../../system/home-manager/applications
+    ../../system/home-manager
   ];
 
 }
