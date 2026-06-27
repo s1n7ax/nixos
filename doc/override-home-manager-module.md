@@ -48,4 +48,4 @@ inputs = {
 
 ## Example
 
-See `system/home-manager/packages/dev/ai/claude.nix` for claude-code module from commit `91be7cc`.
+See `system/home-manager/applications/dev/ai/claude.nix` for claude-code module from commit `91be7cc`.

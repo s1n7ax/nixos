@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 let
   neovim_session = pkgs.writeText "neovim.kitty-session" ''
     cd ~/.config/nvim
@@ -12,7 +12,7 @@ let
     launch --title "Nixos" nvim
   '';
 in
-{
+lib.mkIf config.features.terminal.kitty.enable {
   programs.kitty = {
     enable = true;
 

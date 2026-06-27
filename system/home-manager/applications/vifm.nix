@@ -1,5 +1,7 @@
-{ pkgs, ... }:
-{
+{ pkgs, lib, config, ... }:
+lib.mkIf config.features.cli.vifm.enable {
+  home.packages = [ pkgs.vifm ];
+
   home.file = {
     ".config/vifm/colors".source = pkgs.fetchgit {
       url = "https://github.com/vifm/vifm-colors.git";

@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, lib, config, ... }:
 
-{
+lib.mkIf config.features.shell.nushell.enable {
   home.file = {
     ".config/nushell/modules".source = ./modules;
     ".config/nushell/scripts".source = pkgs.fetchgit {

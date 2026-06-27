@@ -6,7 +6,7 @@ let
     sha256 = "1LeSKuZcuWr9z6mKnyt1ojFOnIiTupwspGrOw/ts8Yk=";
   };
 in
-{
+lib.mkIf config.features.desktop.dunst.enable {
   services.dunst = {
     enable = true;
     # configFile = "${dunstConf}/src/macchiato.conf";

@@ -56,34 +56,6 @@ in
     inputs.sops-nix.nixosModules.sops
     "${inputs.secrets}/modules/nixos.nix"
 
-    ./firewall.nix
-
-    ../../system/nixos/core/boot.nix
-    ../../system/nixos/core/network.nix
-    ../../system/nixos/core/pipewire.nix
-    ../../system/nixos/core/polkit.nix
-    ../../system/nixos/core/ssh.nix
-
-    ../../system/nixos/hardware/bluetooth.nix
-    ../../system/nixos/hardware/firmware.nix
-    ../../system/nixos/hardware/nvidia.nix
-    ../../system/nixos/hardware/openrgb.nix
-    ../../system/nixos/hardware/coral.nix
-
-    # ../../system/nixos/mounts/cloud-storages.nix
-
-    ../../system/nixos/utils/applications.nix
-    ../../system/nixos/utils/hyprwhspr.nix
-    ../../system/nixos/utils/docker.nix
-    ../../system/utils/downloading.nix
-    ../../system/nixos/utils/podman.nix
-    ../../system/nixos/utils/services.nix
-    ../../system/nixos/utils/virt-manager.nix
-    ../../system/nixos/utils/microvm.nix
-    ../../system/nixos/utils/virtualbox.nix
-    ../../system/nixos/utils/waydroid.nix
-    ../../system/nixos/utils/xdg.nix
-
     ../../system/nixos
   ];
 

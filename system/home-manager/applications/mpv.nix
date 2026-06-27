@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.multimedia.video.mpv.enable {
   programs.mpv = {
     enable = true;
     bindings = {
