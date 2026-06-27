@@ -1,14 +1,5 @@
 {
   features = {
-    # dev-vm has a display, so it opts into the desktop home-manager feature set.
-    desktop = {
-      dunst.enable = true;
-      rofi.enable = true;
-      cursor.enable = true;
-      styles.enable = true;
-      hyprland.enable = true;
-    };
-
     network = {
       ssh = {
         enable = true;
