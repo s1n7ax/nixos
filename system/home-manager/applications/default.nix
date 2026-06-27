@@ -29,12 +29,10 @@
     ./terminal.nix
     ./web.nix
     ./presenterm
-    ./storage.nix
     ./nnn.nix
     ./nushell
     ./wezterm.nix
     ./st/st.nix
-    ./systemd.nix
     ./zed/zed.nix
   ];
 }

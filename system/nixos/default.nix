@@ -5,6 +5,6 @@
     ./utils
     ./self-hosted-services
 
-    # ./mounts/cloud-storages.nix
+    ./mounts/cloud-storages.nix
   ];
 }

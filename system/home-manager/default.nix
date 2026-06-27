@@ -9,9 +9,9 @@
   imports = [
     ../options.nix
 
-    # Foundational modules the gated tree depends on: rclone declares
-    # `sops.secrets.*`, so the sops option set must exist even when those features
-    # are disabled.
+    # Foundational modules the gated tree depends on: self-hosted services
+    # (frigate, z2m) declare `sops.secrets.*`/`sops.templates.*`, so the sops
+    # option set must exist even when those features are disabled.
     inputs.sops-nix.homeManagerModules.sops
 
     # Full application aggregator (all leaves gated).
