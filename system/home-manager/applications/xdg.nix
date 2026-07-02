@@ -14,92 +14,98 @@ lib.mkIf config.features.xdg.enable {
     };
     mime.enable = true;
     portal.enable = lib.mkForce (config.features.desktop.xdg.enable);
-    desktopEntries = {
-      whatsapp = {
-        name = "WhatsApp";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://web.whatsapp.com";
-        icon = "whatsapp";
-        terminal = false;
-        categories = [
-          "Network"
-          "InstantMessaging"
-        ];
-      };
-      facebook = {
-        name = "Facebook";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://facebook.com";
-        icon = "facebook";
-        terminal = false;
-        categories = [
-          "Network"
-          "Chat"
-        ];
-      };
-      youtube = {
-        name = "YouTube";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://youtube.com";
-        icon = "youtube";
-        terminal = false;
-        categories = [
-          "Network"
-          "AudioVideo"
-        ];
-      };
-      chatgpt = {
-        name = "ChatGPT";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://chat.openai.com";
-        icon = "openai";
-        terminal = false;
-        categories = [
-          "Network"
-          "Utility"
-        ];
-      };
-      github = {
-        name = "GitHub";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com";
-        icon = "github";
-        terminal = false;
-        categories = [
-          "Network"
-          "Development"
-        ];
-      };
-      github-pulls = {
-        name = "GitHub Pull Requests";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com/pulls";
-        icon = "github";
-        terminal = false;
-        categories = [
-          "Network"
-          "Development"
-        ];
-      };
-      sinhala-unicode = {
-        name = "Sinhala Unicode";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://www.sinhalaunicode.org/";
-        icon = "preferences-desktop-locale";
-        terminal = false;
-        categories = [
-          "Network"
-          "Utility"
-        ];
-      };
-      wiremix = {
-        name = "WireMix";
-        exec = "${pkgs.wiremix}/bin/wiremix";
-        terminal = true;
-        comment = "PipeWire audio mixer and volume control";
-        categories = [
-          "AudioVideo"
-          "Audio"
-          "Mixer"
-        ];
-        settings = {
-          Keywords = "pipewire;audio;mixer;volume;sound;pulse;";
+    # Browser web-app launchers depend on google-chrome (unfree GUI). Only emit
+    # them on profiles with a display; headless/CLI profiles (dev-vm) enable
+    # features.xdg but not features.desktop.xdg, and must not pull in chrome.
+    desktopEntries =
+      {
+        wiremix = {
+          name = "WireMix";
+          exec = "${pkgs.wiremix}/bin/wiremix";
+          terminal = true;
+          comment = "PipeWire audio mixer and volume control";
+          categories = [
+            "AudioVideo"
+            "Audio"
+            "Mixer"
+          ];
+          settings = {
+            Keywords = "pipewire;audio;mixer;volume;sound;pulse;";
+          };
+        };
+      }
+      // lib.optionalAttrs config.features.desktop.xdg.enable {
+        whatsapp = {
+          name = "WhatsApp";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://web.whatsapp.com";
+          icon = "whatsapp";
+          terminal = false;
+          categories = [
+            "Network"
+            "InstantMessaging"
+          ];
+        };
+        facebook = {
+          name = "Facebook";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://facebook.com";
+          icon = "facebook";
+          terminal = false;
+          categories = [
+            "Network"
+            "Chat"
+          ];
+        };
+        youtube = {
+          name = "YouTube";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://youtube.com";
+          icon = "youtube";
+          terminal = false;
+          categories = [
+            "Network"
+            "AudioVideo"
+          ];
+        };
+        chatgpt = {
+          name = "ChatGPT";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://chat.openai.com";
+          icon = "openai";
+          terminal = false;
+          categories = [
+            "Network"
+            "Utility"
+          ];
+        };
+        github = {
+          name = "GitHub";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com";
+          icon = "github";
+          terminal = false;
+          categories = [
+            "Network"
+            "Development"
+          ];
+        };
+        github-pulls = {
+          name = "GitHub Pull Requests";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://github.com/pulls";
+          icon = "github";
+          terminal = false;
+          categories = [
+            "Network"
+            "Development"
+          ];
+        };
+        sinhala-unicode = {
+          name = "Sinhala Unicode";
+          exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://www.sinhalaunicode.org/";
+          icon = "preferences-desktop-locale";
+          terminal = false;
+          categories = [
+            "Network"
+            "Utility"
+          ];
         };
       };
-    };
     mimeApps = {
       enable = true;
 
