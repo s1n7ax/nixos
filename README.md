@@ -80,23 +80,23 @@ sudo nix run --extra-experimental-features 'nix-command flakes' \
 After the first successful switch, `darwin-rebuild` is installed at
 `/run/current-system/sw/bin`. Subsequent rebuilds:
 
+`sudo` strips the Nix directories from `PATH` via `secure_path`, so a plain
+`sudo darwin-rebuild` fails with `command not found`. Invoke it by full path:
+
 ```shell
 # Build and switch to the macbook profile
-sudo darwin-rebuild switch --flake ~/nixos#macbook
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook
 
 # Build the macbook configuration without switching
-sudo darwin-rebuild build --flake ~/nixos#macbook
+sudo /run/current-system/sw/bin/darwin-rebuild build --flake ~/nixos#macbook
 
 # Check what would change (dry run)
-sudo darwin-rebuild switch --flake ~/nixos#macbook --dry-run
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook --dry-run
 ```
 
-> **PATH caveats**
-> - If `darwin-rebuild` isn't found, open a new shell (so `/etc/profiles` /
->   `/run/current-system/sw/bin` is picked up) or invoke it by full path:
->   `/run/current-system/sw/bin/darwin-rebuild`.
-> - `sudo` may strip these directories via `secure_path`; if a plain `sudo
->   darwin-rebuild` fails, call it with the full path above.
+> **Note:** the `--flake ~/nixos#macbook` argument is required. A bare
+> `darwin-rebuild switch` defaults to the flake at `/etc/nix-darwin` keyed by
+> hostname and will fail with a missing-`darwinConfigurations` attribute error.
 
 ### Additional Commands
 
