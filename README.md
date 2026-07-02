@@ -98,6 +98,38 @@ sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook --
 > `darwin-rebuild switch` defaults to the flake at `/etc/nix-darwin` keyed by
 > hostname and will fail with a missing-`darwinConfigurations` attribute error.
 
+##### Dev VM (linux-builder)
+
+`microvm.nix` can't run on macOS, so the macbook profile repurposes nix-darwin's
+`linux-builder` (an aarch64-linux NixOS VM) as a headless dev box. A dedicated
+`s1n7ax` user inside the VM runs the same home-manager feature set as the Linux
+`dev-vm`, except **Claude Code is replaced by the Cursor CLI** (`cursor-agent`).
+The `builder` user is left untouched for Nix remote builds; dev tooling lives in
+the VM, not on the macOS host.
+
+> **Bootstrap caveat:** a customized `linux-builder` must be built by an
+> *already-running* Linux builder. Run the normal switch while the current
+> builder is up so it builds its own replacement:
+>
+> ```shell
+> sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook
+> ```
+>
+> If the builder ever can't rebuild itself, set `nix.linux-builder.enable =
+> false`, switch, then re-enable it and switch again.
+
+The VM runs as a launchd daemon after a switch — no manual start needed. Log in
+as the dev user (find the port in `/etc/ssh/ssh_config.d/*linux-builder*`,
+default `31022`):
+
+```shell
+# First login uses the password `changeme` — change it, or add an SSH key.
+ssh -p 31022 s1n7ax@localhost
+```
+
+Inside the VM `cursor-agent`, `nvim`, `fish`, `git`, `docker`, and the language
+toolchains are all available.
+
 ### Additional Commands
 
 ```shell
