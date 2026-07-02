@@ -70,8 +70,11 @@ so use `darwin-rebuild` instead of `nixos-rebuild`. The flake output is named
 First-time bootstrap (before `darwin-rebuild` exists on the system):
 
 ```shell
-# Run darwin-rebuild straight from the nix-darwin flake to install it
-sudo nix run nix-darwin/nix-darwin-26.05#darwin-rebuild -- switch --flake ~/nixos#macbook
+# Run darwin-rebuild straight from the nix-darwin flake to install it.
+# --extra-experimental-features is required if nix-command/flakes aren't
+# already enabled in the stock macOS Nix install.
+sudo nix run --extra-experimental-features 'nix-command flakes' \
+  nix-darwin/nix-darwin-26.05#darwin-rebuild -- switch --flake ~/nixos#macbook
 ```
 
 After the first successful switch, `darwin-rebuild` is installed at
