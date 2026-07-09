@@ -16,6 +16,11 @@
       atlassian.enable = true;
       lua.enable = true;
       python.enable = true;
+      virtualization.enable = true;
+    };
+
+    virtualization = {
+      docker.enable = true;
     };
 
     cli = {

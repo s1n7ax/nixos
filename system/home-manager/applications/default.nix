@@ -21,6 +21,7 @@
     ./dev/llm.nix
     ./dev/ai
     ./dev/editorconfig.nix
+    ./docker.nix
 
     ./fuzzel.nix
     ./screen-capture.nix

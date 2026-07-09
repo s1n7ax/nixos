@@ -7,10 +7,8 @@ let
 
   darwinNixAliases = {
     mac-update = "cd ~/nixos && nix flake update";
-    mac-rebuild = "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook && sudo launchctl bootout system/org.nixos.linux-builder && sudo rm /var/lib/linux-builder/nixos.qcow2 && sudo launchctl bootstrap system /Library/LaunchDaemons/org.nixos.linux-builder.plist";
-    mac-vm-restart = "sudo pkill -f 'qemu-system-aarch64|create-builder' || true; sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook";
+    mac-rebuild = "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/nixos#macbook";
     mac-clean = "nix-collect-garbage -d && sudo nix-collect-garbage -d && nix-store --optimise";
-    dev = "kitty +kitten ssh -p 31022 s1n7ax@localhost";
   };
 
   alias = {
