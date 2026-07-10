@@ -464,7 +464,14 @@ with lib;
     };
 
     editor = {
-      neovim.enable = mkEnableOption "Neovim editor";
+      neovim = {
+        enable = mkEnableOption "Neovim editor";
+        useNightly = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Use nightly Neovim build instead of stable.";
+        };
+      };
     };
 
     cli = {
