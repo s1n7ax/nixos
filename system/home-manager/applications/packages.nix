@@ -100,7 +100,7 @@ in
       with pkgs;
       [
         gphoto2
-        darktable
+        digikam
       ]
     )
     # network
