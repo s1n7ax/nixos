@@ -28,9 +28,9 @@ let
     ld = "lazydocker";
     yt = "yt-dlp";
 
-    # backup: upload to cloud, remove local only after verified intact (checksum
-    # catches partially-uploaded/broken files; safe on fuse mounts like Dropbox)
-    backup-upload = "rsync -av --checksum --remove-source-files";
+    # backup: upload albums to cloud, remove local only after verified intact
+    # (checksum catches partial/broken files; safe on fuse mounts like Dropbox)
+    backup-upload = ''rsync -av --checksum --remove-source-files ~/Pictures/albums/ ~/"Drives/Dropbox/Camera Album/"'';
     h = "start-hyprland";
     rm = "trash";
     p = "pnpm";
