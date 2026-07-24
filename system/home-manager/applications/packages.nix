@@ -151,7 +151,6 @@ in
         prettierd
         prettier
         biome
-        typescript
         eslint_d
         typescript-language-server
         supabase-cli
