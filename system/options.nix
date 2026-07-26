@@ -507,11 +507,5 @@ with lib;
         description = "Core home-manager bootstrap (programs.home-manager self-management).";
       };
     };
-
-    cli = {
-      alias = {
-        enable = mkEnableOption "shell aliases";
-      };
-    };
   };
 }
