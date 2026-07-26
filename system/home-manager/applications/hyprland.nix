@@ -42,8 +42,9 @@ in
         }
       ];
     };
+  };
 
-    wayland.windowManager.hyprland = {
+  wayland.windowManager.hyprland = {
       enable = true;
       package = config.settings.wm.package;
       configType = "lua";
@@ -261,5 +262,4 @@ in
             ];
           }
         );
-  };
 }
