@@ -3,6 +3,7 @@
   lib,
   inputs,
   pkgs,
+  pkgs-unstable,
   ...
 }:
 let
@@ -11,22 +12,35 @@ let
   voice-indicator = pkgs.callPackage ./hyprland/voice-indicator { };
 in
 {
-  disabledModules = [ "services/window-managers/hyprland.nix" ];
+  home.packages = [ voice-indicator ];
+
+  disabledModules = [
+    "services/window-managers/hyprland.nix"
+    "services/hyprpaper.nix"
+  ];
 
   imports = [
     "${inputs.home-manager-master}/modules/services/window-managers/hyprland.nix"
+    "${inputs.home-manager-master}/modules/services/hyprpaper.nix"
   ];
 
-  config = lib.mkIf config.features.desktop.hyprland.enable {
-    home.packages = [ voice-indicator ];
-
-    services.hyprpaper = {
-      enable = true;
-      settings = {
-        splash = false;
-        preload = [ "~/.wallpaper/wallpaper" ];
-        wallpaper = [ ",~/.wallpaper/wallpaper" ];
-      };
+  services.hyprpaper = {
+    enable = true;
+    # Must come from the same nixpkgs channel as the Hyprland compositor
+    # (pkgs-unstable). A stable hyprpaper links a different libhyprwire /
+    # libhyprtoolkit than the unstable compositor and crashes with
+    # "Disconnected from pollfd id 0" (Backend.cpp:367).
+    package = pkgs-unstable.hyprpaper;
+    settings = {
+      splash = false;
+      preload = [ "${config.home.homeDirectory}/.wallpaper/wallpaper" ];
+      wallpaper = [
+        {
+          monitor = "";
+          path = "${config.home.homeDirectory}/.wallpaper/wallpaper";
+          fit_mode = "cover";
+        }
+      ];
     };
 
     wayland.windowManager.hyprland = {

@@ -85,6 +85,10 @@
       downloading.enable = true;
     };
 
+    cli = {
+      alias.enable = true;
+    };
+
     development = {
       ai = {
         enable = true;
