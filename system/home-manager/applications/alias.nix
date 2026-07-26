@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, config, ... }:
 let
   alias = {
     # ssh
@@ -27,6 +27,11 @@ let
     lg = "lazygit";
     ld = "lazydocker";
     yt = "yt-dlp";
+
+    # backup: upload albums to cloud, remove local only after verified intact
+    # (checksum catches partial/broken files; safe on fuse mounts like Dropbox)
+    backup-upload = ''rsync -av --checksum --remove-source-files ~/Pictures/albums/ ~/"Drives/Dropbox/Camera Album/"'';
+    h = "start-hyprland";
     rm = "trash";
     p = "pnpm";
     px = "pnpm dlx";
@@ -98,7 +103,7 @@ let
     nixos-clean = "nix-collect-garbage -d && sudo nix-collect-garbage -d && sudo /run/current-system/bin/switch-to-configuration boot && sudo nix-store --optimise";
   };
 in
-{
+lib.mkIf config.features.cli.alias.enable {
   home.shellAliases = alias;
   programs.fish.shellAliases = alias;
 }
