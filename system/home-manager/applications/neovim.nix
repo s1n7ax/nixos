@@ -1,8 +1,16 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
 let
-  neovimPkg = if config.features.editor.neovim.useNightly
-    then inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatform.system}.default
-    else pkgs.neovim-unwrapped;
+  neovimPkg =
+    if config.features.editor.neovim.useNightly then
+      inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatform.system}.default
+    else
+      pkgs.neovim-unwrapped;
 in
 lib.mkIf config.features.editor.neovim.enable {
   programs.neovim = {

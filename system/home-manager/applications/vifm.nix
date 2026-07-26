@@ -1,4 +1,9 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 lib.mkIf config.features.cli.vifm.enable {
   home.packages = [ pkgs.vifm ];
 

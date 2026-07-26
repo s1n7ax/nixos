@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 lib.mkIf config.features.desktop.styles.enable {
   gtk = {
     enable = true;

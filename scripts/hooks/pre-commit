@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Format staged Nix files with nixfmt before they are committed.
+set -euo pipefail
+
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACM -- '*.nix')
+[ ${#staged[@]} -eq 0 ] && exit 0
+
+if ! command -v nixfmt >/dev/null 2>&1; then
+  echo "pre-commit: nixfmt not on PATH; skipping Nix formatting" >&2
+  exit 0
+fi
+
+nixfmt "${staged[@]}"
+git add -- "${staged[@]}"

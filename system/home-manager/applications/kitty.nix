@@ -1,4 +1,9 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 let
   neovim_session = pkgs.writeText "neovim.kitty-session" ''
     cd ~/.config/nvim

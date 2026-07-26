@@ -1,0 +1,15 @@
+name: format
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  nixfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check Nix formatting
+        run: nix fmt -- --ci

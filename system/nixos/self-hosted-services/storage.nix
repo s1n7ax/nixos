@@ -9,7 +9,8 @@ let
   # ARR-stack media directories, replicated on each storage backend (the primary
   # /storage SSD and the secondary /storage-hdd RAID enclosure) so the apps can
   # use both drives as root folders / save paths.
-  arrRules = base:
+  arrRules =
+    base:
     optionals hl.entertainment.sonarr.enable [
       "d ${base}/.homelab/sonarr 0700 ${user} users -"
       "d ${base}/.homelab/sonarr/tv 0755 ${user} users -"
@@ -33,8 +34,6 @@ in
       "d ${sp}/.homelab/frigate/media 0700 ${user} users -"
     ]
     ++ arrRules sp
-    ++ optionals (hdd != null) (
-      [ "d ${hdd}/.homelab 0700 ${user} users -" ] ++ arrRules hdd
-    );
+    ++ optionals (hdd != null) ([ "d ${hdd}/.homelab 0700 ${user} users -" ] ++ arrRules hdd);
   };
 }
