@@ -103,6 +103,8 @@
           ];
         };
       };
+
+      formatter.${system} = pkgs.nixfmt-tree;
     };
 
   inputs = {
