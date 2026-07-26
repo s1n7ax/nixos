@@ -14,10 +14,14 @@ in
 {
   home.packages = [ voice-indicator ];
 
-  disabledModules = [ "services/window-managers/hyprland.nix" ];
+  disabledModules = [
+    "services/window-managers/hyprland.nix"
+    "services/hyprpaper.nix"
+  ];
 
   imports = [
     "${inputs.home-manager-master}/modules/services/window-managers/hyprland.nix"
+    "${inputs.home-manager-master}/modules/services/hyprpaper.nix"
   ];
 
   services.hyprpaper = {
@@ -30,7 +34,13 @@ in
     settings = {
       splash = false;
       preload = [ "${config.home.homeDirectory}/.wallpaper/wallpaper" ];
-      wallpaper = [ ",${config.home.homeDirectory}/.wallpaper/wallpaper" ];
+      wallpaper = [
+        {
+          monitor = "";
+          path = "${config.home.homeDirectory}/.wallpaper/wallpaper";
+          fit_mode = "cover";
+        }
+      ];
     };
   };
 
