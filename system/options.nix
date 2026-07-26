@@ -419,5 +419,11 @@ with lib;
         enable = mkEnableOption "Virtualization development tools";
       };
     };
+
+    cli = {
+      alias = {
+        enable = mkEnableOption "shell aliases";
+      };
+    };
   };
 }

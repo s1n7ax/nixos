@@ -84,6 +84,10 @@
       tmux.enable = true;
     };
 
+    cli = {
+      alias.enable = true;
+    };
+
     development = {
       llm.enable = true;
       ai = {
