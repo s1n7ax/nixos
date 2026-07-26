@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.cli.fzf.enable {
   programs.fzf = {
     enable = true;
     enableZshIntegration = true;

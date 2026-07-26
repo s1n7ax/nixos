@@ -38,8 +38,8 @@
       yaml.enable = true;
       database.enable = true;
       web.enable = true;
-      ide.enable = true;
-      ci.enable = true;
+      # ide.enable pulls in GUI editors (vscode, zed); this VM is CLI-only.
+      ide.enable = false;
       virtualization.enable = true;
     };
   };

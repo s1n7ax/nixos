@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, lib, config, ... }:
 
-{
+lib.mkIf config.features.terminal.st.enable {
   home.packages = with pkgs; [
     (st.overrideAttrs (oldAttrs: rec {
       # ligatures dependency

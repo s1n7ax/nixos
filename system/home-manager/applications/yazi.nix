@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.cli.yazi.enable {
   programs.yazi = {
     enable = true;
     enableFishIntegration = true;

@@ -1,5 +1,5 @@
-{ config, ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.shell.zsh.enable {
   programs.zsh = {
     enable = true;
     autosuggestion.enable = true;

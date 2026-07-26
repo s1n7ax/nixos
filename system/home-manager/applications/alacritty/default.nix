@@ -1,11 +1,12 @@
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 
-{
+lib.mkIf config.features.terminal.alacritty.enable {
   home.file = {
     ".config/alacritty/keys.toml".source = ./config/keys.toml;
   };
 
   home.packages = [ pkgs.alacritty-theme ];
+
   programs.alacritty = {
     enable = true;
     settings = {

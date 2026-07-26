@@ -9,10 +9,12 @@
       sops-nix,
       quadlet-nix,
       microvm,
+      nix-darwin,
       ...
     }@inputs:
     let
       system = "x86_64-linux";
+      darwinPlatform = "aarch64-darwin";
 
       pkgs = import nixpkgs {
         inherit system;
@@ -29,6 +31,14 @@
       };
       specialArgs = args;
       extraSpecialArgs = args;
+
+      darwinArgs = {
+        inherit inputs;
+        pkgs-unstable = import nixpkgs-unstable {
+          system = darwinPlatform;
+          config.allowUnfree = true;
+        };
+      };
     in
     {
       nixosConfigurations = {
@@ -74,6 +84,25 @@
           ];
         };
       };
+
+      darwinConfigurations = {
+        macbook = nix-darwin.lib.darwinSystem {
+          specialArgs = darwinArgs;
+
+          modules = [
+            ./profile/macbook/configuration.nix
+            home-manager.darwinModules.home-manager
+            {
+              home-manager = {
+                extraSpecialArgs = darwinArgs;
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.s1n7ax = import ./profile/macbook/home.nix;
+              };
+            }
+          ];
+        };
+      };
     };
 
   inputs = {
@@ -84,6 +113,10 @@
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
     microvm = {
       url = "github:microvm-nix/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

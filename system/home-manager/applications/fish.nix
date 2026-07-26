@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.shell.fish.enable {
   programs.fish = {
     enable = true;
     shellInit = ''

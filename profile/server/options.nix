@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 {
   settings = {
     storagePath = "/storage";
@@ -9,14 +9,12 @@
     desktop.dconf.enable = true;
 
     virtualization = {
-      docker.enable = false;
       podman.enable = true;
     };
 
     security.gpg.enable = true;
 
     hardware = {
-      coral.enable = true;
       firmware.enable = true;
     };
 
@@ -30,16 +28,15 @@
 
     tools = {
       downloading.enable = true;
-      tmux.enable = true;
     };
 
     development = {
       git.enable = true;
+      github.enable = true;
       nix.enable = true;
       javascript.enable = true;
       ai = {
         enable = true;
-        opencode.enable = false;
         claude.enable = true;
       };
     };

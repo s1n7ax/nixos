@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.cli.pet.enable {
   programs.pet = {
     enable = true;
     snippets = [

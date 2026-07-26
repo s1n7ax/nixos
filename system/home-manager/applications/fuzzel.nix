@@ -1,5 +1,5 @@
-{ ... }:
-{
+{ lib, config, ... }:
+lib.mkIf config.features.desktop.fuzzel.enable {
   programs.fuzzel = {
     enable = true;
     settings = {

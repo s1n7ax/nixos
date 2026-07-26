@@ -1,5 +1,5 @@
-{ pkgs, ... }:
-{
+{ pkgs, lib, config, ... }:
+lib.mkIf config.features.cli.scripts.enable {
   home.packages = with pkgs; [
     (writeShellScriptBin "run-command-at" ''
       # just exit if the location is empty
