@@ -1,4 +1,9 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 lib.mkIf config.features.cli.scripts.enable {
   home.packages = with pkgs; [
     (writeShellScriptBin "run-command-at" ''
