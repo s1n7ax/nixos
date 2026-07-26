@@ -12,6 +12,8 @@
 
   networking.hostName = lib.mkForce "dev-vm";
 
+  fileSystems."/nix/store".options = [ "userxattr" ];
+
   users.users.${config.settings.username} = {
     extraGroups = lib.mkForce [
       "wheel"
