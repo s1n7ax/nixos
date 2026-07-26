@@ -58,6 +58,7 @@ with lib;
                 size = 20480;
                 fsType = "ext4";
                 autoCreate = true;
+                mkfsExtraArgs = [ "-i" "4096" ];
               }
               {
                 mountPoint = "/var/lib/docker";
