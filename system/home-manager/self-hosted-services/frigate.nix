@@ -144,7 +144,7 @@ with lib;
           # Frigate+ model: only `path` should be set. The model ships its
           # own labelmap (person, car, motorcycle, bicycle, dog, cat, ...),
           # so no COCO-index remapping — that mislabeled e.g. dogs as cars.
-          path: plus://91f82948b291b2db40885b180314acfb
+          path: plus://fca1ccae7b2c96f0989074f84971cdee
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
