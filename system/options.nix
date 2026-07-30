@@ -435,6 +435,9 @@ with lib;
       web = {
         enable = mkEnableOption "Web development tools";
       };
+      playwright = {
+        enable = mkEnableOption "Playwright browser automation with nix-provided Chromium";
+      };
       ide = {
         enable = mkEnableOption "Integrated Development Environment (IDE) tools";
       };

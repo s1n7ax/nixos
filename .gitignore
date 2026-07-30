@@ -1,2 +1,4 @@
 result
 system/home-manager/applications/hyprland/.luarc.json
+.playwright-mcp/
+/google-iphone.png
