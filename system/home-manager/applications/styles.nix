@@ -38,6 +38,17 @@ lib.mkIf config.features.desktop.styles.enable {
 
   dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
 
+  # GSettings schemas live under share/gsettings-schemas/<name>, which nothing
+  # adds to XDG_DATA_DIRS. Apps launched through a wrapGAppsHook'd launcher
+  # (rofi) inherit them from its wrapper, but ones exec'd straight from Hyprland
+  # cannot resolve org.gnome.desktop.interface and lose the UI font — Firefox
+  # renders its tab labels blank. Prepend them session-wide instead.
+  home.sessionVariables.XDG_DATA_DIRS =
+    let
+      schemas = pkg: "${pkg}/share/gsettings-schemas/${pkg.name}";
+    in
+    "${schemas pkgs.gsettings-desktop-schemas}:${schemas pkgs.gtk3}:$XDG_DATA_DIRS";
+
   qt = {
     style = {
       name = "Breeze-Dark";
