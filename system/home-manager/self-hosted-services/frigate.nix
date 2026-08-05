@@ -6,6 +6,7 @@
 }:
 let
   front_road = config.sops.placeholder."frigate/front_road/pass";
+  veranda = config.sops.placeholder."frigate/veranda/pass";
   front_car = config.sops.placeholder."frigate/front_car/pass";
   backyard_roof = config.sops.placeholder."frigate/backyard_roof/pass";
   backyard_shower = config.sops.placeholder."frigate/backyard_shower/pass";
@@ -25,6 +26,9 @@ with lib;
 {
   config = mkIf config.features.homelab.frigate.enable {
     sops.secrets."frigate/plus/api_key" = { };
+    # The other camera passwords are declared by the secrets flake's pass.nix;
+    # veranda is not, so declare it here.
+    sops.secrets."frigate/veranda/pass" = { };
 
     systemd.user.tmpfiles.rules = [
       "d %h/.homelab/frigate 0700 - - -"
@@ -210,11 +214,30 @@ with lib;
               enabled: true
             motion:
               threshold: 40
+            # 4K camera: main 2560x1440, sub 1280x720 — overrides the
+            # global 640x360 detect resolution.
+            detect:
+              width: 1280
+              height: 720
+              fps: 6
             ffmpeg:
               inputs:
-                - path: rtsp://viewer:${front_road}@192.168.1.124:554/Streaming/Channels/101/
+                - path: rtsp://viewer:${front_road}@192.168.1.125:554/Streaming/Channels/101/
                   roles: [record]
-                - path: rtsp://viewer:${front_road}@192.168.1.124:554/Streaming/Channels/102/
+                - path: rtsp://viewer:${front_road}@192.168.1.125:554/Streaming/Channels/102/
+                  roles: [detect, audio]
+
+          #--------------------------------------------------------------------#
+          #                              VERANDA                               #
+          #--------------------------------------------------------------------#
+          veranda:
+            motion:
+              threshold: 40
+            ffmpeg:
+              inputs:
+                - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/101/
+                  roles: [record]
+                - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/102/
                   roles: [detect, audio]
 
           #--------------------------------------------------------------------#
