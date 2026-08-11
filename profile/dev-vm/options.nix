@@ -21,7 +21,7 @@
         enable = true;
         opencode.enable = true;
         claude.enable = true;
-        headroom.enable = true;
+        headroom.enable = false;
       };
       git.enable = true;
       github.enable = true;
