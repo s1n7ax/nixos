@@ -1,4 +1,7 @@
-{ ... }:
+{ config, lib, ... }:
+let
+  headroom = config.features.development.ai.headroom;
+in
 {
   programs.firefox.profiles.s1n7ax.bookmarks = {
     force = true;
@@ -72,14 +75,6 @@
             url = "http://127.0.0.1:54323";
           }
           {
-            name = "Headroom dashboard";
-            tags = [
-              "local"
-              "ai"
-            ];
-            url = "http://127.0.0.1:8787/dashboard";
-          }
-          {
             name = "tailwind";
             tags = [ "css" ];
             url = "https://nerdcave.com/tailwind-cheat-sheet";
@@ -93,6 +88,16 @@
             name = "presenterm";
             tags = [ "docs" ];
             url = "https://mfontanini.github.io/presenterm";
+          }
+        ]
+        ++ lib.optionals headroom.enable [
+          {
+            name = "Headroom dashboard";
+            tags = [
+              "local"
+              "ai"
+            ];
+            url = "http://127.0.0.1:${toString headroom.port}/dashboard";
           }
         ];
       }

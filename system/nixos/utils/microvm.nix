@@ -107,11 +107,13 @@ with lib;
                 host.port = 5173;
                 guest.port = 5173;
               }
+            ]
+            ++ optionals config.features.development.ai.headroom.enable [
               {
                 from = "host";
                 host.address = "127.0.0.1";
-                host.port = 8787;
-                guest.port = 8787;
+                host.port = config.features.development.ai.headroom.port;
+                guest.port = config.features.development.ai.headroom.port;
               }
             ]
             ++ map (p: {
