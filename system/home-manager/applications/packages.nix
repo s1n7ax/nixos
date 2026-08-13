@@ -159,6 +159,14 @@ in
         vtsls
       ]
     )
+    ++ lib.optionals f.development.jsonnet.enable (
+      with pkgs;
+      [
+        go-jsonnet
+        jsonnet-bundler
+        jsonnet-language-server
+      ]
+    )
     ++ lib.optionals f.development.lua.enable (
       with pkgs;
       [
