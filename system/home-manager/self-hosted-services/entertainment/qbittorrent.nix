@@ -1,7 +1,7 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/qbittorrent";
-  storage_path = "${config.settings.mediaStoragePath}/.homelab/qbittorrent";
+  download_path = config.settings.mediaPaths.downloads;
 in
 with lib;
 {
@@ -26,7 +26,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config"
-        "${storage_path}/downloads:/downloads:z"
+        "${download_path}:/downloads:z"
       ];
 
       ports = [

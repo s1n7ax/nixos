@@ -1,8 +1,8 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/sonarr";
-  storage_path = "${config.settings.mediaStoragePath}/.homelab/sonarr";
-  download_path = "${config.settings.mediaStoragePath}/.homelab/qbittorrent/downloads";
+  tv_path = config.settings.mediaPaths.tv;
+  download_path = config.settings.mediaPaths.downloads;
 in
 with lib;
 {
@@ -18,7 +18,7 @@ with lib;
 
       volumes = [
         "${data_path}/config:/config:Z"
-        "${storage_path}/tv:/tv:z"
+        "${tv_path}:/tv:z"
         "${download_path}:/downloads:z"
       ];
 
