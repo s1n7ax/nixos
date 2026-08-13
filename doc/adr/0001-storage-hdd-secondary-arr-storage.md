@@ -1,6 +1,6 @@
 # 1. Use /storage-hdd as secondary ARR media storage
 
-- Status: Accepted
+- Status: Superseded by [ADR 0002](0002-single-purpose-storage-drives.md)
 - Date: 2026-06-16
 - Related: PR #48 (resilient `/storage-hdd` mount), PR #50 (this change), issue #49
 

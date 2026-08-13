@@ -1,9 +1,8 @@
 { config, lib, ... }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/radarr";
-  storage_path = "${config.settings.storagePath}/.homelab/radarr";
-  download_path = "${config.settings.storagePath}/.homelab/qbittorrent/downloads";
-  hdd = config.settings.storageHddPath;
+  storage_path = "${config.settings.mediaStoragePath}/.homelab/radarr";
+  download_path = "${config.settings.mediaStoragePath}/.homelab/qbittorrent/downloads";
 in
 with lib;
 {
@@ -21,10 +20,6 @@ with lib;
         "${data_path}/config:/config:Z"
         "${storage_path}/movies:/movies:z"
         "${download_path}:/downloads:z"
-      ]
-      ++ optionals (hdd != null) [
-        "${hdd}/.homelab/radarr/movies:/movies-hdd:z"
-        "${hdd}/.homelab/qbittorrent/downloads:/downloads-hdd:z"
       ];
 
       environment = {

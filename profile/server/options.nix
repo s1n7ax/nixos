@@ -1,8 +1,8 @@
 { ... }:
 {
   settings = {
-    storagePath = "/storage";
-    storageHddPath = "/storage-hdd";
+    frigateStoragePath = "/storage";
+    mediaStoragePath = "/storage-hdd";
   };
 
   features = {

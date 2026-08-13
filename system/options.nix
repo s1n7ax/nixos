@@ -71,15 +71,15 @@ with lib;
       default = "kitty";
       description = "Default terminal emulator to use.";
     };
-    storagePath = mkOption {
+    frigateStoragePath = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "Path to the large storage mount point (e.g., /storage for HDD). Set to null if not using external storage.";
+      description = "Path to the storage mount point used exclusively for Frigate recordings (e.g., /storage, the internal SSD). Set to null if not using external storage.";
     };
-    storageHddPath = mkOption {
+    mediaStoragePath = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "Path to a secondary storage mount point (e.g., /storage-hdd RAID enclosure) used as additional ARR-stack media storage. Set to null if not using a second drive.";
+      description = "Path to the storage mount point used exclusively for ARR-stack media (e.g., /storage-hdd, the RAID enclosure). Set to null if not using external storage.";
     };
     network = {
       backend = mkOption {
