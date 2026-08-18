@@ -12,7 +12,7 @@ let
   backyard_shower = config.sops.placeholder."frigate/backyard_shower/pass";
 
   data_path = "${config.home.homeDirectory}/.homelab/frigate";
-  storage_path = "${config.settings.storagePath}/.homelab/frigate";
+  storage_path = "${config.settings.frigateStoragePath}/.homelab/frigate";
   model = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/google-coral/test_data/master/efficientdet_lite3_512_ptq_edgetpu.tflite";
     sha256 = "sha256-T5jwmHJATZ4odE0/9pTYQnqWjdtGeprsCshhvZ89uhQ=";

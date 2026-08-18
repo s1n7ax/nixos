@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 with lib;
 {
   options.settings = {
@@ -71,15 +76,52 @@ with lib;
       default = "kitty";
       description = "Default terminal emulator to use.";
     };
-    storagePath = mkOption {
+    frigateStoragePath = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "Path to the large storage mount point (e.g., /storage for HDD). Set to null if not using external storage.";
+      description = "Mount point of the drive used exclusively for Frigate recordings (e.g., /storage, the internal SSD). Set to null on hosts that do not run Frigate.";
     };
-    storageHddPath = mkOption {
+    mediaStoragePath = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "Path to a secondary storage mount point (e.g., /storage-hdd RAID enclosure) used as additional ARR-stack media storage. Set to null if not using a second drive.";
+      description = "Mount point of the drive used exclusively for ARR-stack media (e.g., /storage-hdd, the RAID enclosure). Set to null on hosts that do not run the entertainment stack.";
+    };
+    mediaPaths = mkOption {
+      type = types.attrsOf types.str;
+      internal = true;
+      readOnly = true;
+      default =
+        let
+          # Forced by whichever consumer touches it first, in either module
+          # system, so this is the only place that reliably beats the bare
+          # "cannot coerce null to a string" the interpolation below would raise.
+          root =
+            if config.settings.mediaStoragePath == null then
+              throw ''
+                settings.mediaStoragePath must be set when the entertainment stack
+                (sonarr/radarr/qbittorrent/jellyfin) is enabled -- the ARR containers
+                bind-mount their libraries and downloads from it.
+              ''
+            else
+              "${config.settings.mediaStoragePath}/.homelab";
+        in
+        {
+          inherit root;
+          sonarr = "${root}/sonarr";
+          tv = "${root}/sonarr/tv";
+          radarr = "${root}/radarr";
+          movies = "${root}/radarr/movies";
+          qbittorrent = "${root}/qbittorrent";
+          downloads = "${root}/qbittorrent/downloads";
+        };
+      defaultText = literalMD "derived from `settings.mediaStoragePath`";
+      description = ''
+        Single source of truth for the ARR-stack directory layout under
+        `settings.mediaStoragePath`. Both the NixOS tmpfiles module that creates
+        these directories and the home-manager container modules that bind-mount
+        them read this, so the two can never drift apart. Only meaningful when
+        `settings.mediaStoragePath` is non-null.
+      '';
     };
     network = {
       backend = mkOption {

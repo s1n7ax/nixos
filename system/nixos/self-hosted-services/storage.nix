@@ -1,39 +1,73 @@
 { config, lib, ... }:
 with lib;
 let
-  sp = config.settings.storagePath;
-  hdd = config.settings.storageHddPath;
+  frigateStorage = config.settings.frigateStoragePath;
+  mediaStorage = config.settings.mediaStoragePath;
+  media = config.settings.mediaPaths;
   user = config.settings.username;
   hl = config.features.homelab;
+  ent = hl.entertainment;
 
-  # ARR-stack media directories, replicated on each storage backend (the primary
-  # /storage SSD and the secondary /storage-hdd RAID enclosure) so the apps can
-  # use both drives as root folders / save paths.
-  arrRules =
-    base:
-    optionals hl.entertainment.sonarr.enable [
-      "d ${base}/.homelab/sonarr 0700 ${user} users -"
-      "d ${base}/.homelab/sonarr/tv 0755 ${user} users -"
+  # Jellyfin only reads the sonarr/radarr libraries, so it counts as a consumer
+  # of those directories even when the producing app is disabled.
+  needsTv = ent.sonarr.enable || ent.jellyfin.enable;
+  needsMovies = ent.radarr.enable || ent.jellyfin.enable;
+  needsMedia = needsTv || needsMovies || ent.qbittorrent.enable;
+
+  dir = mode: path: "d ${path} ${mode} ${user} users -";
+
+  # Only create the media tree when something actually consumes it: the rules run
+  # at boot and touching the path triggers the enclosure's automount, which
+  # stalls up to its device-timeout when the enclosure is powered off.
+  mediaRules = optionals (mediaStorage != null && needsMedia) (
+    optionals needsTv [
+      (dir "0700" media.sonarr)
+      (dir "0755" media.tv)
     ]
-    ++ optionals hl.entertainment.radarr.enable [
-      "d ${base}/.homelab/radarr 0700 ${user} users -"
-      "d ${base}/.homelab/radarr/movies 0755 ${user} users -"
+    ++ optionals needsMovies [
+      (dir "0700" media.radarr)
+      (dir "0755" media.movies)
     ]
-    ++ optionals hl.entertainment.qbittorrent.enable [
-      "d ${base}/.homelab/qbittorrent 0700 ${user} users -"
-      "d ${base}/.homelab/qbittorrent/downloads 0777 ${user} users -"
-    ];
+    ++ optionals ent.qbittorrent.enable [
+      (dir "0700" media.qbittorrent)
+      (dir "0777" media.downloads)
+    ]
+  );
+
+  frigateRules = optionals (frigateStorage != null && hl.frigate.enable) [
+    (dir "0700" "${frigateStorage}/.homelab/frigate")
+    (dir "0700" "${frigateStorage}/.homelab/frigate/media")
+  ];
+
+  # Deduplicated so that pointing both options at one drive (the ADR 0002
+  # rollback) does not emit the same rule twice.
+  roots = unique (
+    optional (frigateStorage != null) "${frigateStorage}/.homelab"
+    ++ optional (mediaStorage != null && needsMedia) media.root
+  );
 in
 {
-  config = mkIf (sp != null) {
-    systemd.tmpfiles.rules = [
-      "d ${sp}/.homelab 0700 ${user} users -"
-    ]
-    ++ optionals hl.frigate.enable [
-      "d ${sp}/.homelab/frigate 0700 ${user} users -"
-      "d ${sp}/.homelab/frigate/media 0700 ${user} users -"
-    ]
-    ++ arrRules sp
-    ++ optionals (hdd != null) ([ "d ${hdd}/.homelab 0700 ${user} users -" ] ++ arrRules hdd);
+  config = {
+    # Each drive is single-purpose: the SSD holds Frigate recordings, the RAID
+    # enclosure holds all ARR-stack media. See doc/adr/0002.
+    assertions = [
+      {
+        assertion = needsMedia -> mediaStorage != null;
+        message = ''
+          settings.mediaStoragePath must be set when the entertainment stack
+          (sonarr/radarr/qbittorrent/jellyfin) is enabled -- the ARR containers
+          bind-mount their libraries and downloads from it.
+        '';
+      }
+      {
+        assertion = hl.frigate.enable -> frigateStorage != null;
+        message = ''
+          settings.frigateStoragePath must be set when features.homelab.frigate
+          is enabled -- Frigate writes its recordings there.
+        '';
+      }
+    ];
+
+    systemd.tmpfiles.rules = map (dir "0700") roots ++ frigateRules ++ mediaRules;
   };
 }

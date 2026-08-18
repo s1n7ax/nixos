@@ -40,7 +40,7 @@
     ];
   };
 
-  # Disk mounts (/storage, /storage-hdd) live in ./storage.nix.
+  # Disk mounts (/storage, /storage-hdd) live in ./configuration.nix.
 
   swapDevices = [
     { device = "/dev/disk/by-uuid/3d30ed3c-9547-4c4c-ae81-87d95b8861f6"; }
