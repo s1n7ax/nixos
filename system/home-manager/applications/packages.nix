@@ -157,6 +157,7 @@ in
         pkgs-unstable.typescript-go
         pkgs-unstable.svelte-language-server
         vtsls
+        vscode-js-debug
       ]
     )
     ++ lib.optionals f.development.lua.enable (
