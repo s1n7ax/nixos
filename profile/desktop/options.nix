@@ -97,6 +97,7 @@
       git.enable = true;
       github.enable = true;
       javascript.enable = true;
+      jsonnet.enable = true;
       lua.enable = true;
       markdown.enable = true;
       nix.enable = true;

@@ -447,6 +447,9 @@ with lib;
       javascript = {
         enable = mkEnableOption "JavaScript/TypeScript development tools";
       };
+      jsonnet = {
+        enable = mkEnableOption "Jsonnet development tools";
+      };
       lua = {
         enable = mkEnableOption "Lua development tools";
       };
