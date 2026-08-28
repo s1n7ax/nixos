@@ -144,8 +144,8 @@ in
       with pkgs;
       [
         deno
-        pkgs-node20.nodejs_20
-        pkgs-node20.pnpm
+        nodejs_24
+        pkgs-node20.pnpm_9
         yarn
         emmet-language-server
         vscode-langservers-extracted
@@ -153,13 +153,13 @@ in
         prettierd
         prettier
         biome
-        typescript
         eslint_d
-        typescript-language-server
         supabase-cli
+        dotenv-cli
         pkgs-unstable.typescript-go
         pkgs-unstable.svelte-language-server
         vtsls
+        vscode-js-debug
       ]
     )
     ++ lib.optionals f.development.lua.enable (
@@ -243,6 +243,7 @@ in
         bruno
         dart-sass
         jsonnet
+        jsonnet-language-server
       ]
     )
     ++ lib.optionals f.development.ide.enable (with pkgs; [ vscode ])

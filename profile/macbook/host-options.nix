@@ -12,10 +12,31 @@
     editor.neovim.enable = true;
 
     development = {
-      github.enable = true;
+
       atlassian.enable = true;
+            llm.enable = true;
+      ai = {
+        enable = true;
+        opencode.enable = false;
+        claude.enable = false;
+        headroom.enable = false;
+      };
+      git.enable = true;
+      github.enable = true;
+      c.enable = true;
+      java.enable = true;
+      javascript.enable = true;
       lua.enable = true;
+      markdown.enable = true;
+      nix.enable = true;
       python.enable = true;
+      rust.enable = true;
+      sh.enable = true;
+      toml.enable = true;
+      yaml.enable = true;
+      database.enable = true;
+      web.enable = true;
+      ide.enable = false;
       virtualization.enable = true;
     };
 
