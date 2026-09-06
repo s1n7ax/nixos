@@ -214,6 +214,10 @@ with lib;
       firmware = {
         enable = mkEnableOption "Hardware firmware support";
       };
+
+      mt7921e = {
+        enable = mkEnableOption "MediaTek MT7921 Wi-Fi boot-probe workaround";
+      };
     };
 
     virtualization = {

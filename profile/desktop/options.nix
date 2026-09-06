@@ -34,6 +34,7 @@
       audio.enable = true;
       coral.enable = false;
       firmware.enable = true;
+      mt7921e.enable = true;
     };
 
     virtualization = {
