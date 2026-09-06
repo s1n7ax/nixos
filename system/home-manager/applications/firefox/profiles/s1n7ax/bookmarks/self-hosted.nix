@@ -72,6 +72,11 @@
             url = "http://192.168.1.110:1880/";
           }
           {
+            name = "Paperless";
+            tags = [ "self-hosted" ];
+            url = "http://192.168.1.110:8000/";
+          }
+          {
             name = "Deye local";
             tags = [ "self-hosted" ];
             url = "http://192.168.1.112/";

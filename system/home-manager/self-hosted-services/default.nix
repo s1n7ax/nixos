@@ -18,6 +18,7 @@ with lib;
     ./homepage.nix
     ./pairdrop.nix
     ./node-red.nix
+    ./paperless.nix
     ./entertainment
   ];
 }

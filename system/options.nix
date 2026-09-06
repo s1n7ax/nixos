@@ -302,6 +302,10 @@ with lib;
         enable = mkEnableOption "Node-RED flow-based automation";
       };
 
+      paperless = {
+        enable = mkEnableOption "Paperless-ngx document management";
+      };
+
       entertainment = {
         enable = mkEnableOption "Entertainment services";
 
