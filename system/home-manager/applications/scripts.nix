@@ -242,5 +242,36 @@ lib.mkIf config.features.cli.scripts.enable {
       set -euo pipefail
       fc-list --format="%{family[0]}\n" | sort | uniq | fzf | tr -s \n | tr -s [:space:] | wl-copy
     '')
+
+    (writeShellApplication {
+      name = "img-rotate";
+      runtimeInputs = [ imagemagick ];
+      text = ''
+        if [ $# -eq 0 ]; then
+          echo "Usage: img-rotate <image>..." >&2
+          exit 1
+        fi
+
+        magick mogrify -rotate 90 "$@"
+      '';
+    })
+
+    (writeShellApplication {
+      name = "img-to-pdf";
+      runtimeInputs = [ img2pdf ];
+      text = ''
+        if [ $# -eq 0 ]; then
+          echo "Usage: img-to-pdf <image>..." >&2
+          exit 1
+        fi
+
+        if [ -e output.pdf ]; then
+          echo "output.pdf already exists in $PWD" >&2
+          exit 1
+        fi
+
+        img2pdf --output output.pdf -- "$@"
+      '';
+    })
   ];
 }
