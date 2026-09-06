@@ -1,7 +1,30 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   data_path = "${config.home.homeDirectory}/.homelab/qbittorrent";
   download_path = config.settings.mediaPaths.downloads;
+
+  # qBittorrent owns qBittorrent.conf -- it rewrites the whole file on shutdown,
+  # so the setting can't be a nix-store symlink. Stamp it in just before the
+  # container starts instead: qBittorrent is stopped at that point, so the write
+  # can't be clobbered, and it survives every restart.
+  sessionTimeout = 31536000;
+  setSessionTimeout = pkgs.writeShellScript "qbittorrent-session-timeout" ''
+    conf="${data_path}/config/qBittorrent/qBittorrent.conf"
+    ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$conf")"
+
+    if [ -f "$conf" ] && ${pkgs.gnugrep}/bin/grep -qF 'WebUI\SessionTimeout=' "$conf"; then
+      ${pkgs.gnused}/bin/sed -i 's|^WebUI\\SessionTimeout=.*|WebUI\\SessionTimeout=${toString sessionTimeout}|' "$conf"
+    elif [ -f "$conf" ] && ${pkgs.gnugrep}/bin/grep -qxF '[Preferences]' "$conf"; then
+      ${pkgs.gnused}/bin/sed -i 's|^\[Preferences\]$|[Preferences]\nWebUI\\SessionTimeout=${toString sessionTimeout}|' "$conf"
+    else
+      printf '\n[Preferences]\n%s\n' 'WebUI\SessionTimeout=${toString sessionTimeout}' >> "$conf"
+    fi
+  '';
 in
 with lib;
 {
@@ -40,6 +63,10 @@ with lib;
         "--tz=local"
         "--stop-timeout 10"
       ];
+
+      extraConfig = {
+        Service.ExecStartPre = "${setSessionTimeout}";
+      };
     };
   };
 }
