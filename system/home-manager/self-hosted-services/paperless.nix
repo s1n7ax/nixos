@@ -62,7 +62,7 @@ with lib;
     services.podman.containers.paperless = {
       # Pinned rather than :latest -- this owns a SQLite database that a major
       # version bump migrates in place, with no way back.
-      image = "ghcr.io/paperless-ngx/paperless-ngx:3.1.3";
+      image = "ghcr.io/paperless-ngx/paperless-ngx:latest";
       network = [ "paperless-network.network" ];
 
       volumes = [
