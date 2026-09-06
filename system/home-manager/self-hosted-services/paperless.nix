@@ -1,13 +1,10 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
   data_path = "${config.home.homeDirectory}/.homelab/paperless";
-  secret_env = "${data_path}/secret.env";
-
   # Single source of truth for the layout: the same paths feed the tmpfiles
   # rules below and the bind mounts further down, so the two cannot drift.
   paths = {
@@ -17,47 +14,22 @@ let
     export = "${data_path}/export";
     redis = "${data_path}/redis";
   };
-
-  # PAPERLESS_SECRET_KEY has no upstream default -- paperless refuses to start
-  # without it, and rotating it invalidates every session and API token. The
-  # secrets flake is not the right home for a value nothing else consumes and
-  # that only this host ever needs, so mint it once on first activation and
-  # leave it alone afterwards.
-  generateSecretKey = pkgs.writeShellScript "paperless-generate-secret-key" ''
-    set -eu
-    target="$1"
-    if [ -s "$target" ]; then
-      exit 0
-    fi
-    # Before the mkdir, so the directory holding the key is never briefly
-    # world-readable when activation wins the race against systemd-tmpfiles.
-    umask 077
-    ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$target")"
-    trap '${pkgs.coreutils}/bin/rm -f "$target.tmp"' EXIT
-    # Materialise the key in its own statement and write via a temp file: a
-    # failed `openssl` inside the printf arguments would otherwise leave an
-    # empty PAPERLESS_SECRET_KEY behind, and the [ -s ] guard above would then
-    # treat that empty key as already generated forever after.
-    key="$(${pkgs.openssl}/bin/openssl rand -hex 48)"
-    if [ -z "$key" ]; then
-      echo "paperless: openssl produced an empty secret key, refusing to write $target" >&2
-      exit 1
-    fi
-    ${pkgs.coreutils}/bin/printf 'PAPERLESS_SECRET_KEY=%s\n' "$key" > "$target.tmp"
-    ${pkgs.coreutils}/bin/mv -f "$target.tmp" "$target"
-  '';
 in
 with lib;
 {
   config = mkIf config.features.homelab.paperless.enable {
     systemd.user.tmpfiles.rules = map (p: "d ${p} 0700 - - -") ([ data_path ] ++ attrValues paths);
 
-    # Must land before reloadSystemd: that is what starts the container units,
-    # and podman-paperless.service dies on a missing EnvironmentFile. Plain
-    # entryAfter "writeBoundary" leaves the two unordered siblings.
-    home.activation.paperlessSecretKey = hm.dag.entryBetween [ "reloadSystemd" ] [ "writeBoundary" ] ''
-      $DRY_RUN_CMD ${generateSecretKey} ${secret_env}
-    '';
+    # The key has no upstream default and paperless refuses to start without
+    # it; rotating it invalidates every session and API token, so it lives in
+    # the secrets flake rather than being minted per-machine.
+    sops.secrets."paperless/secret_key" = { };
+
+    sops.templates."paperless.env" = {
+      content = ''
+        PAPERLESS_SECRET_KEY=${config.sops.placeholder."paperless/secret_key"}
+      '';
+    };
 
     services.podman.networks.paperless-network = {
       autoStart = true;
@@ -100,7 +72,7 @@ with lib;
         "${paths.export}:/usr/src/paperless/export:Z"
       ];
 
-      environmentFile = [ secret_env ];
+      environmentFile = [ config.sops.templates."paperless.env".path ];
 
       environment = {
         PAPERLESS_REDIS = "redis://paperless-redis:6379";
@@ -131,8 +103,17 @@ with lib;
       # init-wait-for-redis step then blocks forever instead of failing.
       extraConfig = {
         Unit = {
-          Wants = [ "podman-paperless-redis.service" ];
-          After = [ "podman-paperless-redis.service" ];
+          Wants = [
+            "podman-paperless-redis.service"
+            "sops-nix.service"
+          ];
+          # sops-nix.service renders the EnvironmentFile under /run/user, which
+          # a reboot wipes; both units are WantedBy default.target, so without
+          # the After= systemd is free to start this one against a missing file.
+          After = [
+            "podman-paperless-redis.service"
+            "sops-nix.service"
+          ];
         };
       };
 
