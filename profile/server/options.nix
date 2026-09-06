@@ -49,6 +49,7 @@
       z2m.enable = true;
       adguard.enable = true;
       node-red.enable = true;
+      paperless.enable = true;
       pairdrop.enable = false;
       homepage.enable = false;
 
