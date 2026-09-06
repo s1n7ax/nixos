@@ -144,7 +144,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "p"
           ];
           for = "unix";
-          run = ''shell 'img-to-pdf "$@"' --block --confirm'';
+          run = ''shell 'img-to-pdf "$@" && ya emit escape --select' --block --confirm'';
           desc = "Create output.pdf from selected images";
         }
       ];
