@@ -42,7 +42,7 @@ with lib;
     };
 
     services.podman.containers.frigate = {
-      image = "ghcr.io/blakeblackshear/frigate:0.17.1";
+      image = "ghcr.io/blakeblackshear/frigate:stable";
 
       network = [
         "frigate-network"
@@ -148,7 +148,7 @@ with lib;
           # Frigate+ model: only `path` should be set. The model ships its
           # own labelmap (person, car, motorcycle, bicycle, dog, cat, ...),
           # so no COCO-index remapping — that mislabeled e.g. dogs as cars.
-          path: plus://e90b2ed69e814823814babfe0b78cc4f
+          path: plus://f48700bf1f0c7bac1154c699c65bc619
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #
