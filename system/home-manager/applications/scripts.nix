@@ -256,6 +256,8 @@ lib.mkIf config.features.cli.scripts.enable {
       '';
     })
 
+    (callPackage ./img-crop { })
+
     (writeShellApplication {
       name = "img-to-pdf";
       runtimeInputs = [ img2pdf ];

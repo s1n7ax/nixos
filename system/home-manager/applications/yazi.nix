@@ -132,6 +132,15 @@ lib.mkIf config.features.cli.yazi.enable {
         {
           on = [
             "g"
+            "c"
+          ];
+          for = "unix";
+          run = ''shell 'img-crop "$@"' --confirm'';
+          desc = "Crop selected images to a four-point page selection";
+        }
+        {
+          on = [
+            "g"
             "p"
           ];
           for = "unix";
