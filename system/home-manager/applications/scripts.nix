@@ -252,7 +252,7 @@ lib.mkIf config.features.cli.scripts.enable {
           exit 1
         fi
 
-        magick mogrify -rotate 90 "$@"
+        magick mogrify -auto-orient -rotate 90 -orient TopLeft "$@"
       '';
     })
 

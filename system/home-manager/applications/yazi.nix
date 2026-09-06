@@ -126,7 +126,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "r"
           ];
           for = "unix";
-          run = ''shell 'img-rotate "$@"' --confirm'';
+          run = ''shell 'img-rotate "$@"' --block --confirm'';
           desc = "Rotate selected images 90 degrees clockwise";
         }
         {
@@ -144,7 +144,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "p"
           ];
           for = "unix";
-          run = ''shell 'img-to-pdf "$@"' --confirm'';
+          run = ''shell 'img-to-pdf "$@"' --block --confirm'';
           desc = "Create output.pdf from selected images";
         }
       ];
