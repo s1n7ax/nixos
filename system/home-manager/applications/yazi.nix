@@ -120,6 +120,33 @@ lib.mkIf config.features.cli.yazi.enable {
           run = "follow";
           desc = "Follow hovered symlink";
         }
+        {
+          on = [
+            "g"
+            "r"
+          ];
+          for = "unix";
+          run = ''shell 'img-rotate "$@"' --block --confirm'';
+          desc = "Rotate selected images 90 degrees clockwise";
+        }
+        {
+          on = [
+            "g"
+            "c"
+          ];
+          for = "unix";
+          run = ''shell 'img-crop "$@"' --confirm'';
+          desc = "Crop selected images to a four-point page selection";
+        }
+        {
+          on = [
+            "g"
+            "p"
+          ];
+          for = "unix";
+          run = ''shell 'img-to-pdf "$@" && ya emit escape --select' --block --confirm'';
+          desc = "Create output.pdf from selected images";
+        }
       ];
       pick.prepend_keymap = [
         {
