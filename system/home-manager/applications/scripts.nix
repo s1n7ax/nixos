@@ -270,7 +270,7 @@ lib.mkIf config.features.cli.scripts.enable {
           exit 1
         fi
 
-        img2pdf --output output.pdf -- "$@"
+        img2pdf --first-frame-only --output output.pdf -- "$@"
       '';
     })
   ];
