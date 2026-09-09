@@ -233,6 +233,14 @@ with lib;
           veranda:
             motion:
               threshold: 40
+            # Our own parked car and bikes sit in the veranda permanently.
+            # Mask them out by label so people are still detected there.
+            objects:
+              filters:
+                car:
+                  mask: 0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997
+                motorcycle:
+                  mask: 0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/101/
