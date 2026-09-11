@@ -154,7 +154,7 @@ in
         eslint_d
         typescript-language-server
         supabase-cli
-        pkgs-unstable.typescript-go
+        pkgs-unstable.typescript
         pkgs-unstable.svelte-language-server
         vtsls
         vscode-js-debug
