@@ -16,6 +16,8 @@ hl.window_rule({ match = { class = "pavucontrol" }, workspace = "8" })
 hl.window_rule({ match = { class = "org.pulseaudio.pavucontrol" }, workspace = "8" })
 hl.window_rule({ match = { class = "steam", title = "Friends List" }, float = true })
 hl.window_rule({ match = { class = "Tor Browser" }, float = true })
+hl.window_rule({ match = { class = "org.kde.kdeconnect.handler" }, float = true, center = true })
+hl.window_rule({ match = { class = "steam", initial_title = "negative:Steam" }, float = true, center = true })
 
 -- App launchers
 hl.bind(mod .. " + P", hl.dsp.exec_cmd("rofi -show drun"))
