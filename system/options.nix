@@ -432,9 +432,6 @@ with lib;
       github = {
         enable = mkEnableOption "GitHub CLI";
       };
-      atlassian = {
-        enable = mkEnableOption "Atlassian CLI (acli)";
-      };
       c = {
         enable = mkEnableOption "C/C++ development tools";
       };

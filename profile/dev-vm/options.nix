@@ -25,7 +25,6 @@
       };
       git.enable = true;
       github.enable = true;
-      atlassian.enable = true;
       c.enable = true;
       java.enable = true;
       javascript.enable = true;

@@ -121,7 +121,6 @@ in
       ]
     )
     ++ lib.optionals f.development.github.enable (with pkgs; [ gh ])
-    ++ lib.optionals f.development.atlassian.enable (with pkgs; [ acli ])
     ++ lib.optionals f.development.virtualization.enable (
       with pkgs;
       [
@@ -144,7 +143,7 @@ in
       [
         deno
         nodejs_24
-        pnpm_9
+        (if stdenv.isDarwin then pnpm_9 else pnpm)
         yarn
         emmet-language-server
         vscode-langservers-extracted
@@ -154,7 +153,6 @@ in
         biome
         eslint_d
         supabase-cli
-        dotenv-cli
         pkgs-unstable.typescript
         pkgs-unstable.svelte-language-server
         vtsls
