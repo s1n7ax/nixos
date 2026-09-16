@@ -30,6 +30,7 @@ lib.mkIf config.features.fonts.enable {
     nerd-fonts.fira-code
     nerd-fonts.monaspace
     nerd-fonts.iosevka
+    nerd-fonts.caskaydia-mono
     maple-mono.NF
   ];
 }

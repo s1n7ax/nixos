@@ -121,6 +121,7 @@ in
       ]
     )
     ++ lib.optionals f.development.github.enable (with pkgs; [ gh ])
+    ++ lib.optionals f.development.atlassian.enable (with pkgs; [ acli ])
     ++ lib.optionals f.development.virtualization.enable (
       with pkgs;
       [
@@ -142,8 +143,8 @@ in
       with pkgs;
       [
         deno
-        nodejs_22
-        pnpm
+        nodejs_24
+        pnpm_9
         yarn
         emmet-language-server
         vscode-langservers-extracted
@@ -152,8 +153,8 @@ in
         prettier
         biome
         eslint_d
-        typescript-language-server
         supabase-cli
+        dotenv-cli
         pkgs-unstable.typescript
         pkgs-unstable.svelte-language-server
         vtsls
@@ -225,7 +226,13 @@ in
       ]
     )
     ++ lib.optionals f.development.toml.enable (with pkgs; [ taplo ])
-    ++ lib.optionals f.development.yaml.enable (with pkgs; [ yaml-language-server ])
+    ++ lib.optionals f.development.yaml.enable (
+      with pkgs;
+      [
+        yaml-language-server
+        yq-go
+      ]
+    )
     ++ lib.optionals f.development.database.enable (
       with pkgs;
       [

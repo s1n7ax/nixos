@@ -13,6 +13,10 @@ let
       pkgs.neovim-unwrapped;
 in
 lib.mkIf config.features.editor.neovim.enable {
+  # Also expose tree-sitter as a standalone CLI (grammar generation, `tree-sitter parse`, etc.),
+  # not just wired into Neovim's own extraPackages environment.
+  home.packages = [ pkgs.tree-sitter ];
+
   programs.neovim = {
     enable = true;
     package = neovimPkg;

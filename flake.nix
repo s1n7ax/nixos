@@ -16,15 +16,16 @@
       system = "x86_64-linux";
       darwinPlatform = "aarch64-darwin";
 
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
+      importPkgs =
+        nixpkgsInput: targetSystem:
+        import nixpkgsInput {
+          system = targetSystem;
+          config.allowUnfree = true;
+        };
 
-      pkgs-unstable = import nixpkgs-unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
+      pkgs = importPkgs nixpkgs system;
+
+      pkgs-unstable = importPkgs nixpkgs-unstable system;
 
       args = {
         inherit inputs pkgs-unstable;
@@ -34,10 +35,7 @@
 
       darwinArgs = {
         inherit inputs;
-        pkgs-unstable = import nixpkgs-unstable {
-          system = darwinPlatform;
-          config.allowUnfree = true;
-        };
+        pkgs-unstable = importPkgs nixpkgs-unstable darwinPlatform;
       };
     in
     {
@@ -91,15 +89,6 @@
 
           modules = [
             ./profile/macbook/configuration.nix
-            home-manager.darwinModules.home-manager
-            {
-              home-manager = {
-                extraSpecialArgs = darwinArgs;
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                users.s1n7ax = import ./profile/macbook/home.nix;
-              };
-            }
           ];
         };
       };

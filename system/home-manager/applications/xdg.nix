@@ -13,6 +13,7 @@ lib.mkIf config.features.xdg.enable {
       setSessionVariables = true;
     };
     mime.enable = true;
+    configFile."mimeapps.list".force = true;
     portal.enable = lib.mkForce (config.features.desktop.xdg.enable);
     # Browser web-app launchers depend on google-chrome (unfree GUI). Only emit
     # them on profiles with a display; headless/CLI profiles (dev-vm) enable

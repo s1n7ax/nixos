@@ -413,13 +413,6 @@ with lib;
             description = "Claude Code AI assistant";
           };
         };
-        cursor-cli = {
-          enable = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Cursor CLI (cursor-agent) AI assistant";
-          };
-        };
         headroom = {
           enable = mkOption {
             type = types.bool;
@@ -438,6 +431,9 @@ with lib;
       };
       github = {
         enable = mkEnableOption "GitHub CLI";
+      };
+      atlassian = {
+        enable = mkEnableOption "Atlassian CLI (acli)";
       };
       c = {
         enable = mkEnableOption "C/C++ development tools";
