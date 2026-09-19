@@ -37,7 +37,7 @@ with lib;
     };
 
     services.podman.containers.paperless-redis = {
-      image = "docker.io/valkey/valkey:9-alpine";
+      image = "docker.io/valkey/valkey:latest";
       autoUpdate = "registry";
       # The `.network` suffix is what makes the home-manager module emit the
       # Wants=/After= on podman-paperless-network.service; a bare name is
