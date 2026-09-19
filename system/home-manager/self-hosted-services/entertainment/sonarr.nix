@@ -14,6 +14,7 @@ with lib;
 
     services.podman.containers.sonarr = {
       image = "lscr.io/linuxserver/sonarr:latest";
+      autoUpdate = "registry";
       network = [ "entertainment-network" ];
 
       volumes = [

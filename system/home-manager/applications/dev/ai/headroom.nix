@@ -17,6 +17,7 @@ in
 
     services.podman.containers.headroom-proxy = {
       image = "ghcr.io/chopratejas/headroom:latest";
+      autoUpdate = "registry";
       ports = [
         "${toString cfg.port}:8787"
       ];

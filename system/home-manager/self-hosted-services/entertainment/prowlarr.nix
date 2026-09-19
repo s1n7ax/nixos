@@ -12,6 +12,7 @@ with lib;
 
     services.podman.containers.prowlarr = {
       image = "lscr.io/linuxserver/prowlarr:latest";
+      autoUpdate = "registry";
       network = [ "entertainment-network" ];
 
       volumes = [
@@ -32,6 +33,7 @@ with lib;
 
     services.podman.containers.flaresolverr = {
       image = "ghcr.io/flaresolverr/flaresolverr:latest";
+      autoUpdate = "registry";
       network = [ "entertainment-network" ];
 
       environment = {

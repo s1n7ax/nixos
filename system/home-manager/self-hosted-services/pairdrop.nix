@@ -12,6 +12,7 @@ with lib;
 
     services.podman.containers.pairdrop = {
       image = "lscr.io/linuxserver/pairdrop:latest";
+      autoUpdate = "registry";
       ports = [
         "3002:3000"
       ];

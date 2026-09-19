@@ -14,6 +14,7 @@ with lib;
 
     services.podman.containers.radarr = {
       image = "lscr.io/linuxserver/radarr:latest";
+      autoUpdate = "registry";
       network = [ "entertainment-network" ];
 
       volumes = [

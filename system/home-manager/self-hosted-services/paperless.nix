@@ -37,7 +37,8 @@ with lib;
     };
 
     services.podman.containers.paperless-redis = {
-      image = "docker.io/valkey/valkey:9-alpine";
+      image = "docker.io/valkey/valkey:latest";
+      autoUpdate = "registry";
       # The `.network` suffix is what makes the home-manager module emit the
       # Wants=/After= on podman-paperless-network.service; a bare name is
       # passed through untouched and leaves the units unordered.
@@ -63,6 +64,7 @@ with lib;
       # Pinned rather than :latest -- this owns a SQLite database that a major
       # version bump migrates in place, with no way back.
       image = "ghcr.io/paperless-ngx/paperless-ngx:latest";
+      autoUpdate = "registry";
       network = [ "paperless-network.network" ];
 
       volumes = [
