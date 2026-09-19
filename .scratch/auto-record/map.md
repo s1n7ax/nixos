@@ -19,6 +19,7 @@ A single `record` command, declared in this repo, that captures the 3440x1440 sc
   - Trim by hand afterwards in LosslessCut — no re-encode, exports mp4.
 - Planning map: tickets resolve decisions. The build happens after the map is clear.
 - Hardware facts surfaced while charting: GPU is a **GTX 1060** — H.264 and HEVC via NVENC, no AV1. The R5 has **no UVC mode**; gphoto2 PTP live view is the only USB feed.
+- Desktop facts confirmed in ticket 05, the first ticket run on the real machine rather than `dev-vm`: Hyprland **0.55.4**, whose Lua dispatcher API replaced `hyprctl dispatch movewindowpixel exact ...`; `wf-recorder` and `pactl` are **not installed**; `wf-recorder` captures the full physical 3440x1440 despite the logical 2752x1152 region; the default sink is a **Bluetooth headset**.
 
 ## Decisions so far
 
@@ -28,10 +29,10 @@ A single `record` command, declared in this repo, that captures the 3440x1440 sc
 - [Screen capture into ffmpeg on Hyprland + NVIDIA](issues/02-wayland-screen-capture-into-ffmpeg.md) — `wf-recorder --codec rawvideo --file pipe:1` is the only viable route (wl-screenrec needs VAAPI encode, which NVIDIA lacks; ffmpeg has no PipeWire input; kmsgrab needs DRM master); one unavoidable system-memory round-trip, then `hwupload_cuda → overlay_cuda → h264_nvenc` stays on-GPU at 60 fps.
 - [Addressing mic and desktop audio from ffmpeg](issues/03-pipewire-source-addressing.md) — `-f pulse` is the only route (ffmpeg has no PipeWire input); desktop audio via `@DEFAULT_MONITOR@` or a resolved `pactl get-default-sink` + `.monitor`; the mic must be pinned to a concrete node name or a headset plugged in mid-take silently takes over; concurrent metering during recording is safe.
 - [The circle: how it looks and where it sits](issues/04-circle-overlay-prototype.md) — 540px circle, bottom-right at `overlay=2860:860`, 3px feather plus a 6px `#89b4fa` ring (the ring is required — with no ring the circle vanishes over a dark pane); mask is a static PNG through `alphamerge`, never `geq`, which benchmarked 8.3x more expensive and cannot hold 60 fps on CPU; all constants, no flags.
+- [Preview that costs no frames](issues/05-live-preview-prototype.md) — the `split` branch costs **zero** dropped frames on both overlay paths (900/900 at 60 fps, measured on the real desktop); preview goes to a separate `ffplay` over `-f fifo` with `drop_pkts_on_overflow` and **never** `attempt_recovery` — a slow reader otherwise collapses the take to 3 fps and `attempt_recovery` hangs past SIGTERM; ffmpeg's `-f sdl` output silently never opens a window on Wayland; and the preview window hides inside the circle's **381px inscribed square**, where the overlay paints over it and it never reaches the file.
 
 ## Not yet specified
 
-- Recording-in-progress indicator — whether the take needs a visible "you are recording" signal, and where it lives so it stays out of the capture.
 - What happens to the description prompt when a take crashes or the machine dies mid-record.
 - Multi-take sessions: several takes back to back without re-running preflight each time.
 - Mic noise suppression / gain — whether the pipeline should touch audio at all before writing it.

@@ -15,3 +15,16 @@ Is this one `ffmpeg` process with four inputs and a filter graph, or a small sup
 Use `/grilling` and `/domain-modeling`.
 
 **From ticket 01**: the camera stream is raw MJPEG with no container and no timestamps, and ffmpeg's raw demuxer fabricates 25 fps for it (`AVFMT_NOTIMESTAMPS`). Whatever shape is chosen has to deal with an input whose declared rate is a lie and whose real rate is unpaced ~10-25 fps.
+
+**From ticket 05** (measured on the desktop, not guessed):
+
+- **Every output needs its own stop condition.** With `-t` on the recording output only, ffmpeg
+  ran on for minutes after the take finished, still serving the second output. Ctrl-C handling
+  has to end all of them.
+- **SIGKILL loses the whole take.** An mp4 killed mid-write has no moov atom and is
+  unplayable — `moov atom not found` — even with 8 MB of video in it. Whatever guards against
+  a crash mid-record, it is not mp4 as written here.
+- `-thread_queue_size` must be raised on the rawvideo pipe input; the default 8 logs
+  `Thread message queue blocking` immediately at 3440x1440@60. 512 was used throughout.
+- Preview is settled as a **separate process** over a fifo-muxer pipe, so the supervisor
+  question now includes at least one child (`ffplay`) beyond the encoder.
