@@ -14,3 +14,8 @@ Status: open
 Use `/grilling`.
 
 **From ticket 02**: the GPU is a GTX 1060 — 12 NVENC sessions, H.264 and HEVC available, **AV1 not**, despite `av1_nvenc` existing in the ffmpeg build. Capture target is 60 fps.
+
+**From ticket 14**: `h264_nvenc -preset p4 -tune hq -rc vbr -cq 23` at 3440x1440 runs at ~140 fps
+unthrottled on this 1060 — 2.3x headroom at 60 fps. **NVENC is the pipeline's throughput ceiling**,
+not the overlay, so a slower/higher-quality preset is affordable and `hevc_nvenc` should be
+measured the same way before choosing. Encoding was measured with H.264; HEVC costs more.

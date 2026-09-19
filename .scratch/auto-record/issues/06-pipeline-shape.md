@@ -28,3 +28,9 @@ Use `/grilling` and `/domain-modeling`.
   `Thread message queue blocking` immediately at 3440x1440@60. 512 was used throughout.
 - Preview is settled as a **separate process** over a fifo-muxer pipe, so the supervisor
   question now includes at least one child (`ffplay`) beyond the encoder.
+
+**From ticket 14**: the on-GPU composite is confirmed on the real hardware — `overlay_cuda`
+blends the circle's alpha, nothing downloads, and `h264_nvenc` takes CUDA frames directly. The
+filter graph this ticket has to shape is ticket 02's single-round-trip one, unchanged. The three
+conditions are load-bearing: `format=yuva420p` before `hwupload_cuda` on the overlay,
+`format=yuv420p` before it on the main input, and **no `-pix_fmt` on the NVENC output**.
