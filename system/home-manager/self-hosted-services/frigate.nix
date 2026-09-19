@@ -137,8 +137,10 @@ with lib;
         #--------------------------------------------------------------------#
         motion:
           mask:
-            - 0,0.103,0.297,0.103,0.3,0,0,0
-            - 0.719,0.889,0.839,0.89,0.839,0.929,0.72,0.929
+            top_left:
+              coordinates: "0,0.103,0.297,0.103,0.3,0,0,0"
+            bottom_right:
+              coordinates: "0.719,0.889,0.839,0.89,0.839,0.929,0.72,0.929"
           contour_area: 10
           improve_contrast: true
 
@@ -239,9 +241,13 @@ with lib;
             objects:
               filters:
                 car:
-                  mask: 0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997
+                  mask:
+                    parked_vehicles:
+                      coordinates: "0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997"
                 motorcycle:
-                  mask: 0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997
+                  mask:
+                    parked_vehicles:
+                      coordinates: "0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997"
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/101/
