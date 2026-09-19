@@ -30,3 +30,8 @@ Use `/grilling` and `/domain-modeling`.
 **From ticket 05**: placement is `hl.dsp.window.float/resize/move/pin` with `relative = false`,
 logical coords (physical ÷ 1.25), window sized at birth via `ffplay -x/-y -noborder`. The
 preview transport is settled — `-f fifo` with `drop_pkts_on_overflow`, never `attempt_recovery`.
+
+**From ticket 06**: the **mic level meter** lands here. Ticket 06 settled that one ffmpeg spans
+preflight and take with no handover, so there is no separate preflight UI to hang a meter on —
+whatever meter exists must live in this HUD and run for the whole session. Note the HUD sits
+inside the circle's 381px inscribed square (ticket 05) and the take is 50 fps (ticket 06).

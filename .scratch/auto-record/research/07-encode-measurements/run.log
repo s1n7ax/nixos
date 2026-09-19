@@ -1,0 +1,37 @@
+### phase0: build raw yuv420p + yuv444p scroll sources (300 frames)
+-rw-r--r-- 1 s1n7ax s1n7ax 2229120000 Sep 20 00:19 raw420.yuv
+-rw-r--r-- 1 s1n7ax s1n7ax 4458240000 Sep 20 00:20 raw444.yuv
+
+### phase1: decode-only ceiling (is the source the bottleneck?)
+
+### phase2: throughput + bitrate, cq 21
+--- h264_nvenc yuv420p p4
+wall 2.76 s
+    size=2118297B  bitrate=2824 kbit/s
+--- h264_nvenc yuv420p p7
+wall 3.00 s
+    size=2116719B  bitrate=2822 kbit/s
+--- h264_nvenc yuv444p p4
+wall 3.53 s
+    size=5328397B  bitrate=7104 kbit/s
+--- h264_nvenc yuv444p p7
+wall 3.53 s
+    size=5313956B  bitrate=7085 kbit/s
+--- hevc_nvenc yuv420p p4
+Error while filtering: Generic error in an external library
+[out#0/matroska @ 0x5f950876fa00] Nothing was written into output file, because at least one of its streams received no packets.
+Command exited with non-zero status 187
+wall 0.50 s
+    size=0B  bitrate=0 kbit/s
+--- hevc_nvenc yuv420p p7
+Error while filtering: Generic error in an external library
+[out#0/matroska @ 0x572033255a00] Nothing was written into output file, because at least one of its streams received no packets.
+Command exited with non-zero status 187
+wall 0.52 s
+    size=0B  bitrate=0 kbit/s
+--- hevc_nvenc yuv444p p4
+Error while filtering: Generic error in an external library
+[out#0/matroska @ 0x5a278b93e880] Nothing was written into output file, because at least one of its streams received no packets.
+Command exited with non-zero status 187
+wall 0.51 s
+    size=0B  bitrate=0 kbit/s

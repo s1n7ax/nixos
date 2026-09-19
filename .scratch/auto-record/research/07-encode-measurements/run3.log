@@ -1,0 +1,31 @@
+### h264_nvenc 420 p4 -bf 3 : cq sweep
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 13: bc: command not found
+  cq=17  3604 kbit/s  40min=GB  
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 13: bc: command not found
+  cq=19  3295 kbit/s  40min=GB  
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 13: bc: command not found
+  cq=21  2824 kbit/s  40min=GB  
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 13: bc: command not found
+  cq=23  2580 kbit/s  40min=GB  
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 13: bc: command not found
+  cq=25  2327 kbit/s  40min=GB  
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 13: bc: command not found
+  cq=28  2023 kbit/s  40min=GB  
+
+### hevc_nvenc 420 p4 -bf 0 (Pascal rejects -bf>0)
+  hevc cq=21  2747 kbit/s  
+  hevc cq=23  2452 kbit/s  
+
+### GOP cost at cq21
+  -g 50 = 1s keyframes: 2118297 B
+  -g 100 = 2s keyframes: 1509878 B
+  -g 250 = 5s keyframes: 1337117 B
+
+### the real CUDA graph, per main pix_fmt
+  main=yuv420p: OK 663295 B
+  main=yuv444p: FAILED: [overlay_cuda @ 0x63aff8fb0d80] Unsupported main input format: yuv444p [Parsed_overlay_cuda_3 @ 0x63aff9db5780] Failed to configure output pad on Parsed_overlay_cuda_3 
+
+### idle: real static desktop capture at cq21
+/tmp/claude-1000/-home-s1n7ax-Workspace-nixos/7c50c0fb-8ebb-448f-af01-c4fc4cd1433e/scratchpad/enc/run3.sh: line 48: bc: command not found
+  idle: 3374405 B / 13.76 s =  kbit/s
+DONE

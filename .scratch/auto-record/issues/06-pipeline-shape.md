@@ -1,7 +1,7 @@
 # One ffmpeg, or a supervisor over several?
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -54,3 +54,108 @@ Two things this ticket now has to decide:
   verified. A take started right after touching the switch is silently encoded at the wrong
   geometry for its whole length. Fix by dropping leading frames, pinning `-f mjpeg
   -video_size`, or running a throwaway warm-up stream in preflight.
+
+## Answer
+
+Grilled on the real desktop (`s1n7ax`, ffmpeg **6.1.6**, GTX 1060). Four load-bearing facts were
+measured here rather than assumed, and three of them overturn what the ticket body feared.
+
+### Measured first
+
+| claim | result |
+|---|---|
+| SIGINT to a multi-output ffmpeg | **finalises every output** — both files got full duration headers. Ticket 05's runaway was `-t` on one output only, not a Ctrl-C flaw. |
+| mkv after SIGKILL | **survives** — 3439/3442 frames recovered, `File ended prematurely` warning only. |
+| `overlay`/`overlay_cuda` on camera EOF | default is `eof_action=repeat`; **`pass` works on `overlay_cuda` on the 1060** — overlay region PSNR **3.9 dB** vs a no-overlay reference at t=1s (circle present), **36.9 dB** at t=6s after the camera died (indistinguishable from clean screen). The circle genuinely vanishes; nothing freezes. |
+| preview-fifo handover between two writers | **broken, two independent ways.** The reader locks to the first stream's parameters and never re-reads the second nut header (`packet size 115200 < expected 230400`); and with byte-identical params, writer B's timestamps restart at 0 so **all 60 of its frames** are rejected as `non monotonically increasing dts`. |
+
+### The shape
+
+**One `ffmpeg` for the whole session, under a thin supervisor that only spawns and reaps.**
+
+The handover result is what forces it. Since the preview window cannot survive a
+preflight→take switch, there is no switch: the single ffmpeg starts at preflight and the file
+rolls from the first preview frame. **Enter is a marker, not a switch** — the preflight head
+gets trimmed in LosslessCut along with everything else, and the file is protected from second
+zero rather than from Enter.
+
+Order of operations:
+
+1. **Warm-up, headless.** `gphoto2 --capture-movie` for ~2 s into a frame counter, discarded.
+   No ffmpeg, no preview — ffmpeg must never see ticket 12's stale-geometry frames, and
+   `-probesize` cannot save it if it does. The same burst measures geometry *and* rate.
+2. **Preflight gate.** Refuse to start on any of three: geometry ≠ **1024x576**, measured rate
+   outside **24.5–25.5**, or either ticket 11 audio node missing. Everything else warns and
+   proceeds. The rate check is what catches "the menu was left on 50.00P". The geometry check
+   also catches a wrong `liveviewsize` (which quarters the source to 512x288), so preflight
+   never needs to *drive* the camera over PTP — checking is enough.
+3. **Spawn**, in order: `ffplay` → `wf-recorder` → `gphoto2` → `ffmpeg`. The supervisor opens
+   the preview fifo `O_RDWR` itself (`exec 3<>`, which never blocks — plain `3>` deadlocks
+   waiting for a reader) so the open-ordering race between ffplay and ffmpeg cannot happen.
+4. **Ctrl-C** → SIGINT **ffmpeg only** → wait 10 s → SIGTERM → wait 3 s → SIGKILL, then reap
+   `gphoto2`, `wf-recorder`, `ffplay` unconditionally. **Close the holder fd before waiting on
+   ffplay** — while it is open the reader can never see EOF and hangs. The SIGKILL rung is only
+   acceptable because mkv survives it; ticket 05's `attempt_recovery` hang is what makes the
+   timeout mandatory rather than optional.
+5. **Rename**, then prompt.
+
+### Camera mode: movie @ FHD 25.00P
+
+Stills mode was the initial recommendation (exact 2:1 into 60 fps, more crop headroom, dodges
+ticket 13's thermals) and was **rejected on a fact only the owner had**: *in stills mode the
+camera powers off after a while*. So movie mode, 1024x576 @ 25.04 fps measured.
+
+This makes **ticket 13 (camera power and thermals) load-bearing**, not optional — movie mode is
+now the mode the pipeline is committed to.
+
+### Output rate: 50 fps throughout
+
+25.04 into 60 is 2.4:1 — each camera frame held 2 or 3 screen frames in a repeating 2,3,2,2,3
+pattern, which reads as judder on a face. Into **50** it is exactly 2:1. 50 is a first-class
+YouTube rate and NVENC has 2.3x headroom either way (ticket 14). The cost is screen capture at
+50 instead of 60, which at 3440x1440 is marginal. *Resolves the map's 50-vs-60 fog.*
+
+### Sync: wallclock on the pipes, never a declared rate
+
+`-use_wallclock_as_timestamps 1` on **both** pipe inputs, `-fps_mode cfr` on the video output,
+**no `-itsoffset`** until a measured offset actually appears.
+
+This is not hygiene. The camera's real rate is 25.04, not 25.00. Declaring `-framerate 25` on
+the mjpeg input drifts the circle **~3.8 seconds behind the audio over a 40-minute take** —
+a lip-sync break, not a rounding error. Wallclock anchors all four inputs to one clock and lets
+ffmpeg drop/dup onto the 50 fps grid.
+
+### Camera dies mid-take: `eof_action=pass`
+
+The circle disappears and the screen keeps recording clean. `repeat` (a frozen face) was the
+initial recommendation on the grounds that it is a loud signal; rejected in favour of a file
+that stays clean, since the preview already tells you the camera is gone.
+
+### The file
+
+Written **directly** into `/home/s1n7ax/Videos/Youtube/00 new/` as `<timestamp> UNTITLED.mkv`,
+renamed in place on Ctrl-C after the description prompt. Same filesystem, so the rename is
+atomic and no multi-GB copy happens; the timestamp is already unique. A crashed take therefore
+leaves a **named, playable orphan** rather than something in `/tmp` that a reboot eats.
+
+**Orphans get named on the next run.** The supervisor globs `* UNTITLED.mkv` at startup and
+prompts for a description for each before starting the new take — no daemon, no second command,
+and it asks you at the one moment you still remember what the take was.
+*Resolves the map's crash/description-prompt fog.*
+
+> The **container choice itself (mkv vs mp4) stays ticket 07's**. This ticket only establishes
+> that the SIGKILL rung of the shutdown ladder depends on a crash-survivable container.
+
+### Session boundary: one run, one take
+
+Multi-take was considered and **deferred**, not designed. The camera can change mode between
+takes and the warm-up is ~2 s, so the friction is small; supporting it turns the supervisor into
+a state machine and reintroduces exactly the restart problem the single-ffmpeg shape avoids.
+Ship one-take; revisit only if the friction is real in practice. *Moved to Out of scope.*
+
+### Left to other tickets
+
+- The **mic level meter** during preflight — ticket 15 (under-circle HUD).
+- **Container and NVENC settings** — ticket 07.
+- **Language and packaging** of the supervisor — ticket 10.
+- **Movie-mode thermals and power** — ticket 13, now load-bearing.

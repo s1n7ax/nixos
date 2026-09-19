@@ -1,0 +1,33 @@
+### read ceiling (no encode)
+wall 0.35 s -> 300 frames
+
+### why did hevc fail? isolate -bf
+--- hevc_nvenc with [-bf 3]
+Error while filtering: Generic error in an external library
+[out#0/null @ 0x5e120ca3e6c0] Nothing was written into output file, because at least one of its streams received no packets.
+    OK
+--- hevc_nvenc with [-bf 0]
+    OK
+--- hevc_nvenc with []
+    OK
+
+### hevc vs h264, matched cq, no b-frames on hevc
+    wall 2.77 s
+  h264_nvenc size=2118297 bitrate=2824 kbit/s
+  quality vs lossless source:     wall 2.51 s
+  hevc_nvenc size=2060543 bitrate=2747 kbit/s
+  quality vs lossless source: 
+### cq sweep, h264 420 p4
+  cq=17  bitrate=3604 kbit/s  40min=1GB  vmaf=
+  cq=19  bitrate=3295 kbit/s  40min=0GB  vmaf=
+  cq=21  bitrate=2824 kbit/s  40min=0GB  vmaf=
+  cq=23  bitrate=2580 kbit/s  40min=0GB  vmaf=
+  cq=25  bitrate=2327 kbit/s  40min=0GB  vmaf=
+
+### GOP cost: -g 50 vs -g 250, h264 cq21
+  -g 50: 2118297 B
+  -g 100: 1509878 B
+  -g 250: 1337117 B
+
+### idle (real static desktop capture) at cq21
+  idle bitrate=1961 kbit/s over 13.76s

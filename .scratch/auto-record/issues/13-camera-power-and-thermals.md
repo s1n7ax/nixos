@@ -21,3 +21,9 @@ stick**; the R5 reports `TFT + PC` straight back. The panel cannot be turned off
 LCD heat is not a lever this script has. Also relevant to take length: live view is a genuine
 25/30/50 fps readout (not a slow poll), and at FHD 50.00P it pushes **42.7 Mbit/s** over USB
 continuously — so the 50p option this ticket's thermal test should use is the hot one.
+
+**From ticket 06**: this ticket is now **load-bearing, not optional**. Stills mode was rejected
+because the body powers itself off after a while, so the pipeline is committed to **movie mode @
+FHD 25.00P** — the mode this ticket is worried about. Note the failure is no longer fatal to a
+take: ticket 06 settled `eof_action=pass`, so a camera that dies mid-take removes the circle and
+the screen keeps recording cleanly.
