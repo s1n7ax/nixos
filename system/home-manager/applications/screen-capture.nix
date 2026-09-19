@@ -11,6 +11,9 @@
     home.packages = with pkgs; [
       grim
       slurp
+
+      # one take of screen + Canon R5 + both audio sources, into one file
+      (callPackage ./record { })
     ];
   };
 }

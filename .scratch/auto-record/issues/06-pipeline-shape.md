@@ -159,3 +159,20 @@ Ship one-take; revisit only if the friction is real in practice. *Moved to Out o
 - **Container and NVENC settings** — ticket 07.
 - **Language and packaging** of the supervisor — ticket 10.
 - **Movie-mode thermals and power** — ticket 13, now load-bearing.
+
+## Correction from the build
+
+The ticket offered three mitigations for the geometry lock — "drop leading frames, pin geometry
+with an explicit `-f mjpeg -video_size`, or a throwaway warm-up". **The middle one does not
+exist.** ffmpeg 6.1.6's mjpeg demuxer exposes only `-framerate` and `-raw_packet_size`:
+
+```
+$ ffmpeg -f mjpeg -video_size 1024x576 -i cam.mjpg ...
+Option video_size not found.
+Error opening input file cam.mjpg.
+```
+
+It is a hard error, not an ignored option, so the take would not start at all. The **warm-up is
+therefore the pipeline's only defence** against the stale-geometry frames, which raises it from
+one of three options to load-bearing. `record` runs it headless before anything else is spawned
+and refuses the take on the geometry it measures.

@@ -103,6 +103,13 @@ in
         digikam
       ]
     )
+    ++ lib.optionals f.productivity.video-production.screen-capture.enable (
+      with pkgs;
+      [
+        # the only editing step after `record`: trim on keyframes, export mp4
+        losslesscut
+      ]
+    )
     # network
     ++ lib.optionals f.network.monitoring.enable (
       with pkgs;
