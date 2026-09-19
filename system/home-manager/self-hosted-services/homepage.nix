@@ -294,6 +294,7 @@ with lib;
 
     services.podman.containers.homepage = {
       image = "ghcr.io/gethomepage/homepage:latest";
+      autoUpdate = "registry";
       network = [ "homepage-network" ];
 
       volumes = [

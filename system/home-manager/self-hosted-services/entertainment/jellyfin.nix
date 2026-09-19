@@ -14,6 +14,7 @@ with lib;
 
     services.podman.containers.jellyfin = {
       image = "lscr.io/linuxserver/jellyfin:latest";
+      autoUpdate = "registry";
       network = [ "entertainment-network" ];
 
       volumes = [

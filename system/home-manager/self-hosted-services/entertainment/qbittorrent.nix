@@ -13,6 +13,7 @@ with lib;
 
     services.podman.containers.qbittorrent = {
       image = "lscr.io/linuxserver/qbittorrent:latest";
+      autoUpdate = "registry";
       network = [ "entertainment-network" ];
 
       environment = {

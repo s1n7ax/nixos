@@ -27,7 +27,8 @@ in
     ];
 
     services.podman.containers.node-red = {
-      image = "nodered/node-red:latest";
+      image = "docker.io/nodered/node-red:latest";
+      autoUpdate = "registry";
       network = [
         "home-assistant-network"
         "mqtt-network"

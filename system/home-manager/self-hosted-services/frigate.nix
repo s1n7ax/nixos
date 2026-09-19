@@ -43,6 +43,7 @@ with lib;
 
     services.podman.containers.frigate = {
       image = "ghcr.io/blakeblackshear/frigate:stable";
+      autoUpdate = "registry";
 
       network = [
         "frigate-network"

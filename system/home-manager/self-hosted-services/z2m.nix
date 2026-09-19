@@ -51,7 +51,8 @@ with lib;
     };
 
     services.podman.containers.z2m = {
-      image = "ghcr.io/koenkk/zigbee2mqtt";
+      image = "ghcr.io/koenkk/zigbee2mqtt:latest";
+      autoUpdate = "registry";
       network = [
         "mqtt-network"
         "z2m-network"

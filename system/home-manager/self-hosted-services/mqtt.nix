@@ -17,7 +17,8 @@ with lib;
     };
 
     services.podman.containers.mqtt = {
-      image = "eclipse-mosquitto:2.0";
+      image = "docker.io/library/eclipse-mosquitto:2.0";
+      autoUpdate = "registry";
       network = [
         "z2m-network"
         "mqtt-network"
