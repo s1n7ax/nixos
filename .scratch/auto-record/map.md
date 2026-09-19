@@ -27,6 +27,7 @@ A single `record` command, declared in this repo, that captures the 3440x1440 sc
 - [R5 over USB: what feed can we actually get?](issues/01-r5-usb-video-feed.md) — no native UVC on the R5, so gphoto2 stays; `--capture-movie` is polled PTP live view emitting untimestamped MJPEG at roughly 1024x576, unpaced ~10-25 fps; pipe it straight into the compositing ffmpeg and drop the v4l2loopback hop.
 - [Screen capture into ffmpeg on Hyprland + NVIDIA](issues/02-wayland-screen-capture-into-ffmpeg.md) — `wf-recorder --codec rawvideo --file pipe:1` is the only viable route (wl-screenrec needs VAAPI encode, which NVIDIA lacks; ffmpeg has no PipeWire input; kmsgrab needs DRM master); one unavoidable system-memory round-trip, then `hwupload_cuda → overlay_cuda → h264_nvenc` stays on-GPU at 60 fps.
 - [Addressing mic and desktop audio from ffmpeg](issues/03-pipewire-source-addressing.md) — `-f pulse` is the only route (ffmpeg has no PipeWire input); desktop audio via `@DEFAULT_MONITOR@` or a resolved `pactl get-default-sink` + `.monitor`; the mic must be pinned to a concrete node name or a headset plugged in mid-take silently takes over; concurrent metering during recording is safe.
+- [The circle: how it looks and where it sits](issues/04-circle-overlay-prototype.md) — 540px circle, bottom-right at `overlay=2860:860`, 3px feather plus a 6px `#89b4fa` ring (the ring is required — with no ring the circle vanishes over a dark pane); mask is a static PNG through `alphamerge`, never `geq`, which benchmarked 8.3x more expensive and cannot hold 60 fps on CPU; all constants, no flags.
 
 ## Not yet specified
 
@@ -34,9 +35,9 @@ A single `record` command, declared in this repo, that captures the 3440x1440 sc
 - What happens to the description prompt when a take crashes or the machine dies mid-record.
 - Multi-take sessions: several takes back to back without re-running preflight each time.
 - Mic noise suppression / gain — whether the pipeline should touch audio at all before writing it.
-- Camera framing adjustment mid-take.
+- Ring colour is hardcoded `#89b4fa` — whether it should track the system theme instead.
 - Hyprland's `screencopy` permission now defaults to ASK and would prompt `wf-recorder` on every run — inert today only because this repo never sets `ecosystem.enforce_permissions`. Whether to pin that explicitly so a future Hyprland update cannot break unattended recording.
-- HDMI plus a capture dongle as the fallback path, if the R5's live-view resolution (ticket 12) proves too low to be worth overlaying.
+- HDMI plus a capture dongle as the fallback path, if the R5's live-view resolution (ticket 12) proves too low to be worth overlaying — ticket 04 fixed the circle at 540px, so a ~1024x576 live view is already being upscaled.
 
 ## Out of scope
 
