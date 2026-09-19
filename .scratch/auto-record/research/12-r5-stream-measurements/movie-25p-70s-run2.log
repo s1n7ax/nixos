@@ -1,0 +1,156 @@
+===== movie  (2026-09-19T23:25:07+05:30) =====
+--- auto-detect ---
+Model                          Port            
+----------------------------------------------------------
+Canon EOS R5                   usb:001,006     
+--- summary ---
+Camera summary:
+Manufacturer: Canon.Inc
+Model: Canon EOS R5
+  Version: 3-2.2.1
+  Serial Number: 0000
+Vendor Extension ID: 0xb (1.0)
+Vendor Extension Description: 
+
+Capture Formats: JPEG
+Display Formats: Association/Directory, Script, DPOF, MS AVI, MS Wave, JPEG, CRW, Unknown(b103), Unknown(bf02), Defined Type, Unknown(b104), Unknown(b105)
+
+Device Capabilities:
+	File Download, File Deletion, File Upload
+	No Image Capture, No Open Capture, Canon EOS Capture, Canon EOS Capture 2
+	Canon Wifi support
+
+Storage Devices Summary:
+
+Device Property Summary:
+Friendly Device Name      (d402 ro str): 'Canon EOS R5'
+Perceived Device Type     (d407 ro u32): 1
+Session Initiator Info    (d406 rw str): 'Unknown Initiator'
+[Unknown Property]        (d303 ro u8 ): 1
+Battery Level             (5001 ro u8 ): Enumeration [100,0,75,0,50] value: 45% (45)
+
+--- config: output ---
+Label: Camera Output
+Readonly: 0
+Type: RADIO
+Current: TFT + PC
+Choice: 0 Off
+Choice: 1 TFT
+Choice: 2 PC
+Choice: 3 TFT + PC
+Choice: 4 MOBILE
+Choice: 5 TFT + MOBILE
+Choice: 6 PC + MOBILE
+Choice: 7 TFT + PC + MOBILE
+Choice: 8 MOBILE2
+Choice: 9 TFT + MOBILE2
+Choice: 10 PC + MOBILE2
+Choice: 11 TFT + PC + MOBILE2
+END
+--- config: liveview-ish ---
+/main/actions/autofocusdrive
+/main/actions/manualfocusdrive
+/main/actions/cancelautofocus
+/main/actions/eoszoom
+/main/actions/eoszoomposition
+/main/actions/viewfinder
+/main/actions/eosmoviemode
+/main/settings/output
+/main/settings/movierecordtarget
+/main/settings/evfmode
+/main/settings/focusarea
+/main/status/eosmovieswitch
+/main/capturesettings/focusmode
+/main/capturesettings/aspectratio
+/main/capturesettings/liveviewsize
+/main/capturesettings/movieservoaf
+[/main/settings/output] Label: Camera Output
+[/main/settings/output] Readonly: 0
+[/main/settings/output] Type: RADIO
+[/main/settings/output] Current: TFT + PC
+[/main/settings/output] Choice: 0 Off
+[/main/settings/output] Choice: 1 TFT
+[/main/settings/output] Choice: 2 PC
+[/main/settings/output] Choice: 3 TFT + PC
+[/main/settings/output] Choice: 4 MOBILE
+[/main/settings/output] Choice: 5 TFT + MOBILE
+[/main/settings/output] Choice: 6 PC + MOBILE
+[/main/settings/output] Choice: 7 TFT + PC + MOBILE
+[/main/actions/viewfinder] Label: Canon EOS Viewfinder
+[/main/actions/viewfinder] Readonly: 0
+[/main/actions/viewfinder] Type: TOGGLE
+[/main/actions/viewfinder] Current: 0
+[/main/actions/viewfinder] END
+[/main/capturesettings/aspectratio] Label: Aspect Ratio
+[/main/capturesettings/aspectratio] Readonly: 0
+[/main/capturesettings/aspectratio] Type: RADIO
+[/main/capturesettings/aspectratio] Current: 3:2
+[/main/capturesettings/aspectratio] Choice: 0 3:2
+[/main/capturesettings/aspectratio] END
+[/main/settings/evfmode] Label: EVF Mode
+[/main/settings/evfmode] Readonly: 0
+[/main/settings/evfmode] Type: RADIO
+[/main/settings/evfmode] Current: Unknown value 0002
+[/main/settings/evfmode] Choice: 0 Unknown value 0002
+[/main/settings/evfmode] END
+[/main/capturesettings/liveviewsize] Label: Live View Size
+[/main/capturesettings/liveviewsize] Readonly: 0
+[/main/capturesettings/liveviewsize] Type: RADIO
+[/main/capturesettings/liveviewsize] Current: Large
+[/main/capturesettings/liveviewsize] Choice: 0 Large
+[/main/capturesettings/liveviewsize] Choice: 1 Medium
+[/main/capturesettings/liveviewsize] Choice: 2 Small
+[/main/capturesettings/liveviewsize] END
+[/main/actions/eoszoom] Label: Canon EOS Zoom
+[/main/actions/eoszoom] Readonly: 0
+[/main/actions/eoszoom] Type: TEXT
+[/main/actions/eoszoom] Current: 0
+[/main/actions/eoszoom] END
+--- single preview frame ---
+Saving file as /tmp/claude-1000/-home-s1n7ax-Workspace-nixos/866d0b10-ffb3-4ac5-9a47-7d7bd290edf1/scratchpad/movie/thumb_preview.jpg
+--- 70s movie stream ---
+Capturing preview frames as movie to 'stdout' for 70 seconds.
+Movie capture finished (1753 frames)
+
+--- capture timing ---
+wall 70.21s, first byte at 0.13s, 1753 SOI markers seen
+mean 25.03 fps over 70.02s of streaming
+inter-frame gap ms: min 0.0  p50 39.0  p90 57.4  p99 61.8  max 70.3
+gap stdev 9.5 ms  (paced stream would be ~0)
+fps per 10s bucket: 0-10s:24.9  10-20s:25.0  20-30s:24.9  30-40s:25.1  40-50s:24.9  50-60s:25.0  60-70s:25.0  70-80s:0.5
+--- stream analysis ---
+file        : /tmp/claude-1000/-home-s1n7ax-Workspace-nixos/866d0b10-ffb3-4ac5-9a47-7d7bd290edf1/scratchpad/movie/stream.mjpg  (172191269 bytes, 172.19 MB)
+frames      : 1753
+wall clock  : 70.00 s  ->  25.04 fps sustained
+
+geometry    :
+  1024x576  x1753  (100.0%)  aspect 1.7778
+
+SOF marker  : {'SOF0 baseline': 1753}
+DRI         : {0: 1753}
+components  : ['id1 2x1', 'id2 1x1', 'id3 1x1'] x1753
+
+frame bytes : min 60910  p50 105373  mean 98226  max 181457
+              -> 95.9 KiB/frame avg
+              -> 19.68 Mbit/s on the USB link
+
+first 12 frames (libgphoto2 #567: leading frames can differ):
+  [ 0] 1024x576   181457 B  SOF0 baseline
+  [ 1] 1024x576    68528 B  SOF0 baseline
+  [ 2] 1024x576    70894 B  SOF0 baseline
+  [ 3] 1024x576    71480 B  SOF0 baseline
+  [ 4] 1024x576    71708 B  SOF0 baseline
+  [ 5] 1024x576    71887 B  SOF0 baseline
+  [ 6] 1024x576    72495 B  SOF0 baseline
+  [ 7] 1024x576    73239 B  SOF0 baseline
+  [ 8] 1024x576    73159 B  SOF0 baseline
+  [ 9] 1024x576    73536 B  SOF0 baseline
+  [10] 1024x576    74228 B  SOF0 baseline
+  [11] 1024x576    75128 B  SOF0 baseline
+last 3 frames:
+  [1750] 1024x576   111472 B  SOF0 baseline
+  [1751] 1024x576   111819 B  SOF0 baseline
+  [1752] 1024x576   111362 B  SOF0 baseline
+
+mid frame   : /tmp/claude-1000/-home-s1n7ax-Workspace-nixos/866d0b10-ffb3-4ac5-9a47-7d7bd290edf1/scratchpad/movie/stream.frame876.jpg
+===== done: /tmp/claude-1000/-home-s1n7ax-Workspace-nixos/866d0b10-ffb3-4ac5-9a47-7d7bd290edf1/scratchpad/movie =====

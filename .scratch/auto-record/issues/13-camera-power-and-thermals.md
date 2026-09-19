@@ -15,3 +15,9 @@ Settle and apply:
 - How long a take actually survives before thermal shutdown, measured once with the settings above.
 
 Resolved when the settings are applied and the real sustainable take length is written down.
+
+**From ticket 12**: `output=PC` — the setting that would blank the LCD to cut heat — **does not
+stick**; the R5 reports `TFT + PC` straight back. The panel cannot be turned off over PTP, so
+LCD heat is not a lever this script has. Also relevant to take length: live view is a genuine
+25/30/50 fps readout (not a slow poll), and at FHD 50.00P it pushes **42.7 Mbit/s** over USB
+continuously — so the 50p option this ticket's thermal test should use is the hot one.
