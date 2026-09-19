@@ -22,14 +22,15 @@ from pathlib import Path
 
 import audio
 import config
+import errors
+import mask
 import meter
 import pipeline
 import session
 import supervisor
 import takes
 
-HERE = Path(__file__).resolve().parent
-MASK = HERE / f"circle-mask-{config.CIRCLE_DIAMETER}.png"
+MASK = Path(__file__).resolve().parent / mask.filename()
 
 WATCH_INTERVAL = 3.0
 PLACEMENT_TIMEOUT = 15.0
@@ -37,6 +38,16 @@ PLACEMENT_TIMEOUT = 15.0
 
 def say(message: str = "") -> None:
     print(message, file=sys.stderr, flush=True)
+
+
+def complain(error: errors.RecordError) -> int:
+    """Report a named failure and pick the exit code its kind deserves.
+
+    1 is something you can fix at the camera or the headset and run again; 3 is the
+    machine, where running again unchanged will fail the same way.
+    """
+    say(f"record: {error}")
+    return 1 if isinstance(error, errors.ExpectedError) else 3
 
 
 def name_orphans(directory: Path, exclude: Path | None = None) -> None:
@@ -61,21 +72,27 @@ def name_orphans(directory: Path, exclude: Path | None = None) -> None:
             say(f"  -> {destination.name}")
 
 
-def place_preview() -> None:
-    """Park the preview window inside the circle, where the overlay paints over it."""
+def place_preview(preview: subprocess.Popen | None) -> None:
+    """Park the preview inside the circle, or close it.
+
+    An unplaced preview is worse than none: `wf-recorder` grabs the monitor's composited
+    image, so a window that never reached the circle is a window burned into the take.
+    If it cannot be parked it is shut instead — losing the preview costs nothing the file
+    keeps, and keeping it costs the file.
+    """
     deadline = time.monotonic() + PLACEMENT_TIMEOUT
     while time.monotonic() < deadline:
         found = subprocess.run(
             ["hyprctl", "clients", "-j"], capture_output=True, text=True, check=False
         ).stdout
         if f'"{pipeline.PREVIEW_TITLE}"' in found:
-            break
+            for dispatch in pipeline.placement_dispatches():
+                subprocess.run(["hyprctl", "dispatch", dispatch], capture_output=True, check=False)
+            return
         time.sleep(0.3)
-    else:
-        say("  preview window never appeared — carrying on without placing it")
-        return
-    for dispatch in pipeline.placement_dispatches():
-        subprocess.run(["hyprctl", "dispatch", dispatch], capture_output=True, check=False)
+    say("!! the preview window could not be parked under the circle — closing it so it")
+    say("!! cannot end up in the recording. The take is unaffected.")
+    supervisor.reap(preview)
 
 
 def run_meter(source: str, desktop: str, stop: threading.Event) -> None:
@@ -100,11 +117,7 @@ def run_meter(source: str, desktop: str, stop: threading.Event) -> None:
                 sys.stderr.write(meter.line(level, desktop))
                 sys.stderr.flush()
     finally:
-        process.terminate()
-        try:
-            process.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            process.kill()
+        supervisor.reap(process)
         sys.stderr.write("\n")
         sys.stderr.flush()
 
@@ -116,10 +129,13 @@ def watch_sources(pid: int, started: float, stop: threading.Event) -> None:
     one audio track, and the two untouched tracks mean a bad one is recoverable — the
     warning exists so you know which minute went bad without listening to the whole take.
     """
-    previous: dict[str, str | None] = {}
-    while not stop.wait(WATCH_INTERVAL):
+    def snapshot() -> dict[str, str | None]:
         dump = subprocess.run(["pw-dump"], capture_output=True, text=True, check=False).stdout
-        current = audio.capture_sources(dump, pid)
+        return audio.capture_sources(dump, pid)
+
+    previous = snapshot()
+    while not stop.wait(WATCH_INTERVAL):
+        current = snapshot()
         for stream, was, now in audio.moves(previous, current):
             say(audio.move_warning(supervisor.elapsed(time.monotonic() - started), stream, was, now))
         previous = {**previous, **current}
@@ -142,22 +158,17 @@ def release_preview(holder: int, preview: subprocess.Popen | None) -> None:
     on ffplay first would hang.
     """
     os.close(holder)
-    reap(preview)
+    supervisor.reap(preview)
 
 
-def reap(process: subprocess.Popen | None) -> None:
-    if process is None or process.poll() is not None:
-        return
-    process.terminate()
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait()
+REQUIRED_TOOLS = ("ffmpeg", "ffplay", "wf-recorder", "gphoto2", "pw-dump", "pw-metadata")
+OPTIONAL_TOOLS = ("hyprctl",)
+"""Without hyprctl the preview simply does not get parked; the take is unaffected."""
 
 
-def missing_tools() -> list[str]:
-    return [tool for tool in ("ffmpeg", "ffplay", "wf-recorder", "gphoto2", "pw-dump") if not shutil.which(tool)]
+def missing_tools(tools: tuple[str, ...] = REQUIRED_TOOLS) -> list[str]:
+    """Which of these are not on PATH."""
+    return [tool for tool in tools if not shutil.which(tool)]
 
 
 def record() -> int:
@@ -167,9 +178,8 @@ def record() -> int:
 
     say("preflight…")
     preflight = session.check()
-    say(f"  camera   {preflight.probe.geometry[0]}x{preflight.probe.geometry[1]} @ {preflight.probe.fps:.2f} fps")
-    say(f"  mic      {preflight.mic}")
-    say(f"  desktop  {preflight.desktop}")
+    for line in preflight.summary():
+        say(f"  {line}")
 
     output = directory / takes.take_filename(takes.timestamp())
     runtime = Path(tempfile.mkdtemp(prefix="record-"))
@@ -218,17 +228,17 @@ def record() -> int:
         )
     except OSError as error:
         for child in (gphoto2, wf_recorder, preview):
-            reap(child)
+            supervisor.reap(child)
         release_preview(holder, None)
         shutil.rmtree(runtime, ignore_errors=True)
-        raise session.PreflightError(f"could not start the pipeline: {error}") from error
+        raise errors.PipelineStartError(f"could not start the pipeline: {error}") from error
     finally:
         for descriptor in (screen_write, camera_write, screen_read, camera_read):
             os.close(descriptor)
 
     started = time.monotonic()
     say(f"\nrolling into {output.name}")
-    threading.Thread(target=place_preview, daemon=True).start()
+    threading.Thread(target=place_preview, args=(preview,), daemon=True).start()
     threading.Thread(target=watch_sources, args=(encoder.pid, started, stop_watch), daemon=True).start()
 
     interrupted = False
@@ -253,10 +263,10 @@ def record() -> int:
         stop_watch.set()
         code = supervisor.stop(
             lambda number: os.kill(encoder.pid, number),
-            lambda grace: _wait(encoder, grace),
+            lambda grace: supervisor.wait_for_exit(encoder, grace),
         )
         for child in (gphoto2, wf_recorder):
-            reap(child)
+            supervisor.reap(child)
         release_preview(holder, preview)
         shutil.rmtree(runtime, ignore_errors=True)
 
@@ -280,37 +290,45 @@ def record() -> int:
     return 0
 
 
-def _wait(process: subprocess.Popen, grace: float) -> int | None:
-    if grace <= 0:
-        return process.wait()
-    try:
-        return process.wait(timeout=grace)
-    except subprocess.TimeoutExpired:
-        return None
+USAGE = """record — one take of the screen, the camera and both audio sources.
+
+usage:
+  record           preflight, then a take. Enter marks the start, Ctrl-C ends it.
+  record --check   preflight only: is the camera on the right setting, and is the
+                   right sink default? Writes nothing.
+"""
 
 
 def main(argv: list[str]) -> int:
+    """Run a take, or answer for one. An unknown argument never starts a take."""
+    if argv in ([], ["--check"]):
+        pass
+    elif argv in (["--help"], ["-h"]):
+        say(USAGE)
+        return 0
+    else:
+        say(USAGE)
+        unknown = next((a for a in argv if a != "--check"), argv[0])
+        say(f"record: unrecognised argument {unknown!r}")
+        return 2
+
     absent = missing_tools()
     if absent:
-        say(f"record: missing {', '.join(absent)}")
-        return 1
-    if "--check" in argv:
+        return complain(errors.ToolUnavailableError(f"missing {', '.join(absent)}"))
+    for tool in missing_tools(OPTIONAL_TOOLS):
+        say(f"record: {tool} is not on PATH — the preview window will not be parked under the circle")
+    if argv == ["--check"]:
         try:
-            preflight = session.check()
-        except session.PreflightError as error:
-            say(f"record: {error}")
-            return 1
-        width, height = preflight.probe.geometry
-        say(f"camera   {width}x{height} @ {preflight.probe.fps:.2f} fps")
-        say(f"mic      {preflight.mic}")
-        say(f"desktop  {preflight.desktop}")
+            for line in session.check().summary():
+                say(line)
+        except errors.RecordError as error:
+            return complain(error)
         say("ready")
         return 0
     try:
         return record()
-    except session.PreflightError as error:
-        say(f"record: {error}")
-        return 1
+    except errors.RecordError as error:
+        return complain(error)
 
 
 if __name__ == "__main__":

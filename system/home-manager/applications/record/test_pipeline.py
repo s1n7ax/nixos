@@ -183,11 +183,13 @@ class TestFfmpeg(unittest.TestCase):
 
 
 class TestPreviewWindow(unittest.TestCase):
-    def test_sized_at_birth_because_hyprland_will_not_shrink_it(self):
+    def test_sized_at_birth_in_physical_pixels(self):
+        """-x/-y are physical; only the dispatcher's coordinates are logical."""
         argv = pipeline.ffplay_argv("/run/preview.fifo")
         width, height = config.hud_size()
-        self.assertEqual(flag_value(argv, "-x"), str(config.to_logical(width)))
-        self.assertEqual(flag_value(argv, "-y"), str(config.to_logical(height)))
+        self.assertEqual(flag_value(argv, "-x"), str(width))
+        self.assertEqual(flag_value(argv, "-y"), str(height))
+        self.assertNotEqual(flag_value(argv, "-x"), str(config.to_logical(width)))
         self.assertIn("-noborder", argv)
 
     def test_titled_so_the_dispatcher_can_find_it(self):

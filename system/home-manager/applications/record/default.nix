@@ -21,22 +21,20 @@ let
     ./audio.py
     ./camera.py
     ./config.py
+    ./errors.py
+    ./mask.py
     ./meter.py
     ./pipeline.py
     ./session.py
     ./supervisor.py
     ./takes.py
   ];
-
-  diameter = "540";
-  feather = "3";
-  centre = "269.5";
-  radius = "270";
 in
 runCommand "record"
   {
     nativeBuildInputs = [
       makeWrapper
+      python3
       ffmpeg_6-full
     ];
     meta = {
@@ -51,9 +49,9 @@ runCommand "record"
       module: "install -Dm644 ${module} $out/share/record/${baseNameOf (toString module)}"
     ) modules}
 
-    ffmpeg -v error -f lavfi \
-      -i "color=c=black:s=${diameter}x${diameter},format=gray,geq=lum='clip((${radius}-hypot(X-${centre},Y-${centre}))*255/${feather},0,255)'" \
-      -frames:v 1 $out/share/record/circle-mask-${diameter}.png
+    # the circle's geometry lives only in config.py; mask.py hands it to ffmpeg here
+    cd $out/share/record
+    ffmpeg -v error -f lavfi -i "$(python3 mask.py lavfi)" -frames:v 1 "$(python3 mask.py filename)"
 
     makeWrapper ${python3}/bin/python3 $out/bin/record \
       --add-flags $out/share/record/main.py \

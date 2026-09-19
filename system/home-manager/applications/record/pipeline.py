@@ -37,7 +37,12 @@ def wf_recorder_argv() -> list[str]:
 
 
 def gphoto2_argv(frames: int | None = None) -> list[str]:
-    """PTP live view onto stdout. With `frames`, a burst that stops itself."""
+    """PTP live view onto stdout. With `frames`, a burst that stops itself.
+
+    `viewfinder=1` opens live view; it is not preflight *driving* the camera, which
+    stays the human's job — nothing here touches the mode switch, `liveviewsize` or the
+    Movie rec quality menu. The gate reads those and refuses; it never sets them.
+    """
     capture = "--capture-movie" if frames is None else f"--capture-movie={frames}"
     return ["gphoto2", "--stdout", "--set-config", "viewfinder=1", capture]
 
@@ -162,7 +167,11 @@ def ffplay_argv(preview: str) -> list[str]:
 
     A separate process because ffmpeg's own `-f sdl` output silently never opens a
     window on Wayland — it accepts and burns frames, exits clean, and shows nothing.
-    Sized at birth because Hyprland will not shrink a window below its native size.
+
+    Sized at birth, in **physical** pixels: Hyprland's dispatcher will not shrink a
+    window below its native size, and `-x`/`-y` are physical where the dispatcher's
+    coordinates are logical. Passing logical here would hand ffplay a window 20% too
+    small and leave the resize it exists to avoid as the only way out.
     """
     width, height = config.hud_size()
     return [
@@ -175,8 +184,8 @@ def ffplay_argv(preview: str) -> list[str]:
         "-fflags", "nobuffer",
         "-flags", "low_delay",
         "-window_title", PREVIEW_TITLE,
-        "-x", str(config.to_logical(width)),
-        "-y", str(config.to_logical(height)),
+        "-x", str(width),
+        "-y", str(height),
         "-i", preview,
     ]
 

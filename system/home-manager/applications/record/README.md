@@ -8,7 +8,12 @@ NVENC-encoded mkv into `~/Videos/Youtube/00 new`, ready to trim in LosslessCut.
 ```sh
 record          # preflight, then a take
 record --check  # preflight only: is the camera, mic and desktop audio ready?
+record --help   # the above, on the terminal
 ```
+
+Exit codes say which kind of failure it was: **1** is something to fix at the camera or
+the headset and run again, **3** is the machine (a binary that will not run, a child
+that will not spawn).
 
 Nothing is configurable. Size, corner, ring colour, monitor, rates and the mic's node
 name are constants in `config.py` — the point of the command is that there is nothing
@@ -59,7 +64,8 @@ Every number here was measured on this machine, and the reasoning lives in
 
 ## Tests
 
-Everything but the process glue in `main.py` is covered headlessly.
+Everything but the process glue — spawning children, terminal I/O — is covered
+headlessly, including the preflight gates and the argument handling.
 
 ```sh
 python3 -m unittest discover --pattern 'test_*.py'

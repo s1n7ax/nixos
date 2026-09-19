@@ -9,6 +9,7 @@ reaped unconditionally afterwards.
 from __future__ import annotations
 
 import signal
+import subprocess
 from dataclasses import dataclass
 from typing import Callable
 
@@ -52,3 +53,31 @@ def elapsed(seconds: float) -> str:
     """`00:14:22` — the stamp a mid-take warning carries, so you know which minute."""
     whole = int(seconds)
     return f"{whole // 3600:02d}:{whole % 3600 // 60:02d}:{whole % 60:02d}"
+
+
+TERMINATE_LADDER = (Rung(signal.SIGTERM, 5.0), Rung(signal.SIGKILL, 0.0))
+"""For the children whose output nobody is waiting on: ask, then insist."""
+
+
+def reap(process: subprocess.Popen | None, ladder: tuple[Rung, ...] = TERMINATE_LADDER) -> int | None:
+    """Stop a child we do not need a clean file from, and collect it."""
+    if process is None or process.poll() is not None:
+        return None if process is None else process.returncode
+    return stop(
+        lambda number: process.send_signal(number),
+        lambda grace: wait_for_exit(process, grace),
+        ladder,
+    )
+
+
+def wait_for_exit(process: subprocess.Popen, grace: float) -> int | None:
+    """The child's exit code, or None if it is still running when `grace` runs out.
+
+    A grace of zero waits without a deadline, which is what the SIGKILL rung wants.
+    """
+    if grace <= 0:
+        return process.wait()
+    try:
+        return process.wait(timeout=grace)
+    except subprocess.TimeoutExpired:
+        return None

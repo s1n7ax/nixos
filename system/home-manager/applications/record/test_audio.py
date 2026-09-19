@@ -126,8 +126,12 @@ class TestMoves(unittest.TestCase):
 
 class TestWarning(unittest.TestCase):
     def test_reads_as_a_wall_clock_stamped_shout(self):
-        line = audio.move_warning("00:14:22", "record-desktop", "headset.monitor", "gpu.monitor")
-        self.assertEqual(line, "!! 00:14:22  record-desktop moved: headset.monitor -> gpu.monitor")
+        line = audio.move_warning("00:14:22", audio.DESKTOP_STREAM, "headset.monitor", "gpu.monitor")
+        self.assertEqual(line, "!! 00:14:22  desktop audio moved: headset.monitor -> gpu.monitor")
+
+    def test_the_mic_is_named_too(self):
+        line = audio.move_warning("00:01:00", audio.MIC_STREAM, "fifine", "headset.hfp")
+        self.assertIn("mic moved:", line)
 
 
 if __name__ == "__main__":

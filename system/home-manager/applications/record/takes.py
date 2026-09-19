@@ -49,7 +49,13 @@ def renamed(path: Path, description: str) -> Path:
 
 
 def unique(path: Path) -> Path:
-    """`path`, or the first ` 2`, ` 3`… beside it that is free."""
+    """`path`, or the first ` 2`, ` 3`… beside it that is free.
+
+    The timestamp already makes collisions all but impossible, so this should never
+    fire. It exists because `Path.rename` overwrites its destination without a word,
+    and the thing it would overwrite is a take — the one file here worth protecting
+    against a case nobody predicted.
+    """
     if not path.exists():
         return path
     for counter in range(2, 1000):

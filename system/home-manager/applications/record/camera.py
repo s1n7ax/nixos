@@ -17,6 +17,8 @@ import time
 from dataclasses import dataclass
 
 import config
+import errors
+import supervisor
 
 SOI = b"\xff\xd8"
 EOI = b"\xff\xd9"
@@ -128,16 +130,24 @@ def warm_up(argv: list[str], frames: int = config.WARMUP_FRAMES, timeout: float 
 
     Headless and discarded: ffmpeg must never see the stale-geometry frames, and this
     same burst is what clears them, so the take's own stream starts uniform.
+
+    Raises:
+        ToolUnavailableError: `gphoto2` is absent or would not start.
     """
-    process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True)
+    try:
+        process = subprocess.Popen(
+            argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True
+        )
+    except OSError as error:
+        raise errors.ToolUnavailableError(f"{argv[0]} would not run: {error}") from error
     sizes: list[tuple[int, int] | None] = []
     arrivals: list[float] = []
     buffer = b""
     deadline = time.monotonic() + timeout
+    stream = process.stdout
     try:
-        assert process.stdout is not None
-        while len(sizes) < frames and time.monotonic() < deadline:
-            chunk = process.stdout.read1(CHUNK)
+        while stream and len(sizes) < frames and time.monotonic() < deadline:
+            chunk = stream.read1(CHUNK)
             if not chunk:
                 break
             now = time.monotonic()
@@ -147,10 +157,5 @@ def warm_up(argv: list[str], frames: int = config.WARMUP_FRAMES, timeout: float 
                 sizes.append(jpeg_size(frame))
                 arrivals.append(now)
     finally:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
+        supervisor.reap(process)
     return Probe.of(sizes, arrivals)

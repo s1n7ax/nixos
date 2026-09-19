@@ -7,7 +7,6 @@ and the two device names are settled values that live in one place.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 MONITOR = "DP-3"
@@ -65,10 +64,7 @@ THREAD_QUEUE_SIZE = 512
 
 
 def output_dir() -> Path:
-    """Where takes are written. `RECORD_OUTPUT_DIR` redirects it for a dry run."""
-    override = os.environ.get("RECORD_OUTPUT_DIR")
-    if override:
-        return Path(override)
+    """Where takes are written. Created by the command if it is not there."""
     return Path.home() / "Videos" / "Youtube" / "00 new"
 
 

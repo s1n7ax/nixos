@@ -27,6 +27,9 @@ MIC_STREAM = "record-mic"
 DESKTOP_STREAM = "record-desktop"
 """`-stream_name` on each pulse input, so the watcher can tell the two apart."""
 
+LABELS = {MIC_STREAM: "mic", DESKTOP_STREAM: "desktop audio"}
+"""What to call each stream when shouting about it, rather than its wire name."""
+
 
 def parse_default_sink(metadata: str) -> str | None:
     """The default sink's node name out of `pw-metadata -n default`.
@@ -135,4 +138,4 @@ def moves(before: dict[str, str | None], after: dict[str, str | None]) -> list[t
 
 def move_warning(elapsed: str, stream: str, was: str, now: str) -> str:
     """The line the watcher shouts. The take keeps rolling; this says which minute went bad."""
-    return f"!! {elapsed}  {stream} moved: {was} -> {now}"
+    return f"!! {elapsed}  {LABELS.get(stream, stream)} moved: {was} -> {now}"

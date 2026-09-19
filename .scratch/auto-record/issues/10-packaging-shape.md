@@ -46,7 +46,7 @@ specific rather than aesthetic — the supervisor has to:
 - and keep a level meter, a prompt and a watcher on the terminal at once.
 
 In shell that is a pile of `trap`, `exec {fd}<>`, `jq` and background subshells with no way to
-test any of it. In Python it is nine small modules and **98 headless tests**, run the way this
+test any of it. In Python it is eleven small modules and **119 headless tests**, run the way this
 repo already runs img-crop's: `python3 -m unittest discover --pattern 'test_*.py'`.
 
 Gated by `features.productivity.video-production.screen-capture.enable`, not
@@ -83,3 +83,15 @@ looking, and there would be nowhere to type the answer. It is run from a termina
 `~/Videos/Youtube/00 new` is created with `mkdir -p` at startup. Nix cannot create an empty
 directory in `$HOME` without an activation script or a placeholder file, and the script has to
 survive the directory being absent anyway — a deleted folder should not be a failed take.
+
+### Reviewed and kept
+
+Two things the spec review flagged as scope creep are deliberate, and stay:
+
+- **`takes.unique()`** invents a ` 2` suffix although ticket 06 says the timestamp is already
+  unique. It should never fire. It exists because `Path.rename` overwrites its destination
+  silently, and the thing it would overwrite is a take.
+- **`--set-config viewfinder=1`** on the gphoto2 command is not preflight driving the camera in
+  the sense ticket 06 ruled out. It opens live view, which is the stream being read; the mode
+  switch, `liveviewsize` and Movie rec quality stay the human's job, and the gate only ever
+  reads them.
