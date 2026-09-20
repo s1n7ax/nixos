@@ -19,6 +19,7 @@ import json
 import os
 import pathlib
 import signal
+import shlex
 import subprocess
 import sys
 import time
@@ -662,10 +663,12 @@ class Rig:
         elif action == "killcam":
             run("pkill -INT -f 'gphoto2 --stdout'")
         elif action == "startcam":
+            log(f"  $ {self.args.startcam_cmd}")
             subprocess.Popen(
-                ["camera-connect"],
+                shlex.split(self.args.startcam_cmd),
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stderr=open(self.args.startcam_log, "ab") if self.args.startcam_log
+                else subprocess.DEVNULL,
                 start_new_session=True,
             )
         elif action == "killnode":
@@ -808,6 +811,10 @@ def main():
     p.add_argument("--kill-after", type=float, default=0)
     p.add_argument("--script", default="")
     p.add_argument("--camera", default="/dev/video9")
+    p.add_argument("--startcam-cmd", default="camera-connect",
+                   help="what `startcam` runs to bring the camera producer back")
+    p.add_argument("--startcam-log", default="",
+                   help="append that command's stderr here instead of discarding it")
     p.add_argument("--mic", default="")
     p.add_argument("--audio-delay", type=int, default=0, help="ms")
     p.add_argument("--fake-screen", action="store_true")

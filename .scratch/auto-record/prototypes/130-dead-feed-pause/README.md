@@ -55,6 +55,8 @@ picker appear; the restore token is cached in `~/.cache/proto130-restore-token`
 | `--muxer`, `--frag` | `hybrid` (`mp4mux fragment-mode=first-moov-then-finalise`), `dash` (plain `mp4mux` fragments) or `isofmp4` (`isofmp4mux`), at any fragment duration in ms |
 | `--kill-after N` | `SIGKILL` itself after N s — the power-loss case |
 | `--progress FILE` | unbuffered `write(2)` of the last PTS handed to the muxer, so the loss window has a ground truth that survives the kill |
+| `--startcam-cmd` | what `startcam` runs. Default `camera-connect`; `./realcam.sh` for the real R5 without the `sudo modprobe` line, `./realcam-fast.sh` for the same with ffmpeg's probe short-circuited ([#131](https://github.com/s1n7ax/nixos/issues/131)) |
+| `--startcam-log` | append that command's stderr to a file instead of discarding it — each line timestamped, which is how #131 split gphoto2's startup from ffmpeg's |
 
 ## Test rig, not a design
 
@@ -71,6 +73,11 @@ program:
   implementation: Timeout was reached"* and every later `CreateSession` from any
   client times out. Recover with `systemctl --user restart
   xdg-desktop-portal-hyprland` **then** `xdg-desktop-portal`. Use `killnode`.
+- **`realcam.sh` / `realcam-fast.sh`** are `camera-connect` with the `sudo
+  modprobe` line removed, because sudo wants a password this rig cannot answer
+  with its stdio closed. `realcamkill9.sh` SIGKILLs gphoto2 by exact process
+  name for the unclean-stop case — never by `-f <pattern>`, which matches the
+  test's own wrapper shell.
 - **the mic** is a `module-null-sink` monitor, fed a sine by a separate
   `gst-launch` so it never suspends. An unfed monitor delivers one buffer every
   ~450 ms and makes the watchdog flap.

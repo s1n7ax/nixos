@@ -1,14 +1,17 @@
 # The dead-feed pause path, and fragment duration vs the loss window
 
 - Date: 2026-09-20
-- Resolves: [#130](https://github.com/s1n7ax/nixos/issues/130) — part of the
+- Resolves: [#130](https://github.com/s1n7ax/nixos/issues/130) and
+  [#131](https://github.com/s1n7ax/nixos/issues/131) — part of the
   Wayfinder map [#121](https://github.com/s1n7ax/nixos/issues/121)
 - Questions: (1) does the `valve` + running-time-offset path actually pause and
   resume a recording when a feed *dies* rather than being politely stopped, per
   feed, with the seam measured the way [#124](https://github.com/s1n7ax/nixos/issues/124)
   measured it? (2) does a shorter `fragment-duration` close the loss window
   #124 saw, measured against the real 1440p60 composite rather than synthetic
-  720p?
+  720p? (3) how long does `camera-connect` take to bring the real R5 back, which
+  is how long a camera-loss pause actually lasts — added by
+  [#131](https://github.com/s1n7ax/nixos/issues/131)?
 - Rig: `.scratch/auto-record/prototypes/130-dead-feed-pause/` (throwaway)
 
 ## Answers in one paragraph each
@@ -33,6 +36,16 @@ order, not the fragment size. `isofmp4mux` at 500 ms recovered every frame in
 five of five, and `header-update-mode=rewrite write-mehd=true` gives it the
 clean finalised file that was the hybrid muxer's only advantage — for +1.0% in
 file size. **Swap the muxer.**
+
+**A camera-loss pause lasts about one second, and half of that is fixable.**
+With the real R5, `camera-connect` puts frames back on `/dev/video9` **730 ms**
+after it is executed — but only 141 ms of that is gphoto2; the rest is ffmpeg
+probing an MJPEG stream it is never told about. Told the format, the restart is
+**174 ms** and the whole pause drops from 1.05 s to 0.50 s. Retries need no
+delay between them. What no retry fixes is an unclean stop: `SIGKILL` wedges the
+PTP session, `gphoto2 --reset` does not clear it and on the second try knocked
+the camera off the USB bus altogether, and only the power switch brought it
+back.
 
 ## Machine and pipeline under test
 
@@ -122,12 +135,11 @@ Killing the producer with `SIGINT` leaves roughly half a second of frames still
 in flight, so the last half-second before a camera death is real footage, not
 frozen frames.
 
-*Not measured:* how long `camera-connect` itself takes to come back. The R5 was
-not available, so the producer here was an ffmpeg feeding `/dev/video9` the same
-1024x576 MJPEG at 50 fps (`fakecam.sh`). #127 established that a dead V4L2
-producer is indistinguishable whatever the producer was, so detection and the
-seam transfer directly; the gphoto2 startup latency does not, and it is what
-decides how long the pause actually lasts in the field.
+The producer here was an ffmpeg feeding `/dev/video9` the same 1024x576 MJPEG at
+50 fps (`fakecam.sh`), because the R5 was not available that session. #127
+established that a dead V4L2 producer is indistinguishable whatever the producer
+was, so detection and the seam transfer directly; the `camera-connect` startup
+latency does not, and **Question 3** below measures it against the real camera.
 
 #### Mic — `pipewiresrc`
 
@@ -287,6 +299,98 @@ measured gain.
 with `isofmp4mux fragment-duration=500ms header-update-mode=rewrite
 write-mehd=true`.**
 
+## Question 3 — how long `camera-connect` takes to bring the R5 back
+
+Added 2026-09-20 with the camera actually plugged in, which is what
+[#131](https://github.com/s1n7ax/nixos/issues/131) was opened for. Same rig and
+the same flags; `startcam` runs `realcam.sh` — `camera-connect` minus its
+`sudo modprobe` line — instead of `fakecam.sh`.
+
+### 730 ms, and 570 ms of it is ffmpeg guessing the format
+
+Five runs, `SIGINT` to gphoto2 and then `camera-connect` again. Detection is
+`324 ms` in every single run; the restart is the interval from the `exec` to
+the first frame reaching the pipeline.
+
+| restart fired | detect | restart | excised pause |
+| --- | --- | --- | --- |
+| 10 s after death | 324 ms | 735 ms | (10.7 s, gap dominated) |
+| 6 s after death | 324 ms | 727 ms | (6.7 s, gap dominated) |
+| 6 s after death | 324 ms | 732 ms | (6.7 s, gap dominated) |
+| 25 ms after DEAD | 326 ms | 726 ms | **1.050 s** |
+| 25 ms after DEAD | 324 ms | 774 ms | **1.100 s** |
+| 25 ms after DEAD | 325 ms | 725 ms | **1.050 s** |
+
+`realcam.sh` timestamps both halves of the pipe, and the split is lopsided:
+
+```
++0 ms    exec
++141 ms  gphoto2: "Capturing preview frames as movie to 'stdout'"
++707 ms  ffmpeg:  "Input #0, mjpeg, from 'fd:'"
++735 ms  first frame on /dev/video9
+```
+
+gphoto2 reopening the PTP session, setting `viewfinder=1` and streaming is
+**141 ms** — the cheap part. The expensive part is ffmpeg probing a stream
+whose format is already known: it logs `Format mjpeg detected only with low
+score of 25, misdetection possible!` and spends ~570 ms making up its mind.
+
+Telling it instead — `-f mjpeg -probesize 32 -analyzeduration 0 -fflags
+nobuffer`, as `realcam-fast.sh` does — collapses the restart to **174 ms**,
+twice, to the millisecond:
+
+| variant | restart | excised pause | wall clock, death to resume | seam in the file |
+| --- | --- | --- | --- | --- |
+| `camera-connect` as installed | ~730 ms | 1.05–1.10 s | ~1.42 s | 49.7 ms |
+| with the probe told | 174 ms | **0.500 s** | 824 ms | 66.7 ms |
+
+Same 1024x576 MJPEG out either way, no decode errors in either file. So the
+camera-loss pause is `324 ms detect + 730 ms restart + 300 ms stability` ≈
+**1.05 s**, and roughly half of it is removable by fixing one ffmpeg
+invocation. A cold start straight after the camera is powered on is **832 ms**,
+close enough to the warm number that the PTP session is clearly not what costs.
+
+### The retry needs no delay between attempts
+
+Re-running `camera-connect` 25 ms after the watchdog declared the feed dead
+worked exactly as well as running it 10 s later — gphoto2 has already let go of
+the camera by then, because the frame-silence timeout is longer than the ~85 ms
+gphoto2 takes to exit on `SIGINT`. #121's three retries can therefore be
+back-to-back, ~730 ms apart (~175 ms tuned). What they cannot fix is below.
+
+### An unclean stop costs a power cycle, and `gphoto2 --reset` makes it worse
+
+[#127](https://github.com/s1n7ax/nixos/issues/127)'s note says `gphoto2 --reset`
+clears a wedged PTP session. It does not:
+
+```
+SIGKILL to gphoto2
+camera-connect  -> "Capturing preview frames", then PTP Timeout 4.6 s later, 0 frames
+gphoto2 --reset -> returns in 490 ms
+camera-connect  -> PTP Timeout again, 3.1 s in, 0 frames
+gphoto2 --reset -> *** Error (-7: 'I/O problem') ***
+                   ...and the R5 leaves the USB bus entirely
+gphoto2 --auto-detect -> empty; no 04a9 device under /sys/bus/usb/devices
+```
+
+Two further reset-and-retry cycles found no camera at all. Switching the R5 off
+and on brought it straight back, and a normal `camera-connect` then returned in
+832 ms. So for #121: `SIGINT` is the only acceptable stop, the recorder must
+never escalate to `SIGKILL` on a camera that will not die, and when the three
+retries are spent the alert has to say *power-cycle the camera* — there is no
+recovery the program can perform itself.
+
+### `camera-connect` as installed cannot be re-run unattended
+
+Its first line is `sudo modprobe v4l2loopback exclusive_caps=1 max_buffer=2`,
+and sudo wants a password on this machine. A recorder re-running the installed
+script with its stdio closed gets a silent hang, not a camera. `boot.nix` has
+`boot.extraModulePackages`, which only makes the module *available*. Either add
+`boot.kernelModules = [ "v4l2loopback" ]` with the options in
+`boot.extraModprobeConfig`, or make the script skip the modprobe when the
+loopback node already exists. The measurements above used `realcam.sh`, which
+is the script with that line removed.
+
 ## What the pause/resume state machine has to do
 
 ```
@@ -338,6 +442,10 @@ Consequences worth stating plainly:
   its clean finalised output on the strength of a 720p test; at the real 1440p60
   bitrate it loses the whole take about one run in five, and `isofmp4mux` with
   `header-update-mode=rewrite` finalises just as cleanly.
+- **#127's `gphoto2 --reset` recovery does not work.** An unclean stop wedges
+  the camera exactly as #127 said, but the reset does not clear it — twice — and
+  the second reset dropped the R5 off the USB bus entirely. The camera has to be
+  switched off and on by hand.
 - **#124's measured 2 s pause with a one-frame seam was an orderly `PAUSED`
   transition and is not reachable for a dead feed** — a blocked live source
   makes the state change hang. The valve keeps the pipeline PLAYING instead, and
@@ -357,4 +465,11 @@ and are written down there so they are not paid twice:
   times out. Recovery is restarting `xdg-desktop-portal-hyprland` **and then**
   `xdg-desktop-portal`, in that order. Use `pw-cli destroy <node>` instead.
 - `pkill -f <pattern>` inside a `nix-shell --run` kills the wrapper shell,
-  because the pattern is on the wrapper's own command line. Kill by pid.
+  because the pattern is on the wrapper's own command line. Kill by pid, or by
+  exact process name (`pkill -x gphoto2`). This is easy to pay twice: passing
+  the pattern in `--script` puts it on the command line of the shell running the
+  test as well, which then kills itself mid-run.
+- `realcam.sh` is `camera-connect` with the `sudo modprobe` line removed and
+  both halves of the pipe stderr-timestamped; `realcam-fast.sh` is the same with
+  ffmpeg's probe short-circuited. `--startcam-cmd` chooses which one `startcam`
+  runs, and `--startcam-log` keeps its stderr instead of discarding it.
