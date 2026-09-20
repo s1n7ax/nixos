@@ -221,22 +221,69 @@ lib.mkIf config.features.cli.scripts.enable {
         --no-actions \
         --insensitive
     '')
-    (writeShellScriptBin "camera-connect" ''
-      set -euo pipefail
+    (writeShellApplication {
+      name = "camera-connect";
+      runtimeInputs = [
+        coreutils
+        ffmpeg
+        gphoto2
+        kmod
+      ];
+      text = ''
+        node_nr=9
+        node="/dev/video$node_nr"
+        label=camera
 
-      sudo modprobe v4l2loopback exclusive_caps=1 max_buffer=2
+        if ! gphoto2 --auto-detect | grep -q 'usb:'; then
+          echo "No camera found. Turn the camera on, set movie mode, then plug in USB." >&2
+          exit 1
+        fi
 
-      gphoto2 \
-      	--stdout \
-      	--set-config viewfinder=1 \
-      	--capture-movie |
-      	ffmpeg \
-      		-i - \
-      		-vcodec copy \
-      		-threads 1 \
-      		-f v4l2 \
-      		"/dev/$(ls -1 /sys/devices/virtual/video4linux)"
-    '')
+        current_label=$(cat "/sys/devices/virtual/video4linux/video$node_nr/name" 2>/dev/null || true)
+
+        if [ "$current_label" != "$label" ]; then
+          if lsmod | grep -q '^v4l2loopback '; then
+            if ! sudo modprobe -r v4l2loopback; then
+              echo "v4l2loopback is loaded with the wrong options and something is still using it." >&2
+              exit 1
+            fi
+          fi
+
+          sudo modprobe v4l2loopback \
+            exclusive_caps=1 \
+            max_buffers=2 \
+            video_nr="$node_nr" \
+            card_label="$label"
+        fi
+
+        for _ in $(seq 1 50); do
+          if [ -w "$node" ]; then
+            break
+          fi
+          sleep 0.1
+        done
+
+        if [ ! -w "$node" ]; then
+          echo "$node never became writable -- udev did not apply the video group." >&2
+          exit 1
+        fi
+
+        gphoto2 --reset >/dev/null 2>&1 || true
+
+        echo "Streaming the camera to $node. Press Ctrl-C to stop."
+
+        gphoto2 \
+          --stdout \
+          --set-config viewfinder=1 \
+          --capture-movie |
+          ffmpeg \
+            -i - \
+            -vcodec copy \
+            -threads 1 \
+            -f v4l2 \
+            "$node"
+      '';
+    })
 
     (writeShellScriptBin "font-menu" ''
       set -euo pipefail
