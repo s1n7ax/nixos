@@ -12,6 +12,8 @@ let
     corner. gpu-screen-recorder itself is installed system-wide by
     `programs.gpu-screen-recorder`, which owns the setcap'd gsr-kms-server that
     monitor capture needs, so it is resolved from PATH instead of runtimeInputs.
+    `hyprctl` comes from PATH for the same reason: it belongs to the running
+    compositor, not to this script's closure.
   */
   screen-record = pkgs.writeShellApplication {
     name = "screen-record";
@@ -27,9 +29,6 @@ let
 in
 {
   config = lib.mkIf config.features.productivity.video-production.screen-capture.enable {
-    home.packages = [
-      screen-record
-      indicator
-    ];
+    home.packages = [ screen-record ];
   };
 }

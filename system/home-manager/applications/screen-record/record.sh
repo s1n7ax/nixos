@@ -12,8 +12,6 @@ audio="${SCREEN_RECORD_AUDIO:-default_output|default_input}"
 
 monitor_name="screen"
 monitor_scale="1"
-indicator_width="384"
-indicator_height="216"
 
 notify() {
   notify-send -a screen-record -i camera-video "$1" "${2-}" || true
@@ -25,7 +23,9 @@ running() {
 
 # Echoes the camera to composite into the recording, empty when there is none.
 # The v4l2loopback node wins because `camera-connect` feeds the DSLR into it;
-# a plain webcam is the fallback.
+# a plain webcam is the fallback. Both candidates are checked against the real
+# /dev node, because gpu-screen-recorder aborts the whole capture when a source
+# it was handed cannot be opened.
 camera_device() {
   if [ -n "${SCREEN_RECORD_CAMERA:-}" ]; then
     printf '%s' "$SCREEN_RECORD_CAMERA"
@@ -34,7 +34,7 @@ camera_device() {
 
   local device
   for device in /sys/devices/virtual/video4linux/*; do
-    [ -e "$device" ] || continue
+    [ -c "/dev/${device##*/}" ] || continue
     printf '/dev/%s' "${device##*/}"
     return
   done
@@ -60,8 +60,8 @@ read_monitor() {
       ;;
   esac
 
-  indicator_width="$(awk -v v="$cam_width" -v s="$monitor_scale" 'BEGIN { printf "%d", v / s }')"
-  indicator_height="$(awk -v v="$cam_height" -v s="$monitor_scale" 'BEGIN { printf "%d", v / s }')"
+  indicator_width="$(awk -v v="$cam_width" -v s="$monitor_scale" 'BEGIN { if (s + 0 <= 0) s = 1; printf "%d", v / s }')"
+  indicator_height="$(awk -v v="$cam_height" -v s="$monitor_scale" 'BEGIN { if (s + 0 <= 0) s = 1; printf "%d", v / s }')"
 }
 
 stop_indicator() {
@@ -70,9 +70,13 @@ stop_indicator() {
   rm -f "$INDICATOR_PID_FILE"
 }
 
+# Pinned to the monitor being captured and tied to the recorder pid, so the pill
+# cannot outlive a capture that dies on its own.
 start_indicator() {
   stop_indicator
   nohup screen-record-indicator \
+    --monitor "$monitor_name" \
+    --watch-pid "$1" \
     --max-width "$indicator_width" \
     --max-height "$indicator_height" \
     >/dev/null 2>&1 &
@@ -117,7 +121,8 @@ cmd_start() {
     -v no \
     -o "$take" \
     >"$LOG_FILE" 2>&1 &
-  echo $! >"$PID_FILE"
+  local recorder_pid=$!
+  echo "$recorder_pid" >"$PID_FILE"
   printf '%s\n' "$take" >"$TAKE_FILE"
 
   sleep 1
@@ -127,7 +132,7 @@ cmd_start() {
     return 1
   fi
 
-  start_indicator
+  start_indicator "$recorder_pid"
 
   if [ -n "$camera" ]; then
     notify "Recording started" "$monitor_name + facecam ($camera)"
@@ -150,13 +155,20 @@ cmd_stop() {
 
   # SIGINT is what makes gpu-screen-recorder finalise the mp4 container, so the
   # file is only playable once the process is actually gone.
-  kill -INT "$pid"
+  kill -INT "$pid" 2>/dev/null || true
 
   local waited=0
   while kill -0 "$pid" 2>/dev/null && [ "$waited" -lt 150 ]; do
     sleep 0.1
     waited=$((waited + 1))
   done
+
+  # The pid file stays while the recorder does, so `start` cannot launch a
+  # second capture that fights this one for the camera and the encoder.
+  if kill -0 "$pid" 2>/dev/null; then
+    notify "Recording still finalising" "$(cat "$TAKE_FILE" 2>/dev/null || true)"
+    return 1
+  fi
 
   rm -f "$PID_FILE"
   notify "Recording saved" "$(cat "$TAKE_FILE" 2>/dev/null || true)"
