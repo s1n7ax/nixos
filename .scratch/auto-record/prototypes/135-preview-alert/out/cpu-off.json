@@ -1,0 +1,90 @@
+{
+  "record": "/tmp/p135-cpu.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 3,
+    "camera": 993,
+    "mic": 0,
+    "deskaudio": 0
+  },
+  "max_gap_s": {
+    "screen": 18.958,
+    "camera": 0.169,
+    "mic": 0.0,
+    "deskaudio": 0.0
+  },
+  "total_excised_ns": 17220754960,
+  "mux_buffers": 159,
+  "rebuilds": {
+    "mic": 0,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": null,
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {},
+  "level_counts": {},
+  "level_max_db": {},
+  "last_mux_pts_ns": 2645911706,
+  "preview": "off",
+  "preview_rate": 15,
+  "preview_frames": 0,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": null,
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 0.9768442230015353
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.1204445830007899
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.1304856400020071
+    },
+    {
+      "kind": "dead",
+      "feed": "screen",
+      "why": "no data for 2046ms",
+      "t": 3.166575717001251
+    },
+    {
+      "kind": "pause",
+      "t": 3.166617225000664,
+      "rt": 2051643162
+    },
+    {
+      "kind": "back",
+      "feed": "screen",
+      "t": 20.086748430003354,
+      "dead_ms": 16920.2,
+      "attempts": 0
+    },
+    {
+      "kind": "resume",
+      "t": 20.387428442001692,
+      "gap_ns": 17220754960,
+      "total_offset_ns": 17220754960
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 20.97747788700144
+    }
+  ]
+}

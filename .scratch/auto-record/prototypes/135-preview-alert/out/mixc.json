@@ -1,0 +1,145 @@
+{
+  "record": "/tmp/p135-mixc.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 3,
+    "camera": 893,
+    "mic": 419,
+    "deskaudio": 419
+  },
+  "max_gap_s": {
+    "screen": 3.631,
+    "camera": 0.086,
+    "mic": 0.043,
+    "deskaudio": 0.043
+  },
+  "total_excised_ns": 3999981144,
+  "mux_buffers": 832,
+  "rebuilds": {
+    "mic": 0,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": {
+    "id": 148,
+    "serial": 2690,
+    "name": "proto133mic",
+    "desc": "proto133mic",
+    "class": "Audio/Sink"
+  },
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {
+    "miclevel": {
+      "t": 19.046,
+      "rms": [
+        -31.8,
+        -31.8
+      ],
+      "peak": [
+        -28.8,
+        -28.8
+      ]
+    },
+    "desklevel": {
+      "t": 19.046,
+      "rms": [
+        -29.0,
+        -29.0
+      ],
+      "peak": [
+        -26.0,
+        -26.0
+      ]
+    },
+    "mixlevel": {
+      "t": 19.047,
+      "rms": [
+        -28.0,
+        -28.0
+      ],
+      "peak": [
+        -21.3,
+        -21.3
+      ]
+    }
+  },
+  "level_counts": {
+    "miclevel": 90,
+    "desklevel": 90,
+    "mixlevel": 90
+  },
+  "level_max_db": {
+    "miclevel": -31.8,
+    "desklevel": -29.0,
+    "mixlevel": -27.2
+  },
+  "last_mux_pts_ns": 13850018856,
+  "preview": "off",
+  "preview_rate": 15,
+  "preview_frames": 0,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": null,
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 1.0433638809990953
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.1851455260002695
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.186242259998835
+    },
+    {
+      "kind": "live",
+      "feed": "mic",
+      "t": 1.2005933569998888
+    },
+    {
+      "kind": "live",
+      "feed": "deskaudio",
+      "t": 1.2036065969987249
+    },
+    {
+      "kind": "event",
+      "what": "pause",
+      "t": 7.045022395999695
+    },
+    {
+      "kind": "pause",
+      "t": 7.045094172000972,
+      "rt": 5863103614
+    },
+    {
+      "kind": "event",
+      "what": "resume",
+      "t": 11.04500385999927
+    },
+    {
+      "kind": "resume",
+      "t": 11.045073352001054,
+      "gap_ns": 3999981144,
+      "total_offset_ns": 3999981144
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 19.04502667199995
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+[  0.012] gtk: display=wayland-1 renderer=default
+[  0.012] build: begin
+[  0.013] portal: proxy ready, handshake (cached token: yes)
+[  0.016] portal: CreateSession ok
+[  0.016] portal: SelectSources
+[  0.038] portal: Start returned {'streams': [(102, {'source_type': 1, 'size': (3440, 1440), 'position': (0, 0)})], 'source_type': 1, 'restore_token': '<restore-token-redacted>'}
+[  0.038] portal: Start returned a restore_token (SAME as the one sent), cached
+[  0.040] portal: handshake done in 27ms
+[  0.040] portal: fd=6 node=102
+[  0.040] pipeline: glvideomixer name=mix background=black ! video/x-raw(memory:GLMemory),width=2560,height=1440,framerate=60/1 ! tee name=t ! queue max-size-buffers=6 ! valve name=vvalve ! queue max-size-buffers=6 ! nvh264enc bitrate=50000 rc-mode=cbr gop-size=120 ! h264parse ! queue ! isofmp4mux name=mux fragment-duration=500000000 header-update-mode=rewrite write-mehd=true ! filesink name=sink location=/tmp/p135-dl.mp4 videotestsrc pattern=ball is-live=true ! video/x-raw,width=1024,height=576,framerate=50/1 ! videoconvert ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),format=RGBA ! mix.sink_1  t. ! queue max-size-buffers=2 leaky=downstream ! videorate drop-only=true max-rate=15 ! gldownload ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=440,height=248 ! gtk4paintablesink name=preview sync=false 
+[  0.972] LAYOUT 2
+[  0.973] pinned the pipeline to GstSystemClock
+[  1.101] preview: window presented
+[  1.195] LIVE  screen: first buffer
+[  1.202] LIVE  camera: first buffer
+[  1.227] vvalve out #1: pts=0 dts=18446744073709551615 dur=16666666
+[  1.241] vvalve out #2: pts=16666666 dts=18446744073709551615 dur=16666667
+[  1.242] preview: first frame, caps=video/x-raw, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)496/495, format=(string)RGBA
+[  1.248] vvalve out #3: pts=33333333 dts=18446744073709551615 dur=16666667
+[  1.250] vvalve out #4: pts=50000000 dts=18446744073709551615 dur=16666666
+[  1.294] vvalve out #5: pts=66666666 dts=18446744073709551615 dur=16666667
+[  2.101] pipeline clock: GstSystemClock (SystemClock)
+[  2.101] rt=  0.91s mux_pts=  0.87s frames=53 screen=16 camera=45 mic=0 deskaudio=0 paused=False
+[  3.101] rt=  1.91s mux_pts=  1.87s frames=113 screen=31 camera=95 mic=0 deskaudio=0 paused=False
+[  4.101] rt=  2.91s mux_pts=  2.87s frames=173 screen=46 camera=145 mic=0 deskaudio=0 paused=False
+[  5.101] rt=  3.91s mux_pts=  3.87s frames=233 screen=60 camera=195 mic=0 deskaudio=0 paused=False
+[  6.101] rt=  4.91s mux_pts=  4.87s frames=293 screen=76 camera=245 mic=0 deskaudio=0 paused=False
+[  7.101] rt=  5.91s mux_pts=  5.87s frames=353 screen=91 camera=295 mic=0 deskaudio=0 paused=False
+[  8.101] rt=  6.91s mux_pts=  6.87s frames=413 screen=106 camera=345 mic=0 deskaudio=0 paused=False
+[  9.101] rt=  7.91s mux_pts=  7.87s frames=473 screen=121 camera=395 mic=0 deskaudio=0 paused=False
+[ 10.101] rt=  8.91s mux_pts=  8.87s frames=533 screen=136 camera=445 mic=0 deskaudio=0 paused=False
+[ 11.101] rt=  9.91s mux_pts=  9.87s frames=593 screen=150 camera=495 mic=0 deskaudio=0 paused=False
+[ 12.101] rt= 10.91s mux_pts= 10.87s frames=653 screen=166 camera=545 mic=0 deskaudio=0 paused=False
+[ 13.101] rt= 11.91s mux_pts= 11.87s frames=713 screen=180 camera=595 mic=0 deskaudio=0 paused=False
+[ 14.101] rt= 12.91s mux_pts= 12.87s frames=773 screen=196 camera=645 mic=0 deskaudio=0 paused=False
+[ 15.101] rt= 13.91s mux_pts= 13.87s frames=833 screen=211 camera=695 mic=0 deskaudio=0 paused=False
+[ 16.101] rt= 14.91s mux_pts= 14.87s frames=893 screen=226 camera=745 mic=0 deskaudio=0 paused=False
+[ 17.101] rt= 15.91s mux_pts= 15.87s frames=953 screen=241 camera=795 mic=0 deskaudio=0 paused=False
+[ 18.101] rt= 16.91s mux_pts= 16.87s frames=1013 screen=256 camera=845 mic=0 deskaudio=0 paused=False
+[ 19.101] rt= 17.91s mux_pts= 17.87s frames=1073 screen=271 camera=895 mic=0 deskaudio=0 paused=False
+[ 20.101] rt= 18.91s mux_pts= 18.87s frames=1133 screen=286 camera=945 mic=0 deskaudio=0 paused=False
+[ 21.101] EVENT stop
+[ 21.101] EOS + finalise
+[ 21.212] bus EOS
+[ 21.232] REPORT {"record": "/tmp/p135-dl.mp4", "muxer": "isofmp4", "frag_ms": 500, "offset_mode": "rewrite", "counts": {"screen": 301, "camera": 995, "mic": 0, "deskaudio": 0}, "max_gap_s": {"screen": 0.521, "camera": 0.027, "mic": 0.0, "deskaudio": 0.0}, "total_excised_ns": 0, "mux_buffers": 1196, "rebuilds": {"mic": 0, "screen": 0, "deskaudio": 0}, "recasts": 0, "mic_node": null, "desk_node": null, "delays_ms": {}, "screen_delay_ms": 0, "delay_mode": "probe", "levels": {}, "level_counts": {}, "level_max_db": {}, "last_mux_pts_ns": 19916666666, "preview": "download", "preview_rate": 15, "preview_frames": 299, "dropped_repeat_pts": 0, "preview_geometry": {"logical": [352, 198], "surface_scale": 1.25, "physical": [440, 248]}, "alert_mode": "mapped", "alert_lead_ms": 34, "alert_paints_ms": [], "layout": 2, "events": [{"kind": "layout", "n": 2, "t": 0.9725078360024781}, {"kind": "live", "feed": "screen", "t": 1.1948191190022044}, {"kind": "live", "feed": "camera", "t": 1.2021345100001781}, {"kind": "preview-caps", "t": 1.2424175850028405, "caps": "video/x-raw, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)496/495, format=(string)RGBA"}, {"kind": "event", "what": "stop", "t": 21.101121125000645}]}

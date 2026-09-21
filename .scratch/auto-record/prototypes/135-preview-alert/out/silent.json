@@ -1,0 +1,144 @@
+{
+  "record": "/tmp/p135-sil.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 236,
+    "camera": 395,
+    "mic": 185,
+    "deskaudio": 371
+  },
+  "max_gap_s": {
+    "screen": 0.143,
+    "camera": 0.022,
+    "mic": 0.043,
+    "deskaudio": 0.022
+  },
+  "total_excised_ns": 0,
+  "mux_buffers": 475,
+  "rebuilds": {
+    "mic": 0,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": {
+    "id": 148,
+    "serial": 2690,
+    "name": "proto133mic",
+    "desc": "proto133mic",
+    "class": "Audio/Sink"
+  },
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {
+    "desklevel": {
+      "t": 9.204,
+      "rms": [
+        -700.0,
+        -700.0
+      ],
+      "peak": [
+        -350.0,
+        -350.0
+      ]
+    },
+    "mixlevel": {
+      "t": 9.206,
+      "rms": [
+        -37.0,
+        -37.0
+      ],
+      "peak": [
+        -34.0,
+        -34.0
+      ]
+    },
+    "miclevel": {
+      "t": 9.204,
+      "rms": [
+        -37.0,
+        -37.0
+      ],
+      "peak": [
+        -34.0,
+        -34.0
+      ]
+    }
+  },
+  "level_counts": {
+    "desklevel": 80,
+    "mixlevel": 80,
+    "miclevel": 79
+  },
+  "level_max_db": {
+    "desklevel": -200.0,
+    "mixlevel": -37.0,
+    "miclevel": -37.0
+  },
+  "last_mux_pts_ns": 7900000000,
+  "preview": "gl",
+  "preview_rate": 15,
+  "preview_frames": 119,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": {
+    "logical": [
+      352,
+      249
+    ],
+    "surface_scale": 1.25,
+    "physical": [
+      440,
+      311
+    ]
+  },
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 1.0600219070001913
+    },
+    {
+      "kind": "live",
+      "feed": "deskaudio",
+      "t": 1.3064590499998303
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.3089939970013802
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.3140934650000418
+    },
+    {
+      "kind": "live",
+      "feed": "mic",
+      "t": 1.3333026300024358
+    },
+    {
+      "kind": "preview-caps",
+      "t": 1.3685473049990833,
+      "caps": "video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D"
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/m2-silent.png",
+      "t": 6.203711209000176
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 9.203700876001676
+    }
+  ]
+}

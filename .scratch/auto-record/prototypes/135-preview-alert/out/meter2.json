@@ -1,0 +1,217 @@
+{
+  "record": "/tmp/p135-meter2.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 686,
+    "camera": 1195,
+    "mic": 435,
+    "deskaudio": 560
+  },
+  "max_gap_s": {
+    "screen": 0.26,
+    "camera": 0.069,
+    "mic": 5.415,
+    "deskaudio": 0.043
+  },
+  "total_excised_ns": 5714459562,
+  "mux_buffers": 1091,
+  "rebuilds": {
+    "mic": 1,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": {
+    "id": 148,
+    "serial": 2690,
+    "name": "proto133mic",
+    "desc": "proto133mic",
+    "class": "Audio/Sink"
+  },
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {
+    "miclevel": {
+      "t": 25.199,
+      "rms": [
+        -37.0,
+        -37.0
+      ],
+      "peak": [
+        -34.0,
+        -34.0
+      ]
+    },
+    "mixlevel": {
+      "t": 25.199,
+      "rms": [
+        -37.0,
+        -37.0
+      ],
+      "peak": [
+        -34.0,
+        -34.0
+      ]
+    },
+    "desklevel": {
+      "t": 25.196,
+      "rms": [
+        -29.0,
+        -29.0
+      ],
+      "peak": [
+        -26.0,
+        -26.0
+      ]
+    }
+  },
+  "level_counts": {
+    "miclevel": 186,
+    "mixlevel": 240,
+    "desklevel": 239
+  },
+  "level_max_db": {
+    "miclevel": -37.0,
+    "mixlevel": -28.4,
+    "desklevel": -28.8
+  },
+  "last_mux_pts_ns": 18185540438,
+  "preview": "gl",
+  "preview_rate": 15,
+  "preview_frames": 359,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": {
+    "logical": [
+      352,
+      249
+    ],
+    "surface_scale": 1.25,
+    "physical": [
+      440,
+      311
+    ]
+  },
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [
+    [
+      "show",
+      18.0
+    ],
+    [
+      "hide",
+      14.7
+    ]
+  ],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 1.0563922110013664
+    },
+    {
+      "kind": "live",
+      "feed": "mic",
+      "t": 1.3065112360018247
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.307005811999261
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.3100611430018034
+    },
+    {
+      "kind": "live",
+      "feed": "deskaudio",
+      "t": 1.3346619719995942
+    },
+    {
+      "kind": "preview-caps",
+      "t": 1.3656769070003065,
+      "caps": "video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D"
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/m2-live.png",
+      "t": 5.195810362001794
+    },
+    {
+      "kind": "event",
+      "what": "sh=./mickill.sh",
+      "t": 8.19581788999858
+    },
+    {
+      "kind": "dead",
+      "feed": "mic",
+      "why": "pipewire registry removed node 46",
+      "t": 8.448680211000465
+    },
+    {
+      "kind": "pause",
+      "t": 8.44873799099878,
+      "rt": 7146008210
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/m2-dead.png",
+      "t": 10.196020580999175
+    },
+    {
+      "kind": "event",
+      "what": "sh=./micstart.sh",
+      "t": 13.195845107999048
+    },
+    {
+      "kind": "swap",
+      "feed": "mic",
+      "t": 13.778963241999008,
+      "unlink_ms": 0.1,
+      "to_null_ms": 1.2,
+      "null_ret": "success",
+      "remove_ms": 0.0,
+      "configure_ms": 76.0,
+      "relink_ms": 10.5,
+      "total_ms": 87.9,
+      "link": "ok",
+      "serial": 2690,
+      "old_serial": 2632,
+      "node_id": 148
+    },
+    {
+      "kind": "back",
+      "feed": "mic",
+      "t": 13.829030616001546,
+      "dead_ms": 5380.3,
+      "attempts": 1
+    },
+    {
+      "kind": "alert-hide",
+      "t": 14.129108961999009
+    },
+    {
+      "kind": "resume",
+      "t": 14.163217059001909,
+      "gap_ns": 5714459562,
+      "total_offset_ns": 5714459562
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/m2-back.png",
+      "t": 18.195802524998726
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 25.195941401998425
+    }
+  ]
+}

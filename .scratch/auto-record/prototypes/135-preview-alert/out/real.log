@@ -1,0 +1,77 @@
+[  0.011] gtk: display=wayland-1 renderer=default
+[  0.011] build: begin
+[  0.012] portal: proxy ready, handshake (cached token: yes)
+[  0.015] portal: CreateSession ok
+[  0.015] portal: SelectSources
+[  0.046] portal: Start returned {'streams': [(92, {'source_type': 1, 'size': (3440, 1440), 'position': (0, 0)})], 'source_type': 1, 'restore_token': '<restore-token-redacted>'}
+[  0.046] portal: Start returned a restore_token (SAME as the one sent), cached
+[  0.048] portal: handshake done in 36ms
+[  0.048] portal: fd=9 node=92
+[  0.105] mic: id=89 serial=1271 name=alsa_input.usb-fifine_Microphones_fifine_Microphone_REV1.0-00.analog-stereo class=Audio/Source
+[  0.105] deskaudio: following the default sink (no target-object)
+[  0.106] pipeline: glvideomixer name=mix background=black ! video/x-raw(memory:GLMemory),width=2560,height=1440,framerate=60/1 ! tee name=t ! queue max-size-buffers=6 ! valve name=vvalve ! queue max-size-buffers=6 ! nvh264enc bitrate=50000 rc-mode=cbr gop-size=120 ! h264parse ! queue ! isofmp4mux name=mux fragment-duration=500000000 header-update-mode=rewrite write-mehd=true ! filesink name=sink location=/tmp/p135-real.mp4 videotestsrc pattern=ball is-live=true ! video/x-raw,width=1024,height=576,framerate=50/1 ! videoconvert ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),format=RGBA ! mix.sink_1  pipewiresrc name=mic target-object=1271 do-timestamp=true ! audio/x-raw,channels=2 ! queue max-size-time=200000000 ! valve name=micvalve ! level name=miclevel post-messages=true interval=100000000 ! audioconvert ! audioresample ! tee name=mict  pipewiresrc name=desk do-timestamp=true stream-properties="props,stream.capture.sink=true" ! audio/x-raw,channels=2 ! queue max-size-time=200000000 ! valve name=deskvalve ! level name=desklevel post-messages=true interval=100000000 ! audioconvert ! audioresample ! tee name=deskt  audiomixer name=amix latency=100000000 start-time-selection=first ! level name=mixlevel post-messages=true interval=100000000 ! valve name=mixvalve ! audioconvert ! audioresample ! avenc_aac name=mixaac bitrate=192000 ! aacparse ! queue ! mux.sink_1  mict. ! queue max-size-time=400000000 max-size-buffers=0 max-size-bytes=0 ! amix.sink_0  deskt. ! queue max-size-time=400000000 max-size-buffers=0 max-size-bytes=0 ! amix.sink_1  t. ! queue max-size-buffers=2 leaky=downstream ! videorate drop-only=true max-rate=15 ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),format=RGBA,width=440,height=248 ! gtk4paintablesink name=preview sync=false 
+[  1.050] LAYOUT 2
+[  1.050] excision probe on mixaac
+[  1.051] pinned the pipeline to GstSystemClock
+[  1.191] preview: window presented
+[  1.195] alert: window created (mode=mapped)
+[  1.324] LIVE  camera: first buffer
+[  1.360] LIVE  deskaudio: first buffer
+[  1.360] LIVE  mic: first buffer
+[  1.363] LIVE  screen: first buffer
+[  1.386] vvalve out #1: pts=0 dts=18446744073709551615 dur=16666666
+[  1.386] preview: first frame, caps=video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D
+[  1.403] vvalve out #2: pts=16666666 dts=18446744073709551615 dur=16666667
+[  1.405] vvalve out #3: pts=33333333 dts=18446744073709551615 dur=16666667
+[  1.411] vvalve out #4: pts=50000000 dts=18446744073709551615 dur=16666666
+[  1.416] vvalve out #5: pts=66666666 dts=18446744073709551615 dur=16666667
+[  2.195] pipeline clock: GstSystemClock (SystemClock)
+[  2.195] rt=  0.88s mux_pts=  0.83s frames=51 screen=27 camera=44 mic=39 deskaudio=40 paused=False
+[  3.195] EVENT geom
+[  3.195] preview geometry: {"logical": [352, 249], "surface_scale": 1.25, "physical": [440, 311]}
+[  3.195] rt=  1.88s mux_pts=  1.83s frames=111 screen=58 camera=94 mic=86 deskaudio=87 paused=False
+[  4.195] EVENT grim=out/shot-l2.png
+[  4.195]   $ grim -o DP-3 out/shot-l2.png
+[  4.419] rt=  3.10s mux_pts=  3.05s frames=184 screen=89 camera=155 mic=143 deskaudio=144 paused=False
+[  5.419] rt=  4.10s mux_pts=  4.05s frames=244 screen=120 camera=205 mic=190 deskaudio=191 paused=False
+[  6.195] EVENT layout=1
+[  6.195] LAYOUT 1
+[  6.419] rt=  5.10s mux_pts=  5.07s frames=305 screen=151 camera=255 mic=237 deskaudio=238 paused=False
+[  7.419] rt=  6.10s mux_pts=  6.07s frames=365 screen=181 camera=305 mic=284 deskaudio=284 paused=False
+[  8.195] EVENT grim=out/shot-l1.png
+[  8.195]   $ grim -o DP-3 out/shot-l1.png
+[  8.419] rt=  7.10s mux_pts=  7.05s frames=424 screen=206 camera=355 mic=331 deskaudio=331 paused=False
+[  9.419] rt=  8.10s mux_pts=  8.07s frames=485 screen=237 camera=405 mic=378 deskaudio=378 paused=False
+[ 10.195] EVENT layout=3
+[ 10.195] LAYOUT 3
+[ 10.419] rt=  9.10s mux_pts=  9.05s frames=544 screen=266 camera=455 mic=425 deskaudio=425 paused=False
+[ 11.419] rt= 10.10s mux_pts= 10.05s frames=604 screen=296 camera=505 mic=472 deskaudio=472 paused=False
+[ 12.195] EVENT grim=out/shot-l3.png
+[ 12.195]   $ grim -o DP-3 out/shot-l3.png
+[ 12.419] rt= 11.10s mux_pts= 11.05s frames=664 screen=322 camera=555 mic=518 deskaudio=519 paused=False
+[ 13.419] rt= 12.10s mux_pts= 12.07s frames=725 screen=353 camera=605 mic=565 deskaudio=566 paused=False
+[ 14.195] EVENT layout=2
+[ 14.195] LAYOUT 2
+[ 14.419] rt= 13.10s mux_pts= 13.07s frames=785 screen=383 camera=655 mic=612 deskaudio=613 paused=False
+[ 15.419] rt= 14.10s mux_pts= 14.05s frames=844 screen=412 camera=705 mic=659 deskaudio=659 paused=False
+[ 16.195] EVENT pause
+[ 16.195] PAUSE at running-time 14.875s
+[ 16.419] rt= 15.10s mux_pts= 14.85s frames=892 screen=443 camera=755 mic=706 deskaudio=706 paused=True
+[ 17.419] rt= 16.10s mux_pts= 14.85s frames=892 screen=473 camera=805 mic=753 deskaudio=753 paused=True
+[ 18.195] EVENT grim=out/shot-alert.png
+[ 18.195]   $ grim -o DP-3 out/shot-alert.png
+[ 18.419] rt= 17.10s mux_pts= 14.85s frames=892 screen=499 camera=855 mic=800 deskaudio=800 paused=True
+[ 19.419] rt= 18.10s mux_pts= 14.85s frames=892 screen=530 camera=905 mic=847 deskaudio=847 paused=True
+[ 20.419] rt= 19.10s mux_pts= 14.85s frames=892 screen=559 camera=955 mic=893 deskaudio=894 paused=True
+[ 21.195] EVENT resume
+[ 21.229] RESUME after 5.034s (total excised 5.034s, mode=rewrite)
+[ 21.419] rt= 20.10s mux_pts= 15.02s frames=902 screen=590 camera=1005 mic=940 deskaudio=941 paused=False
+[ 22.419] rt= 21.10s mux_pts= 16.02s frames=962 screen=620 camera=1055 mic=987 deskaudio=988 paused=False
+[ 23.419] rt= 22.10s mux_pts= 17.02s frames=1022 screen=650 camera=1105 mic=1034 deskaudio=1034 paused=False
+[ 24.419] rt= 23.10s mux_pts= 18.02s frames=1082 screen=681 camera=1155 mic=1081 deskaudio=1081 paused=False
+[ 25.419] rt= 24.10s mux_pts= 19.02s frames=1142 screen=711 camera=1205 mic=1128 deskaudio=1128 paused=False
+[ 26.419] rt= 25.10s mux_pts= 20.03s frames=1203 screen=742 camera=1255 mic=1175 deskaudio=1175 paused=False
+[ 27.195] EVENT stop
+[ 27.195] EOS + finalise
+[ 27.369] bus EOS
+[ 27.376] REPORT {"record": "/tmp/p135-real.mp4", "muxer": "isofmp4", "frag_ms": 500, "offset_mode": "rewrite", "counts": {"screen": 765, "camera": 1294, "mic": 1211, "deskaudio": 1212}, "max_gap_s": {"screen": 0.126, "camera": 0.049, "mic": 0.022, "deskaudio": 0.022}, "total_excised_ns": 5034050807, "mux_buffers": 1252, "rebuilds": {"mic": 0, "screen": 0, "deskaudio": 0}, "recasts": 0, "mic_node": {"id": 89, "serial": 1271, "name": "alsa_input.usb-fifine_Microphones_fifine_Microphone_REV1.0-00.analog-stereo", "desc": "fifine  Microphone Analog Stereo", "class": "Audio/Source"}, "desk_node": null, "delays_ms": {}, "screen_delay_ms": 0, "delay_mode": "probe", "levels": {"desklevel": {"t": 27.196, "rms": [-700.0, -700.0], "peak": [-350.0, -350.0]}, "miclevel": {"t": 27.196, "rms": [-46.6, -46.6], "peak": [-35.5, -35.5]}, "mixlevel": {"t": 27.196, "rms": [-47.7, -47.7], "peak": [-36.1, -36.1]}}, "level_counts": {"desklevel": 208, "miclevel": 208, "mixlevel": 259}, "level_max_db": {"desklevel": -200.0, "miclevel": -44.1, "mixlevel": -44.1}, "last_mux_pts_ns": 20849282526, "preview": "gl", "preview_rate": 15, "preview_frames": 389, "dropped_repeat_pts": 0, "preview_geometry": {"logical": [352, 249], "surface_scale": 1.25, "physical": [440, 311]}, "alert_mode": "mapped", "alert_lead_ms": 34, "alert_paints_ms": [["show", 18.4], ["hide", 14.1]], "layout": 2, "events": [{"kind": "layout", "n": 2, "t": 1.0499520090015722}, {"kind": "live", "feed": "camera", "t": 1.324454327001149}, {"kind": "live", "feed": "deskaudio", "t": 1.3597863750001125}, {"kind": "live", "feed": "mic", "t": 1.3602602219980326}, {"kind": "live", "feed": "screen", "t": 1.3630534389994864}, {"kind": "preview-caps", "t": 1.3862885290000122, "caps": "video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D"}, {"kind": "event", "what": "geom", "t": 3.1949815719999606}, {"kind": "geometry", "t": 3.1951277180014586, "geom": {"logical": [352, 249], "surface_scale": 1.25, "physical": [440, 311]}}, {"kind": "event", "what": "grim=out/shot-l2.png", "t": 4.194987520000723}, {"kind": "event", "what": "layout=1", "t": 6.194983214998501}, {"kind": "layout", "n": 1, "t": 6.195058476998383}, {"kind": "event", "what": "grim=out/shot-l1.png", "t": 8.194986788999813}, {"kind": "event", "what": "layout=3", "t": 10.194994997000322}, {"kind": "layout", "n": 3, "t": 10.203106880999258}, {"kind": "event", "what": "grim=out/shot-l3.png", "t": 12.194996138001443}, {"kind": "event", "what": "layout=2", "t": 14.195005279001634}, {"kind": "layout", "n": 2, "t": 14.195100298999023}, {"kind": "event", "what": "pause", "t": 16.195018401998823}, {"kind": "pause", "t": 16.19508377600141, "rt": 14874989191}, {"kind": "event", "what": "grim=out/shot-alert.png", "t": 18.194999560000724}, {"kind": "event", "what": "resume", "t": 21.194996237998566}, {"kind": "alert-hide", "t": 21.195019702001446}, {"kind": "resume", "t": 21.229172464998555, "gap_ns": 5034050807, "total_offset_ns": 5034050807}, {"kind": "event", "what": "stop", "t": 27.19501343199954}]}

@@ -1,0 +1,243 @@
+{
+  "record": "/tmp/p135-real.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 765,
+    "camera": 1294,
+    "mic": 1211,
+    "deskaudio": 1212
+  },
+  "max_gap_s": {
+    "screen": 0.126,
+    "camera": 0.049,
+    "mic": 0.022,
+    "deskaudio": 0.022
+  },
+  "total_excised_ns": 5034050807,
+  "mux_buffers": 1252,
+  "rebuilds": {
+    "mic": 0,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": {
+    "id": 89,
+    "serial": 1271,
+    "name": "alsa_input.usb-fifine_Microphones_fifine_Microphone_REV1.0-00.analog-stereo",
+    "desc": "fifine  Microphone Analog Stereo",
+    "class": "Audio/Source"
+  },
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {
+    "desklevel": {
+      "t": 27.196,
+      "rms": [
+        -700.0,
+        -700.0
+      ],
+      "peak": [
+        -350.0,
+        -350.0
+      ]
+    },
+    "miclevel": {
+      "t": 27.196,
+      "rms": [
+        -46.6,
+        -46.6
+      ],
+      "peak": [
+        -35.5,
+        -35.5
+      ]
+    },
+    "mixlevel": {
+      "t": 27.196,
+      "rms": [
+        -47.7,
+        -47.7
+      ],
+      "peak": [
+        -36.1,
+        -36.1
+      ]
+    }
+  },
+  "level_counts": {
+    "desklevel": 208,
+    "miclevel": 208,
+    "mixlevel": 259
+  },
+  "level_max_db": {
+    "desklevel": -200.0,
+    "miclevel": -44.1,
+    "mixlevel": -44.1
+  },
+  "last_mux_pts_ns": 20849282526,
+  "preview": "gl",
+  "preview_rate": 15,
+  "preview_frames": 389,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": {
+    "logical": [
+      352,
+      249
+    ],
+    "surface_scale": 1.25,
+    "physical": [
+      440,
+      311
+    ]
+  },
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [
+    [
+      "show",
+      18.4
+    ],
+    [
+      "hide",
+      14.1
+    ]
+  ],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 1.0499520090015722
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.324454327001149
+    },
+    {
+      "kind": "live",
+      "feed": "deskaudio",
+      "t": 1.3597863750001125
+    },
+    {
+      "kind": "live",
+      "feed": "mic",
+      "t": 1.3602602219980326
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.3630534389994864
+    },
+    {
+      "kind": "preview-caps",
+      "t": 1.3862885290000122,
+      "caps": "video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D"
+    },
+    {
+      "kind": "event",
+      "what": "geom",
+      "t": 3.1949815719999606
+    },
+    {
+      "kind": "geometry",
+      "t": 3.1951277180014586,
+      "geom": {
+        "logical": [
+          352,
+          249
+        ],
+        "surface_scale": 1.25,
+        "physical": [
+          440,
+          311
+        ]
+      }
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/shot-l2.png",
+      "t": 4.194987520000723
+    },
+    {
+      "kind": "event",
+      "what": "layout=1",
+      "t": 6.194983214998501
+    },
+    {
+      "kind": "layout",
+      "n": 1,
+      "t": 6.195058476998383
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/shot-l1.png",
+      "t": 8.194986788999813
+    },
+    {
+      "kind": "event",
+      "what": "layout=3",
+      "t": 10.194994997000322
+    },
+    {
+      "kind": "layout",
+      "n": 3,
+      "t": 10.203106880999258
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/shot-l3.png",
+      "t": 12.194996138001443
+    },
+    {
+      "kind": "event",
+      "what": "layout=2",
+      "t": 14.195005279001634
+    },
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 14.195100298999023
+    },
+    {
+      "kind": "event",
+      "what": "pause",
+      "t": 16.195018401998823
+    },
+    {
+      "kind": "pause",
+      "t": 16.19508377600141,
+      "rt": 14874989191
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/shot-alert.png",
+      "t": 18.194999560000724
+    },
+    {
+      "kind": "event",
+      "what": "resume",
+      "t": 21.194996237998566
+    },
+    {
+      "kind": "alert-hide",
+      "t": 21.195019702001446
+    },
+    {
+      "kind": "resume",
+      "t": 21.229172464998555,
+      "gap_ns": 5034050807,
+      "total_offset_ns": 5034050807
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 27.19501343199954
+    }
+  ]
+}

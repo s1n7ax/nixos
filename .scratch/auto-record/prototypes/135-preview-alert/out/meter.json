@@ -1,0 +1,217 @@
+{
+  "record": "/tmp/p135-meter.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 685,
+    "camera": 1195,
+    "mic": 434,
+    "deskaudio": 560
+  },
+  "max_gap_s": {
+    "screen": 0.268,
+    "camera": 0.049,
+    "mic": 5.429,
+    "deskaudio": 0.046
+  },
+  "total_excised_ns": 5716925947,
+  "mux_buffers": 1091,
+  "rebuilds": {
+    "mic": 1,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": {
+    "id": 46,
+    "serial": 2632,
+    "name": "proto133mic",
+    "desc": "proto133mic",
+    "class": "Audio/Sink"
+  },
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {
+    "desklevel": {
+      "t": 25.192,
+      "rms": [
+        -29.0,
+        -29.0
+      ],
+      "peak": [
+        -26.0,
+        -26.0
+      ]
+    },
+    "miclevel": {
+      "t": 25.193,
+      "rms": [
+        -37.0,
+        -37.0
+      ],
+      "peak": [
+        -34.0,
+        -34.0
+      ]
+    },
+    "mixlevel": {
+      "t": 25.193,
+      "rms": [
+        -700.0,
+        -700.0
+      ],
+      "peak": [
+        -350.0,
+        -350.0
+      ]
+    }
+  },
+  "level_counts": {
+    "desklevel": 182,
+    "miclevel": 181,
+    "mixlevel": 238
+  },
+  "level_max_db": {
+    "desklevel": -26.6,
+    "miclevel": -34.4,
+    "mixlevel": -28.4
+  },
+  "last_mux_pts_ns": 18183074053,
+  "preview": "gl",
+  "preview_rate": 15,
+  "preview_frames": 359,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": {
+    "logical": [
+      352,
+      249
+    ],
+    "surface_scale": 1.25,
+    "physical": [
+      440,
+      311
+    ]
+  },
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [
+    [
+      "show",
+      17.9
+    ],
+    [
+      "hide",
+      14.9
+    ]
+  ],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 1.0539725560010993
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.3028407800011337
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.3048013000006904
+    },
+    {
+      "kind": "live",
+      "feed": "deskaudio",
+      "t": 1.3256226029989193
+    },
+    {
+      "kind": "live",
+      "feed": "mic",
+      "t": 1.3307576900006097
+    },
+    {
+      "kind": "preview-caps",
+      "t": 1.3557635220022348,
+      "caps": "video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D"
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/meter-live.png",
+      "t": 5.192046311000013
+    },
+    {
+      "kind": "event",
+      "what": "sh=./mickill.sh",
+      "t": 8.192026315999101
+    },
+    {
+      "kind": "dead",
+      "feed": "mic",
+      "why": "pipewire registry removed node 36",
+      "t": 8.452356636000331
+    },
+    {
+      "kind": "pause",
+      "t": 8.45241333300146,
+      "rt": 7153706426
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/meter-dead.png",
+      "t": 10.19204515200181
+    },
+    {
+      "kind": "event",
+      "what": "sh=./micstart.sh",
+      "t": 13.192025142001512
+    },
+    {
+      "kind": "swap",
+      "feed": "mic",
+      "t": 13.785140928001056,
+      "unlink_ms": 0.1,
+      "to_null_ms": 1.2,
+      "null_ret": "success",
+      "remove_ms": 0.0,
+      "configure_ms": 78.7,
+      "relink_ms": 10.4,
+      "total_ms": 90.5,
+      "link": "ok",
+      "serial": 2632,
+      "old_serial": 2562,
+      "node_id": 46
+    },
+    {
+      "kind": "back",
+      "feed": "mic",
+      "t": 13.835214525999618,
+      "dead_ms": 5382.9,
+      "attempts": 1
+    },
+    {
+      "kind": "alert-hide",
+      "t": 14.13525272500192
+    },
+    {
+      "kind": "resume",
+      "t": 14.169360800002323,
+      "gap_ns": 5716925947,
+      "total_offset_ns": 5716925947
+    },
+    {
+      "kind": "event",
+      "what": "grim=out/meter-back.png",
+      "t": 18.19200984100098
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 25.1920178750006
+    }
+  ]
+}

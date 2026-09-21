@@ -1,0 +1,53 @@
+[  0.011] gtk: display=wayland-1 renderer=default
+[  0.011] build: begin
+[  0.012] portal: proxy ready, handshake (cached token: yes)
+[  0.015] portal: CreateSession ok
+[  0.015] portal: SelectSources
+[  0.036] portal: Start returned {'streams': [(164, {'source_type': 1, 'size': (3440, 1440), 'position': (0, 0)})], 'source_type': 1, 'restore_token': '<restore-token-redacted>'}
+[  0.036] portal: Start returned a restore_token (SAME as the one sent), cached
+[  0.038] portal: handshake done in 26ms
+[  0.038] portal: fd=6 node=164
+[  0.099] mic: id=148 serial=2690 name=proto133mic class=Audio/Sink
+[  0.099] deskaudio: following the default sink (no target-object)
+[  0.099] pipeline: glvideomixer name=mix background=black ! video/x-raw(memory:GLMemory),width=2560,height=1440,framerate=60/1 ! queue max-size-buffers=6 ! valve name=vvalve ! queue max-size-buffers=6 ! nvh264enc bitrate=50000 rc-mode=cbr gop-size=120 ! h264parse ! queue ! isofmp4mux name=mux fragment-duration=500000000 header-update-mode=rewrite write-mehd=true ! filesink name=sink location=/tmp/p135-mixc.mp4 videotestsrc pattern=ball is-live=true ! video/x-raw,width=1024,height=576,framerate=50/1 ! videoconvert ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),format=RGBA ! mix.sink_1  pipewiresrc name=mic target-object=2690 do-timestamp=true ! audio/x-raw,channels=2 ! queue max-size-time=200000000 ! level name=miclevel post-messages=true interval=200000000 ! valve name=micvalve ! audioconvert ! audioresample ! tee name=mict  pipewiresrc name=desk do-timestamp=true stream-properties="props,stream.capture.sink=true" ! audio/x-raw,channels=2 ! queue max-size-time=200000000 ! level name=desklevel post-messages=true interval=200000000 ! valve name=deskvalve ! audioconvert ! audioresample ! tee name=deskt  audiomixer name=amix latency=100000000 start-time-selection=first ! level name=mixlevel post-messages=true interval=200000000 ! valve name=mixvalve ! audioconvert ! audioresample ! avenc_aac name=mixaac bitrate=192000 ! aacparse ! queue ! mux.sink_1  mict. ! queue max-size-time=400000000 max-size-buffers=0 max-size-bytes=0 ! amix.sink_0  deskt. ! queue max-size-time=400000000 max-size-buffers=0 max-size-bytes=0 ! amix.sink_1  mict. ! queue ! avenc_aac name=rawmicaac bitrate=192000 ! aacparse ! queue ! mux.sink_2  deskt. ! queue ! avenc_aac name=rawdeskaac bitrate=192000 ! aacparse ! queue ! mux.sink_3 
+[  1.043] LAYOUT 2
+[  1.044] excision probe on mixaac
+[  1.044] excision probe on rawmicaac
+[  1.044] excision probe on rawdeskaac
+[  1.044] pinned the pipeline to GstSystemClock
+[  1.045] registry watch: pw-mon running
+[  1.185] LIVE  screen: first buffer
+[  1.186] LIVE  camera: first buffer
+[  1.201] LIVE  mic: first buffer
+[  1.204] LIVE  deskaudio: first buffer
+[  1.209] vvalve out #1: pts=0 dts=18446744073709551615 dur=16666666
+[  1.236] vvalve out #2: pts=16666666 dts=18446744073709551615 dur=16666667
+[  1.252] vvalve out #3: pts=33333333 dts=18446744073709551615 dur=16666667
+[  1.269] vvalve out #4: pts=50000000 dts=18446744073709551615 dur=16666666
+[  1.286] vvalve out #5: pts=66666666 dts=18446744073709551615 dur=16666667
+[  2.045] pipeline clock: GstSystemClock (SystemClock)
+[  2.045] rt=  0.86s mux_pts=  0.82s frames=50 screen=1 camera=43 mic=20 deskaudio=20 paused=False
+[  3.045] rt=  1.86s mux_pts=  1.82s frames=110 screen=1 camera=93 mic=44 deskaudio=44 paused=False
+[  4.045] rt=  2.86s mux_pts=  2.82s frames=170 screen=1 camera=143 mic=67 deskaudio=67 paused=False
+[  5.045] rt=  3.86s mux_pts=  3.82s frames=230 screen=3 camera=193 mic=91 deskaudio=91 paused=False
+[  6.045] rt=  4.86s mux_pts=  4.82s frames=290 screen=3 camera=243 mic=114 deskaudio=114 paused=False
+[  7.045] EVENT pause
+[  7.045] PAUSE at running-time 5.863s
+[  7.045] rt=  5.86s mux_pts=  5.82s frames=350 screen=3 camera=293 mic=137 deskaudio=137 paused=True
+[  8.045] rt=  6.86s mux_pts=  5.82s frames=350 screen=3 camera=343 mic=161 deskaudio=161 paused=True
+[  9.045] rt=  7.86s mux_pts=  5.82s frames=350 screen=3 camera=393 mic=184 deskaudio=184 paused=True
+[ 10.045] rt=  8.86s mux_pts=  5.82s frames=350 screen=3 camera=443 mic=208 deskaudio=208 paused=True
+[ 11.045] EVENT resume
+[ 11.045] RESUME after 4.000s (total excised 4.000s, mode=rewrite)
+[ 11.045] rt=  9.86s mux_pts=  5.82s frames=350 screen=3 camera=493 mic=231 deskaudio=231 paused=False
+[ 12.045] rt= 10.86s mux_pts=  6.82s frames=410 screen=3 camera=543 mic=255 deskaudio=255 paused=False
+[ 13.045] rt= 11.86s mux_pts=  7.82s frames=470 screen=3 camera=593 mic=278 deskaudio=278 paused=False
+[ 14.045] rt= 12.86s mux_pts=  8.82s frames=530 screen=3 camera=643 mic=302 deskaudio=301 paused=False
+[ 15.045] rt= 13.86s mux_pts=  9.82s frames=590 screen=3 camera=693 mic=325 deskaudio=325 paused=False
+[ 16.045] rt= 14.86s mux_pts= 10.82s frames=650 screen=3 camera=743 mic=348 deskaudio=348 paused=False
+[ 17.045] rt= 15.86s mux_pts= 11.82s frames=710 screen=3 camera=793 mic=372 deskaudio=372 paused=False
+[ 18.045] rt= 16.86s mux_pts= 12.82s frames=770 screen=3 camera=843 mic=395 deskaudio=395 paused=False
+[ 19.045] EVENT stop
+[ 19.045] EOS + finalise
+[ 19.197] bus EOS
+[ 19.214] REPORT {"record": "/tmp/p135-mixc.mp4", "muxer": "isofmp4", "frag_ms": 500, "offset_mode": "rewrite", "counts": {"screen": 3, "camera": 893, "mic": 419, "deskaudio": 419}, "max_gap_s": {"screen": 3.631, "camera": 0.086, "mic": 0.043, "deskaudio": 0.043}, "total_excised_ns": 3999981144, "mux_buffers": 832, "rebuilds": {"mic": 0, "screen": 0, "deskaudio": 0}, "recasts": 0, "mic_node": {"id": 148, "serial": 2690, "name": "proto133mic", "desc": "proto133mic", "class": "Audio/Sink"}, "desk_node": null, "delays_ms": {}, "screen_delay_ms": 0, "delay_mode": "probe", "levels": {"miclevel": {"t": 19.046, "rms": [-31.8, -31.8], "peak": [-28.8, -28.8]}, "desklevel": {"t": 19.046, "rms": [-29.0, -29.0], "peak": [-26.0, -26.0]}, "mixlevel": {"t": 19.047, "rms": [-28.0, -28.0], "peak": [-21.3, -21.3]}}, "level_counts": {"miclevel": 90, "desklevel": 90, "mixlevel": 90}, "level_max_db": {"miclevel": -31.8, "desklevel": -29.0, "mixlevel": -27.2}, "last_mux_pts_ns": 13850018856, "preview": "off", "preview_rate": 15, "preview_frames": 0, "dropped_repeat_pts": 0, "preview_geometry": null, "alert_mode": "mapped", "alert_lead_ms": 34, "alert_paints_ms": [], "layout": 2, "events": [{"kind": "layout", "n": 2, "t": 1.0433638809990953}, {"kind": "live", "feed": "screen", "t": 1.1851455260002695}, {"kind": "live", "feed": "camera", "t": 1.186242259998835}, {"kind": "live", "feed": "mic", "t": 1.2005933569998888}, {"kind": "live", "feed": "deskaudio", "t": 1.2036065969987249}, {"kind": "event", "what": "pause", "t": 7.045022395999695}, {"kind": "pause", "t": 7.045094172000972, "rt": 5863103614}, {"kind": "event", "what": "resume", "t": 11.04500385999927}, {"kind": "resume", "t": 11.045073352001054, "gap_ns": 3999981144, "total_offset_ns": 3999981144}, {"kind": "event", "what": "stop", "t": 19.04502667199995}]}

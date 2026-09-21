@@ -1,0 +1,81 @@
+{
+  "record": "/tmp/p135-cpu.mp4",
+  "muxer": "isofmp4",
+  "frag_ms": 500,
+  "offset_mode": "rewrite",
+  "counts": {
+    "screen": 299,
+    "camera": 994,
+    "mic": 0,
+    "deskaudio": 0
+  },
+  "max_gap_s": {
+    "screen": 0.521,
+    "camera": 0.021,
+    "mic": 0.0,
+    "deskaudio": 0.0
+  },
+  "total_excised_ns": 0,
+  "mux_buffers": 1194,
+  "rebuilds": {
+    "mic": 0,
+    "screen": 0,
+    "deskaudio": 0
+  },
+  "recasts": 0,
+  "mic_node": null,
+  "desk_node": null,
+  "delays_ms": {},
+  "screen_delay_ms": 0,
+  "delay_mode": "probe",
+  "levels": {},
+  "level_counts": {},
+  "level_max_db": {},
+  "last_mux_pts_ns": 19883333333,
+  "preview": "gl",
+  "preview_rate": 15,
+  "preview_frames": 299,
+  "dropped_repeat_pts": 0,
+  "preview_geometry": {
+    "logical": [
+      352,
+      198
+    ],
+    "surface_scale": 1.25,
+    "physical": [
+      440,
+      248
+    ]
+  },
+  "alert_mode": "mapped",
+  "alert_lead_ms": 34,
+  "alert_paints_ms": [],
+  "layout": 2,
+  "events": [
+    {
+      "kind": "layout",
+      "n": 2,
+      "t": 0.9651210209995043
+    },
+    {
+      "kind": "live",
+      "feed": "screen",
+      "t": 1.2231710499982
+    },
+    {
+      "kind": "live",
+      "feed": "camera",
+      "t": 1.2322003619992756
+    },
+    {
+      "kind": "preview-caps",
+      "t": 1.2551704379984585,
+      "caps": "video/x-raw(memory:GLMemory), format=(string)RGBA, width=(int)440, height=(int)248, framerate=(fraction)15/1, interlace-mode=(string)progressive, pixel-aspect-ratio=(fraction)1/1, texture-target=(string)2D"
+    },
+    {
+      "kind": "event",
+      "what": "stop",
+      "t": 21.10878282199701
+    }
+  ]
+}
