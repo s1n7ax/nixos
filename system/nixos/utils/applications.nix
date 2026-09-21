@@ -10,6 +10,8 @@ with lib;
     enable = true;
   };
 
+  programs.gpu-screen-recorder.enable = mkIf config.features.productivity.video-production.screen-capture.enable true;
+
   programs.hyprland = mkIf config.features.desktop.hyprland.enable {
     enable = true;
     xwayland.enable = true;

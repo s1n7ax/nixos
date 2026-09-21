@@ -31,6 +31,11 @@ hl.bind(
 	hl.dsp.exec_cmd([[slurp | grim -g - -t png ~/Pictures/"$(date +'screenshot %y-%m-%d %H:%M:%S').png"]])
 )
 
+-- Screen recording: full screen + facecam overlay, bottom-right
+hl.bind(amod .. " + F9", hl.dsp.exec_cmd("screen-record start"))
+hl.bind(amod .. " + F10", hl.dsp.exec_cmd("screen-record restart"))
+hl.bind(amod .. " + F11", hl.dsp.exec_cmd("screen-record stop"))
+
 -- System
 hl.bind(amod .. " + O", hl.dsp.exec_cmd("poweroff"))
 hl.bind(
