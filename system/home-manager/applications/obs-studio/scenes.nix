@@ -150,7 +150,8 @@ let
   /**
     Fills the whole canvas with the source, cropping whatever does not fit.
     Used for the fullscreen facecam. The camera only offers 1024x576, so this
-    is a 2.5x upscale and needs a real resampler rather than the nearest-
+    is a 3.4x upscale of a 16:9 frame into a 21:9 canvas — the top and bottom
+    are cropped away and it needs a real resampler rather than the nearest-
     neighbour `disable` that every other item can afford.
   */
   fillCanvas = {
@@ -163,9 +164,10 @@ let
   };
 
   /**
-    Fits the whole source inside the canvas, centred. The 21:9 monitor becomes
-    2560x1072 with a bar above and below rather than losing its edges, and
-    `area` is the filter that keeps small text readable through that downscale.
+    Fits the whole source inside the canvas, centred. The canvas is the
+    monitor's own resolution, so this is a 1:1 fit with no bars; it stays a
+    bounding box rather than a bare 1.0 scale so a different display still
+    lands inside the frame instead of overflowing it.
   */
   fitCanvas = {
     bounds_type = bounds.scaleInner;

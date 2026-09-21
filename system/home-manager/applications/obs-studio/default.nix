@@ -5,8 +5,12 @@
   ...
 }:
 let
+  /**
+    Matches the monitor exactly (see `hyprland.nix`), so the screen capture
+    fills the canvas edge to edge instead of being letterboxed into a 16:9 box.
+  */
   canvas = {
-    width = 2560;
+    width = 3440;
     height = 1440;
     fps = 60;
   };
