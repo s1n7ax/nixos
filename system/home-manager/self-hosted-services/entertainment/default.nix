@@ -14,5 +14,6 @@ with lib;
     ./sonarr.nix
     ./radarr.nix
     ./qbittorrent.nix
+    ./media-storage.nix
   ];
 }
