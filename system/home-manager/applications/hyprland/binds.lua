@@ -141,3 +141,12 @@ hl.bind(
 	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -f \"[v]oice-indicator/main.py\"'"),
 	{ release = true }
 )
+
+-- OBS scene switching and recording. OBS cannot register global hotkeys under
+-- Wayland, so its own F1-F3 bindings only fire while it has focus; these drive
+-- the same actions over obs-websocket via obs-ctl and work while recording.
+hl.bind(mod .. " + F1", hl.dsp.exec_cmd([[obs-ctl scene switch "Desktop + Facecam"]]))
+hl.bind(mod .. " + F2", hl.dsp.exec_cmd([[obs-ctl scene switch "Facecam Fullscreen"]]))
+hl.bind(mod .. " + F3", hl.dsp.exec_cmd([[obs-ctl scene switch "Desktop"]]))
+hl.bind(mod .. " + F9", hl.dsp.exec_cmd("obs-ctl recording toggle"))
+hl.bind(mod .. " + F10", hl.dsp.exec_cmd("obs-ctl recording toggle-pause"))
