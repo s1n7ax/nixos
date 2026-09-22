@@ -36,7 +36,10 @@
       fish.enable = true;
     };
 
-    editor.neovim.enable = true;
+    editor.neovim = {
+      enable = true;
+      useNightly = true;
+    };
 
     cli = {
       eza.enable = true;
