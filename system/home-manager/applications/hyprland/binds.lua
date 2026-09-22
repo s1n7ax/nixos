@@ -141,3 +141,4 @@ hl.bind(
 	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -f \"[v]oice-indicator/main.py\"'"),
 	{ release = true }
 )
+
