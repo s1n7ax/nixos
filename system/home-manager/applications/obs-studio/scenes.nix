@@ -60,15 +60,53 @@ let
     scaleOuter = 3;
   };
 
+  /**
+    The facecam overlay is square rather than the camera's native 16:9 frame.
+    `scaleOuter` bounds fill the box and clip the overflow, so the sides of the
+    picture are cropped away and the middle is kept.
+  */
   cameraBox = {
-    width = 640;
-    height = 360;
+    size = 480;
     margin = 48;
-    border = 4;
+    border = 6;
   };
 
-  cameraBoxLeft = width - cameraBox.width - cameraBox.margin;
-  cameraBoxTop = height - cameraBox.height - cameraBox.margin;
+  cameraBoxLeft = width - cameraBox.size - cameraBox.margin;
+  cameraBoxTop = height - cameraBox.size - cameraBox.margin;
+
+  borderSpeed = 0.12;
+
+  /**
+    Paints the facecam's border as a hue wheel that rotates once every
+    `1 / speed` seconds, on the colour source sitting behind the camera. Only
+    the outer `border` pixels are drawn; everything further in is transparent
+    (premultiplied, which is what obs-shaderfilter's alpha-divide output pass
+    expects) and would be hidden under the camera anyway.
+
+    obs-shaderfilter declares `uv_size` and `elapsed_time` itself, so the
+    shader must not redeclare them.
+  */
+  borderShader = ''
+    float3 hue(float h)
+    {
+      float3 rgb = clamp(abs(frac(h + float3(0.0, 0.66666667, 0.33333333)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+      return rgb * rgb * (3.0 - 2.0 * rgb);
+    }
+
+    float4 mainImage(VertData v_in) : TARGET
+    {
+      float2 px = v_in.uv * uv_size;
+      float edge = min(min(px.x, uv_size.x - px.x), min(px.y, uv_size.y - px.y));
+
+      float2 centred = v_in.uv - 0.5;
+      float angle = atan2(centred.y, centred.x) * 0.15915494 + 0.5;
+      float3 colour = hue(frac(angle + elapsed_time * ${toString borderSpeed}));
+
+      float thickness = ${toString cameraBox.border}.0;
+      float alpha = 1.0 - smoothstep(thickness - 1.0, thickness + 1.0, edge);
+      return float4(colour * alpha, alpha);
+    }
+  '';
 
   sourceDefaults = {
     prev_ver = 536936450;
@@ -185,8 +223,8 @@ let
       y = cameraBoxTop * 1.0;
     };
     bounds = {
-      x = cameraBox.width * 1.0;
-      y = cameraBox.height * 1.0;
+      x = cameraBox.size * 1.0;
+      y = cameraBox.size * 1.0;
     };
     scale_filter = "area";
   };
@@ -362,10 +400,20 @@ in
       uuid = uuid.cameraFrame;
       id = "color_source_v3";
       settings = {
-        color = 4293322470;
-        width = cameraBox.width + (2 * cameraBox.border);
-        height = cameraBox.height + (2 * cameraBox.border);
+        color = 4294967295;
+        width = cameraBox.size + (2 * cameraBox.border);
+        height = cameraBox.size + (2 * cameraBox.border);
       };
+      filters = [
+        (mkFilter {
+          name = "Animated Border";
+          id = "shader_filter";
+          settings = {
+            from_file = false;
+            shader_text = borderShader;
+          };
+        })
+      ];
     })
 
     (mkScene {

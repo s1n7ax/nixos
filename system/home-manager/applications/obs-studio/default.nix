@@ -89,6 +89,7 @@ in
       enable = true;
       plugins = [
         pkgs.obs-studio-plugins.obs-source-record
+        pkgs.obs-studio-plugins.obs-shaderfilter
         nvencDriverPath
       ];
     };
