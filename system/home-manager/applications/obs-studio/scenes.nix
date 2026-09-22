@@ -49,10 +49,11 @@ let
   };
 
   /**
-    OBS bounding-box modes. `scaleInner` letterboxes a source inside the box
-    (nothing is cropped); `scaleOuter` fills the box and clips the overflow.
+    OBS bounding-box modes. `scaleInner` letterboxes a source inside the box;
+    `scaleOuter` fills the box and lets the overflow spill past its edges.
     Both keep the layout correct whatever resolution the source reports, which
-    matters for a webcam that is not plugged in at activation time.
+    matters for a webcam that is not plugged in at activation time. Neither
+    one clips on its own — that is `bounds_crop`, OBS's "Crop to Bounding Box".
   */
   bounds = {
     none = 0;
@@ -62,8 +63,9 @@ let
 
   /**
     The facecam overlay is square rather than the camera's native 16:9 frame.
-    `scaleOuter` bounds fill the box and clip the overflow, so the sides of the
-    picture are cropped away and the middle is kept.
+    `scaleOuter` bounds scale the picture until it covers the box and
+    `bounds_crop` trims what hangs over, so the sides are cut away and the
+    middle is kept.
   */
   cameraBox = {
     size = 480;
@@ -218,6 +220,7 @@ let
 
   cameraOverlay = {
     bounds_type = bounds.scaleOuter;
+    bounds_crop = true;
     pos = {
       x = cameraBoxLeft * 1.0;
       y = cameraBoxTop * 1.0;
