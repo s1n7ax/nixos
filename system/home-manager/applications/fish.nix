@@ -23,7 +23,7 @@ lib.mkIf config.features.shell.fish.enable {
     + ''
       stty -ixon
 
-      set -x PATH $PATH ~/.cargo/bin
+      fish_add_path -gm ~/.cargo/bin
 
       # disable greeting
       set -g fish_greeting
