@@ -243,11 +243,11 @@ with lib;
                 car:
                   mask:
                     parked_vehicles:
-                      coordinates: "0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997"
+                      coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
                 motorcycle:
                   mask:
                     parked_vehicles:
-                      coordinates: "0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997"
+                      coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/101/
