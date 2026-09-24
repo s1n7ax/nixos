@@ -22,6 +22,7 @@
     ./dev/ai
     ./dev/editorconfig.nix
     ./dev/playwright.nix
+    ./docker.nix
 
     ./fuzzel.nix
     ./screen-capture.nix

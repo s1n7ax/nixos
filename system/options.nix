@@ -413,13 +413,6 @@ with lib;
             description = "Claude Code AI assistant";
           };
         };
-        cursor-cli = {
-          enable = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Cursor CLI (cursor-agent) AI assistant";
-          };
-        };
         headroom = {
           enable = mkOption {
             type = types.bool;
