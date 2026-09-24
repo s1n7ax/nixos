@@ -142,8 +142,8 @@ in
       with pkgs;
       [
         deno
-        nodejs_22
-        pnpm
+        nodejs_24
+        (if stdenv.isDarwin then pnpm_9 else pnpm)
         yarn
         emmet-language-server
         vscode-langservers-extracted
@@ -152,7 +152,6 @@ in
         prettier
         biome
         eslint_d
-        typescript-language-server
         supabase-cli
         pkgs-unstable.typescript
         pkgs-unstable.svelte-language-server
@@ -225,7 +224,13 @@ in
       ]
     )
     ++ lib.optionals f.development.toml.enable (with pkgs; [ taplo ])
-    ++ lib.optionals f.development.yaml.enable (with pkgs; [ yaml-language-server ])
+    ++ lib.optionals f.development.yaml.enable (
+      with pkgs;
+      [
+        yaml-language-server
+        yq-go
+      ]
+    )
     ++ lib.optionals f.development.database.enable (
       with pkgs;
       [

@@ -2,3 +2,6 @@ result
 system/home-manager/applications/hyprland/.luarc.json
 .playwright-mcp/
 /google-iphone.png
+keys/
+nixos.qcow2
+$XDG_CONFIG_HOME/
