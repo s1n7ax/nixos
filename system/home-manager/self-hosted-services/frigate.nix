@@ -217,6 +217,9 @@ with lib;
               enabled: true
             motion:
               threshold: 40
+              mask:
+                timestamp:
+                  coordinates: "0,0,0.321,0,0.321,0.102,0,0.102"
             # 4K camera: main 2560x1440, sub 1280x720 — overrides the
             # global 640x360 detect resolution.
             detect:
