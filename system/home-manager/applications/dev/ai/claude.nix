@@ -7,6 +7,7 @@
 }:
 let
   headroom = config.features.development.ai.headroom;
+  skills = import ./skills;
 
   claudeCode =
     if headroom.enable then
@@ -25,5 +26,14 @@ in
 {
   config = lib.mkIf config.features.development.ai.claude.enable {
     home.packages = [ claudeCode ];
+
+    # Custom skills, version-controlled here so they're the same on every
+    # machine instead of hand-edited under ~/.claude/skills.
+    home.file = lib.listToAttrs (
+      map (name: {
+        name = ".claude/skills/${name}";
+        value.source = ./skills/${name};
+      }) skills.names
+    );
   };
 }

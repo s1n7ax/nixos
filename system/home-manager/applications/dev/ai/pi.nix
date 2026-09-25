@@ -4,6 +4,15 @@
   lib,
   ...
 }:
+let
+  skills = import ./skills;
+
+  # Pi loads skills from ~/.agents/skills, following the same Agent Skills
+  # spec as Claude Code's SKILL.md -- so the same directories are portable.
+  # "wayfinder" is skipped here: an unrelated third-party skill of the same
+  # name is already installed there by hand, and this must not clobber it.
+  piSkillNames = lib.filter (name: name != "wayfinder") skills.names;
+in
 {
   config = lib.mkIf config.features.development.ai.pi.enable {
     # pi-coding-agent (github.com/badlogic/pi-mono, pi.dev) -- Claude-Code-style
@@ -18,5 +27,12 @@
     #   - or export ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY (etc.)
     #     in the shell before invoking `pi`.
     home.packages = [ pkgs-unstable.pi-coding-agent ];
+
+    home.file = lib.listToAttrs (
+      map (name: {
+        name = ".agents/skills/${name}";
+        value.source = ./skills/${name};
+      }) piSkillNames
+    );
   };
 }
