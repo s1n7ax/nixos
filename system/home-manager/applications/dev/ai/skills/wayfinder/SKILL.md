@@ -11,13 +11,13 @@ Three rules hold the whole skill up. Everything below is detail.
 
 1. **One ticket holds everything.** The map, the requirements, every answer, every step's report. Nothing lives anywhere else.
 2. **Ask about requirements, never about implementation.** The user decides what it must do. You decide how to build it.
-3. **One wave per session, then stop.** A wave is either one step you walk with the user, or up to three independent steps handed to subagents at once. Every step is sized to fit one fresh ~100K-token context. The wave finishes, the results go back to the ticket, and you hand off.
+3. **One user step per session; subagent waves chain on their own.** A step that needs the user (`grill:`, `prototype:`, `task:`) runs in your session, and at most one of them per session. `research:` and `implement:` steps always run as subagents, and you launch them yourself, wave after wave, without waiting for a prompt, until this session has used about **30% of its context window**. Past that line, launch a wave only when the user says so. Every step is sized to fit one fresh ~100K-token context.
 
-## Why one wave per session
+## Why sessions stay short
 
-Long sessions rot: by step four the context is full of step one's dead ends and the work gets worse. The ticket is the memory instead of the context window. So a session loads the map, does exactly one step, writes what it learned back, and ends clean — the next session starts fresh and loses nothing, because the ticket has it all.
+Long sessions rot: by step four the context is full of step one's dead ends and the work gets worse. The ticket is the memory instead of the context window. So a session does at most one step with the user in it, writes what it learned back, and ends clean. The next session starts fresh and loses nothing, because the ticket has it all.
 
-A subagent is a fresh context too. That is why `research:` and `implement:` steps — the ones with no user in them — can run side by side: each subagent loads the map itself, does its one step, and hands back a report. Your context sees the reports, not the dead ends behind them. The rule is not loosened, only widened: one wave of fresh contexts per session, then stop.
+A subagent is a fresh context too. That is why `research:` and `implement:` steps, the ones with no user in them, always go to subagents: each subagent loads the map itself, does its one step, and hands back a report. Your context sees the reports, not the dead ends behind them. That is also why you can chain waves without asking: each wave costs your context only its briefs and reports. The 30% line is where that cost starts to matter. Once you cross it, stop chaining and let the user decide.
 
 This is also why the ticket is created **early**, before the requirements are finished: if the session dies mid-grilling, the answers already given are safe on the ticket.
 
@@ -75,13 +75,13 @@ The prefix on a checklist line tells the next session what kind of work it is, s
 | `task:` | Manual work that unblocks a decision — sign up for a service, provision access, move data | whoever can do it |
 | `implement:` | Write the real code, test it, commit, open a PR | you alone |
 
-The two rows that say **you alone** — `research:` and `implement:` — are the ones a subagent can run. The other three need the user in the room, so they run in your session, one at a time.
+The two rows that say **you alone** (`research:` and `implement:`) always run as subagents, never in your own context, even when the wave holds only one step. The other three need the user in the room, so they run in your session, one at a time.
 
 Size every step to one fresh session. If a step turns out bigger than that, **do not push through** — split it into sub-steps on the map, tick nothing, and hand off. A half-done step that was never split is the main way a map goes wrong.
 
 ## Running steps in parallel
 
-When the next unticked steps are `research:` or `implement:` and do not feed each other, run them at once as subagents instead of one per session.
+When the next unticked steps are `research:` or `implement:` and do not feed each other, run them at once as subagents.
 
 **Pick the wave.** Start at the first unticked step. Walk down `## Map` taking steps while every one is `research:` or `implement:` and none `needs:` a step that is still unticked. Stop at **three**. Three is a ceiling, not a target — a wave of one is normal.
 
@@ -102,7 +102,7 @@ Each brief carries what the agent cannot get for itself, and nothing more:
 
 If an agent hands back a split instead of a result, do not tick that line — replace it on the map with the sub-steps it named, and say so in the hand-off.
 
-Then stop. A finished wave ends the session exactly as a finished step does.
+Then go to **What comes next** below. Do not stop to ask.
 
 ## Asking questions
 
@@ -179,11 +179,25 @@ The user runs `/wayfinder <issue number or URL>`, or `/wayfinder` alone.
 
 1. **Find the map.** With an argument, load that issue. Without one, list open `wayfinder:map` issues in the repo; if there is exactly one, take it, otherwise ask which.
 2. **Read the body only** — Destination, Requirements, Out of scope, Map. Do not read every comment; zoom into a comment only when the current step needs what it holds.
-3. **Take the wave.** The first `- [ ]` line in `## Map` is the step. Its prefix decides what happens next — no asking the user what to work on, and no re-deciding the order. If it is `research:` or `implement:`, take the following such lines that nothing unticked blocks too, up to three, and run them as subagents (see **Running steps in parallel**). Any other prefix: that one step, alone, in this session.
-4. **Do that wave, and only that wave.**
-5. **Report it** (below), then hand off.
+3. **Take the next step.** The first `- [ ]` line in `## Map` is the step. Its prefix decides what happens next. Do not ask the user what to work on, and do not re-decide the order. If it is `research:` or `implement:`, take the following such lines that nothing unticked blocks too, up to three, and run them as subagents (see **Running steps in parallel**). Any other prefix: that one step, alone, in this session, with the user.
+4. **Finish it** (see **Finishing a step**), then go to **What comes next**.
 
 If the map has no unticked steps: check whether the destination is actually reached. If it is, say so and offer to close the issue. If it is not, the fog moved — chart the next steps and stop.
+
+## What comes next
+
+After every finished step or wave, the ticket is already up to date. Look at the new first unticked line and pick one:
+
+| Next step | Context used so far | Do this |
+| --- | --- | --- |
+| `research:` / `implement:` | under ~30% | Launch the next wave of subagents **right now**, in this same turn. Do not end your turn, do not ask "shall I continue?". |
+| `research:` / `implement:` | ~30% or more | Stop. Hand off, and say the next wave is ready. Launch it only if the user tells you to. If they do, launch one wave, then ask again. |
+| `grill:` / `prototype:` / `task:` | any | Stop and hand off. A user step always starts in a fresh session. |
+| none left | any | Check the destination (see above). |
+
+The context line is your own session's context window, not the subagents'. Judge it from what is loaded: the map body, the user step you ran, and every brief and report so far. When unsure, treat it as crossed.
+
+Example: the map is `grill, grill, implement, implement, research, grill, …`. Session 1 runs the first grill and hands off, because the next step is a grill. Session 2 runs the second grill, writes it to the ticket, then at once launches the two `implement:` steps and the `research:` step as one wave. When they report, the next step is a grill, so it hands off.
 
 ## Finishing a step
 
@@ -192,6 +206,8 @@ Every step ends the same way, whatever its type:
 1. **Post a comment** on the map issue — one per step in the wave: what was done, what was found, and every decision made that the user did not make. For `implement:`, include the PR link.
 2. **Tick the checklist lines** in the body, each linked to its own comment, and push the body once for the whole wave.
 3. **Update the rest of the body**: new requirements learned, fog that is now sharp enough to become steps, anything now out of scope, implementation decisions under **Implementation notes**.
-4. **Hand off** — end the session with the issue link, one line per step on what was done, and the next wave's steps, then tell the user to start a fresh session (`/clear`, then `/wayfinder <issue>`). Resist doing "just one more" step: the next session's clean context is worth more than the minutes saved.
+4. **Go to What comes next.** Do steps 1–3 before any new subagent launches, so the subagents read an up-to-date body.
+
+When **What comes next** says hand off: end the session with the issue link, one line per step done in this session, and the next steps, then tell the user to start a fresh session (`/clear`, then `/wayfinder <issue>`). Never run a second user step in the same session: the next session's clean context is worth more than the minutes saved.
 
 For `implement:` steps, finish the code the way this repo finishes code — tests run, committed on a branch, PR opened and linked back to the map issue. A subagent does this inside its own worktree, so its branch and PR are its own. If the repo has skills for testing or committing (`/tdd`, `/git-commit`, `/code-review`), use them; the map does not replace how this repo works.
