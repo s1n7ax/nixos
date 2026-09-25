@@ -93,6 +93,7 @@
       ai = {
         enable = true;
         claude.enable = true;
+        pi.enable = true;
       };
       git.enable = true;
       github.enable = true;
