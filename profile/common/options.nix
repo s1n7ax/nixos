@@ -38,7 +38,6 @@
 
     editor.neovim = {
       enable = true;
-      useNightly = true;
     };
 
     cli = {
