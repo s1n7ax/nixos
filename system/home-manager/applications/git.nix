@@ -5,6 +5,10 @@
       enable = true;
       lfs.enable = true;
 
+      ignores = [
+        ".claude/worktrees/"
+      ];
+
       settings = {
         user = {
           name = config.settings.username;
