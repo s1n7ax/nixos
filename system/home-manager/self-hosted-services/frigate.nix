@@ -217,6 +217,9 @@ with lib;
               enabled: true
             motion:
               threshold: 40
+              mask:
+                timestamp:
+                  coordinates: "0,0,0.321,0,0.321,0.102,0,0.102"
             # 4K camera: main 2560x1440, sub 1280x720 — overrides the
             # global 640x360 detect resolution.
             detect:
@@ -243,11 +246,11 @@ with lib;
                 car:
                   mask:
                     parked_vehicles:
-                      coordinates: "0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997"
+                      coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
                 motorcycle:
                   mask:
                     parked_vehicles:
-                      coordinates: "0,0.633,0.631,0.131,0.953,0.302,0.832,1,0.001,0.997"
+                      coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/101/
