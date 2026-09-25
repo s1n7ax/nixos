@@ -413,6 +413,13 @@ with lib;
             description = "Claude Code AI assistant";
           };
         };
+        pi = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "pi-coding-agent AI assistant (github.com/badlogic/pi-mono, pi.dev)";
+          };
+        };
         headroom = {
           enable = mkOption {
             type = types.bool;
