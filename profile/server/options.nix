@@ -38,6 +38,9 @@
       ai = {
         enable = true;
         claude.enable = true;
+        mcp = {
+          home-assistant.enable = true;
+        };
       };
     };
 

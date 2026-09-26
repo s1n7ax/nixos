@@ -25,7 +25,10 @@ let
 in
 {
   config = lib.mkIf config.features.development.ai.claude.enable {
-    home.packages = [ claudeCode ];
+    programs.claude-code = {
+      enable = true;
+      package = claudeCode;
+    };
 
     # Custom skills, version-controlled here so they're the same on every
     # machine instead of hand-edited under ~/.claude/skills.
