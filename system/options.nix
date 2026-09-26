@@ -436,14 +436,14 @@ with lib;
           nixos = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "mcp-nixos MCP server (nixpkgs, NixOS and home-manager option search)";
             };
           };
           playwright = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "Playwright MCP server (browser automation)";
             };
             headless = mkOption {
@@ -455,35 +455,35 @@ with lib;
           context7 = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "Context7 MCP server (up-to-date library documentation)";
             };
           };
           svelte = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "Svelte MCP server (@sveltejs/mcp, via npx)";
             };
           };
           nextjs = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "Next.js MCP server (next-devtools-mcp, via npx)";
             };
           };
           tailwindcss = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "Tailwind CSS MCP server (tailwindcss-mcp-server, via npx)";
             };
           };
           chakra-ui = {
             enable = mkOption {
               type = types.bool;
-              default = true;
+              default = false;
               description = "Chakra UI MCP server (@chakra-ui/react-mcp, via npx)";
             };
           };

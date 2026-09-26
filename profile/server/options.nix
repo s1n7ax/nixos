@@ -39,13 +39,6 @@
         enable = true;
         claude.enable = true;
         mcp = {
-          nixos.enable = false;
-          playwright.enable = false;
-          context7.enable = false;
-          svelte.enable = false;
-          nextjs.enable = false;
-          tailwindcss.enable = false;
-          chakra-ui.enable = false;
           home-assistant.enable = true;
         };
       };
