@@ -459,6 +459,34 @@ with lib;
               description = "Context7 MCP server (up-to-date library documentation)";
             };
           };
+          svelte = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Svelte MCP server (@sveltejs/mcp, via npx)";
+            };
+          };
+          nextjs = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Next.js MCP server (next-devtools-mcp, via npx)";
+            };
+          };
+          tailwindcss = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Tailwind CSS MCP server (tailwindcss-mcp-server, via npx)";
+            };
+          };
+          chakra-ui = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Chakra UI MCP server (@chakra-ui/react-mcp, via npx)";
+            };
+          };
           home-assistant = {
             enable = mkOption {
               type = types.bool;

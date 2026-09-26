@@ -21,6 +21,16 @@
         opencode.enable = false;
         claude.enable = false;
         headroom.enable = false;
+        mcp = {
+          nixos.enable = true;
+          playwright.enable = true;
+          context7.enable = true;
+          svelte.enable = true;
+          nextjs.enable = true;
+          tailwindcss.enable = true;
+          chakra-ui.enable = true;
+          home-assistant.enable = false;
+        };
       };
       git.enable = true;
       github.enable = true;

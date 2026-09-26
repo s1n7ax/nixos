@@ -19,7 +19,8 @@ let
     exec ${lib.getExe pkgs.ha-mcp} "$@"
   '';
 
-  # Option-gated servers, handed to every enabled client.
+  # Single MCP fleet, with each server enabled or disabled per-host through the
+  # profile's features.development.ai.mcp.* options.
   servers =
     lib.optionalAttrs cfg.nixos.enable {
       nixos.command = lib.getExe pkgs.mcp-nixos;
@@ -33,6 +34,42 @@ let
     // lib.optionalAttrs cfg.context7.enable {
       context7.command = lib.getExe pkgs.context7-mcp;
     }
+    // lib.optionalAttrs cfg.svelte.enable {
+      svelte = {
+        command = "npx";
+        args = [
+          "-y"
+          "@sveltejs/mcp"
+        ];
+      };
+    }
+    // lib.optionalAttrs cfg.nextjs.enable {
+      nextjs = {
+        command = "npx";
+        args = [
+          "-y"
+          "next-devtools-mcp@latest"
+        ];
+      };
+    }
+    // lib.optionalAttrs cfg.tailwindcss.enable {
+      tailwindcss = {
+        command = "npx";
+        args = [
+          "-y"
+          "tailwindcss-mcp-server"
+        ];
+      };
+    }
+    // lib.optionalAttrs cfg.chakra-ui.enable {
+      chakra-ui = {
+        command = "npx";
+        args = [
+          "-y"
+          "@chakra-ui/react-mcp"
+        ];
+      };
+    }
     // lib.optionalAttrs cfg.home-assistant.enable {
       home-assistant.command = "${homeAssistantMcp}";
     };
@@ -43,13 +80,13 @@ in
       {
         programs.mcp = {
           enable = true;
-          servers = common.mcpServers // servers;
+          servers = servers;
         };
       }
 
       # Claude Code ignores ~/.config/mcp/mcp.json; home-manager wraps `claude`
-      # with a generated --plugin-dir carrying these servers instead. The npx
-      # framework servers in common.nix stay opencode-only.
+      # with a generated --plugin-dir carrying the same server list instead. Pi
+      # gets the shared instructions via ~/.pi/agent/AGENTS.md in pi.nix.
       (lib.mkIf ai.claude.enable {
         programs.claude-code.mcpServers = servers;
       })

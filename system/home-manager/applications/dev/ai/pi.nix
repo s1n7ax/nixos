@@ -5,7 +5,19 @@
   ...
 }:
 let
+  common = import ./common.nix { };
   skills = import ./skills;
+
+  # Pi package declarations live in ~/.pi/agent/settings.json. pi-mcp-adapter
+  # adds native MCP support to Pi and automatically discovers the shared MCP
+  # config from ~/.config/mcp/mcp.json that programs.mcp writes in mcp.nix.
+  piSettings = builtins.toJSON {
+    packages = [
+      {
+        source = "npm:pi-mcp-adapter@2.37.0";
+      }
+    ];
+  };
 
   # Pi loads skills from ~/.agents/skills, following the same Agent Skills
   # spec as Claude Code's SKILL.md -- so the same directories are portable.
@@ -28,7 +40,11 @@ in
     #     in the shell before invoking `pi`.
     home.packages = [ pkgs-unstable.pi-coding-agent ];
 
-    home.file = lib.listToAttrs (
+    home.file = {
+      ".pi/agent/AGENTS.md".text = common.rules;
+      ".pi/agent/settings.json".text = piSettings;
+    }
+    // lib.listToAttrs (
       map (name: {
         name = ".agents/skills/${name}";
         value.source = ./skills/${name};
