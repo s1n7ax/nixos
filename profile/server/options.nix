@@ -38,6 +38,10 @@
       ai = {
         enable = true;
         claude.enable = true;
+        mcp = {
+          playwright.headless = true;
+          home-assistant.enable = true;
+        };
       };
     };
 

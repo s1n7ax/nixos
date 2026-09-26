@@ -432,6 +432,46 @@ with lib;
             description = "Loopback port the Headroom proxy listens on";
           };
         };
+        mcp = {
+          nixos = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "mcp-nixos MCP server (nixpkgs, NixOS and home-manager option search)";
+            };
+          };
+          playwright = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Playwright MCP server (browser automation)";
+            };
+            headless = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Run the Playwright MCP browser headless (for hosts without a display)";
+            };
+          };
+          context7 = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Context7 MCP server (up-to-date library documentation)";
+            };
+          };
+          home-assistant = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Home Assistant MCP server (ha-mcp); reads its long-lived access token from the sops secret home-assistant/mcp_token";
+            };
+            url = mkOption {
+              type = types.str;
+              default = "http://127.0.0.1:8124";
+              description = "Home Assistant base URL the MCP server connects to";
+            };
+          };
+        };
       };
       git = {
         enable = mkEnableOption "Git version control";

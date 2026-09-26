@@ -1,10 +1,6 @@
 { ... }:
 {
   mcpServers = {
-    nixos = {
-      command = "mcp-nixos";
-      args = [ ];
-    };
     svelte = {
       command = "npx";
       args = [
@@ -31,13 +27,6 @@
       args = [
         "-y"
         "@chakra-ui/react-mcp"
-      ];
-    };
-    context7 = {
-      command = "npx";
-      args = [
-        "-y"
-        "@upstash/context7-mcp"
       ];
     };
   };

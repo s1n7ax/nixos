@@ -23,6 +23,7 @@
         claude.enable = true;
         pi.enable = true;
         headroom.enable = false;
+        mcp.playwright.headless = true;
       };
       git.enable = true;
       github.enable = true;
