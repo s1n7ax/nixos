@@ -96,14 +96,18 @@ with lib;
               }
             ];
 
+            # Bound to loopback so only desktop itself can reach the guest.
+            # Nothing on the LAN can ssh to the microvm directly.
             forwardPorts = [
               {
                 from = "host";
+                host.address = "127.0.0.1";
                 host.port = 2222;
                 guest.port = 22;
               }
               {
                 from = "host";
+                host.address = "127.0.0.1";
                 host.port = 5173;
                 guest.port = 5173;
               }
@@ -118,6 +122,7 @@ with lib;
             ]
             ++ map (p: {
               from = "host";
+              host.address = "127.0.0.1";
               host.port = p;
               guest.port = p;
             }) (lib.range 3000 3100);

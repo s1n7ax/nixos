@@ -19,4 +19,5 @@
 
   # Suppresses the "Last login: ..." banner macOS prints on new login shells.
   home.file.".hushlogin".text = "";
+
 }

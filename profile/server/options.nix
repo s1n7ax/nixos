@@ -23,6 +23,7 @@
         enable = true;
         agent.enable = true;
       };
+      mdns.enable = true;
       monitoring.enable = true;
     };
 

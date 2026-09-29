@@ -147,6 +147,15 @@ lib.mkIf config.features.cli.yazi.enable {
           run = ''shell 'img-to-pdf "$@" && ya emit escape --select' --block --confirm'';
           desc = "Create output.pdf from selected images";
         }
+        {
+          on = [
+            "g"
+            "v"
+          ];
+          for = "linux";
+          run = "shell --orphan -- losslesscut %h";
+          desc = "Open hovered video in LosslessCut";
+        }
       ];
       pick.prepend_keymap = [
         {

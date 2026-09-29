@@ -260,6 +260,10 @@ with lib;
         };
       };
 
+      mdns = {
+        enable = mkEnableOption "mDNS/Bonjour (advertises and resolves *.local on the LAN)";
+      };
+
       monitoring = {
         enable = mkEnableOption "Network monitoring tools";
       };

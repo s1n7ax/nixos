@@ -10,9 +10,15 @@ let
     launch --title "Neovim Config" nvim
   '';
   homelab_session = pkgs.writeText "homelab.kitty-session" ''
-    launch --title "Homelab" kitty +kitten ssh s1n7ax@192.168.1.110
+    launch --title "Homelab" kitty +kitten ssh homelab
   '';
-  nix_session = pkgs.writeText "homelab.kitty-session" ''
+  dev_session = pkgs.writeText "dev.kitty-session" ''
+    launch --title "Dev VM" kitty +kitten ssh dev
+  '';
+  mac_session = pkgs.writeText "mac.kitty-session" ''
+    launch --title "Mac" kitty +kitten ssh macbook
+  '';
+  nix_session = pkgs.writeText "nixos.kitty-session" ''
     cd ~/Workspace/nixos
     launch --title "Nixos" nvim
   '';
@@ -45,6 +51,8 @@ lib.mkIf config.features.terminal.kitty.enable {
       "ctrl+c" = "copy_or_interrupt";
       "alt+s>n" = "goto_session ${neovim_session}";
       "alt+s>t" = "goto_session ${homelab_session}";
+      "alt+s>d" = "goto_session ${dev_session}";
+      "alt+s>m" = "goto_session ${mac_session}";
       "alt+s>e" = "goto_session ${nix_session}";
     };
   };

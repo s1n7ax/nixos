@@ -19,8 +19,12 @@
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVIC02vnjFyL+I4RHfvIGNtOgJMe769VTF1VR4EB3ZB";
         };
 
-        "192.168.1.110 ssh-ed25519" = {
-          hostNames = [ "192.168.1.110" ];
+        "homelab ssh-ed25519" = {
+          hostNames = [
+            "homelab"
+            "homelab.local"
+            "192.168.1.110"
+          ];
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHAsksMYthB3wMx9p1PQU/WNtVdfVt3dNXIE/CXUKB45";
         };
 

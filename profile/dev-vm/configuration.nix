@@ -35,7 +35,8 @@
   ];
 
   services.openssh = {
-    settings.PasswordAuthentication = true;
+    # Key-only: desktop key only (see authorizedKeys above). No passwords.
+    settings.PasswordAuthentication = false;
     hostKeys = [
       {
         path = "/persist/ssh-host-keys/ssh_host_ed25519_key";
