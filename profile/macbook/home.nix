@@ -19,4 +19,13 @@
 
   # Suppresses the "Last login: ..." banner macOS prints on new login shells.
   home.file.".hushlogin".text = "";
+
+  # nix-darwin no longer materializes
+  # users.users.<name>.openssh.authorizedKeys (its authorizedKeysFiles option
+  # was removed), so the desktop-only key is enforced here instead.
+  # Must stay in sync with profile/macbook/configuration.nix.
+  home.file.".ssh/authorized_keys".text = ''
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHTyz+PybkD53ewO5SZQCwgFIJlq1MvirnvEFOQ7SIpE srineshnisala@gmail.com
+  '';
+
 }

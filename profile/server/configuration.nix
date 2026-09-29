@@ -11,6 +11,10 @@
     ./options.nix
   ];
 
+  # Advertises homelab.local via mDNS (see features.network.mdns).
+  # Overrides profile/common's `networking.hostName = username`.
+  networking.hostName = lib.mkForce "homelab";
+
   environment.sessionVariables = lib.mkIf config.features.security.gpg.enable {
     GPG_TTY = "$(tty)";
   };

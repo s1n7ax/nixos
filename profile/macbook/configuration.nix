@@ -14,6 +14,12 @@ in
   nixpkgs.hostPlatform = "aarch64-darwin";
   nixpkgs.config.allowUnfree = true;
 
+  # Advertises macbook.local via Bonjour/mDNS, which is what desktop's
+  # `ssh macbook` resolves until a static DHCP reservation replaces it.
+  networking.hostName = "macbook";
+  networking.localHostName = "macbook";
+  networking.computerName = "macbook";
+
   nix.settings = {
     experimental-features = [
       "nix-command"
@@ -28,7 +34,22 @@ in
   users.users.${username} = {
     name = username;
     home = "/Users/${username}";
+    openssh.authorizedKeys.keys = [
+      # Main NixOS host key (same as profile/server/configuration.nix)
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHTyz+PybkD53ewO5SZQCwgFIJlq1MvirnvEFOQ7SIpE srineshnisala@gmail.com"
+    ];
   };
+
+  # Enables macOS Remote Login (sshd) so authorized keys can log in without a password.
+  services.openssh.enable = true;
+
+  # Key-only: desktop key only. nix-darwin's openssh module has no
+  # `settings` option (unlike NixOS), so this goes in extraConfig.
+  services.openssh.extraConfig = ''
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    PermitRootLogin no
+  '';
 
   home-manager = {
     useGlobalPkgs = true;
