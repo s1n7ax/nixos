@@ -143,7 +143,7 @@ in
       [
         deno
         nodejs_24
-        (if stdenv.isDarwin then pnpm_9 else pnpm)
+        pnpm
         yarn
         emmet-language-server
         vscode-langservers-extracted
