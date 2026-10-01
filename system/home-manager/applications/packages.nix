@@ -83,7 +83,13 @@ in
         # kdePackages.kdenlive
       ]
     )
-    ++ lib.optionals f.multimedia.video.enable (with pkgs; [ vlc ])
+    ++ lib.optionals f.multimedia.video.enable (
+      with pkgs;
+      [
+        vlc
+        losslesscut
+      ]
+    )
     ++ lib.optionals f.multimedia.mobile.enable (with pkgs; [ waydroid ])
     ++ lib.optionals f.multimedia.gaming.enable (with pkgs; [ steam ])
 

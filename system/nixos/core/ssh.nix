@@ -7,6 +7,10 @@ with lib;
       enable = true;
       settings = {
         AllowUsers = [ "s1n7ax" ];
+        # Key-only: only the desktop key in authorizedKeys can log in.
+        PasswordAuthentication = false;
+        KbdInteractiveAuthentication = false;
+        PermitRootLogin = "no";
       };
     };
   };

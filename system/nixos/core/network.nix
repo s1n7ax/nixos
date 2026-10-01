@@ -13,4 +13,15 @@ in
   };
 
   networking.enableIPv6 = false;
+
+  # Advertises <hostname>.local and resolves peers' .local names.
+  # No firewall rules needed: networking.firewall is disabled (see firewall.nix).
+  services.avahi = lib.mkIf config.features.network.mdns.enable {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+    };
+  };
 }
