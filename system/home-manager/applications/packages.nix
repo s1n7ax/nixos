@@ -148,7 +148,7 @@ in
       with pkgs;
       [
         deno
-        nodejs_24
+        fnm
         pnpm
         yarn
         emmet-language-server
