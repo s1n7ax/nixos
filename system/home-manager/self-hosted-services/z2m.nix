@@ -61,9 +61,6 @@ with lib;
         "--group-add=keep-groups"
         "--tz=local"
       ];
-      devices = [
-        "/dev/ttyUSB0:/dev/ttyUSB0"
-      ];
       volumes = [
         "${data_path}:/app/data"
         "${data_path}/configuration.yaml:/app/data/configuration.yaml"
@@ -90,25 +87,18 @@ with lib;
         base_topic: zigbee2mqtt
         server: mqtt://mqtt:1883
       serial:
-        port: /dev/ttyUSB0
+        port: tcp://192.168.1.170:6638
         baudrate: 115200
-        adapter: zstack
-        disable_led: false
+        adapter: ember
+        rtscts: false
       advanced:
         log_level: info
         channel: 25
         transmit_power: 20
+        last_seen: ISO_8601
         network_key: '!/app/secrets/secret.yaml network_key'
-        pan_id: 26823
-        ext_pan_id:
-          - 242
-          - 246
-          - 94
-          - 150
-          - 77
-          - 76
-          - 67
-          - 57
+        pan_id: 27259
+        ext_pan_id: [200, 189, 37, 39, 41, 120, 164, 152]
       availability:
         enabled: true
         active:
