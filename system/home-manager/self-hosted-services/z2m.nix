@@ -13,6 +13,10 @@ let
      * for some devices to work properly (like Livolo). Use with caution
      * as this will make it very easy for someone to hack your Zigbee network!
      * https://github.com/Koenkk/zigbee2mqtt/issues/25626
+     *
+     * Joining is renewed with the same mode it was last opened with ("All"
+     * or via a specific router), and only while it is still open, so a
+     * manual disable from the frontend sticks.
      */
     const NS = 'ext:permit-join-forever';
 
@@ -20,18 +24,37 @@ let
         constructor(zigbee, mqtt, state, publishEntityState, eventBus, enableDisableExtension, restartCallback, addExtension, settings, logger) {
             this.logger = logger;
             this.zigbee = zigbee;
+            this.device = undefined;
         }
 
         start() {
             this.logger.warning('Permitting joining forever, only use this extension when strictly necessary!', NS);
+
+            // herdsman does not remember which router joining was opened
+            // through, so record it from every permitJoin call (frontend, MQTT)
+            const permitJoin = this.zigbee.permitJoin;
+            this.zigbee.permitJoin = async (time, device) => {
+                this.device = time > 0 ? device : undefined;
+                return permitJoin.call(this.zigbee, time, device);
+            };
+
             this.zigbee.permitJoin(254);
-            this.interval = setInterval(() => {
-                this.zigbee.permitJoin(254);
+            this.interval = setInterval(async () => {
+                if (!this.zigbee.getPermitJoin()) {
+                    return;
+                }
+
+                try {
+                    await this.zigbee.permitJoin(254, this.device);
+                } catch (error) {
+                    this.logger.error('Failed to renew permit join: ' + error.message, NS);
+                }
             }, 240 * 1000);
         }
 
         stop() {
             clearInterval(this.interval);
+            delete this.zigbee.permitJoin;
         }
     }
 
