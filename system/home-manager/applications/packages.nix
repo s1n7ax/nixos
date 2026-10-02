@@ -148,6 +148,7 @@ in
       with pkgs;
       [
         deno
+        fnm
         nodejs_24
         pnpm
         yarn
