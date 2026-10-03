@@ -55,6 +55,7 @@
       adguard.enable = true;
       node-red.enable = true;
       paperless.enable = true;
+      dongle-m-reboot-monitor.enable = true;
       pairdrop.enable = false;
       homepage.enable = false;
 

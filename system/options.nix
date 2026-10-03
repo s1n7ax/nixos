@@ -311,6 +311,10 @@ with lib;
         enable = mkEnableOption "Paperless-ngx document management";
       };
 
+      dongle-m-reboot-monitor = {
+        enable = mkEnableOption "the SONOFF Dongle-M reboot monitor (records every coordinator reboot and sends a Home Assistant notification for each)";
+      };
+
       entertainment = {
         enable = mkEnableOption "Entertainment services";
 
