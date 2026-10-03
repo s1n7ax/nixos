@@ -291,6 +291,10 @@ with lib;
         permit_join_forever = mkEnableOption "the permit-join-forever extension (keeps the Zigbee network open to joins; insecure)";
       };
 
+      dongle-m-serial-log = {
+        enable = mkEnableOption "the SONOFF Dongle-M serial console logger (logs the ESP32 reset reason of every reboot while the dongle is on USB-C)";
+      };
+
       adguard = {
         enable = mkEnableOption "AdGuard DNS filtering";
       };
