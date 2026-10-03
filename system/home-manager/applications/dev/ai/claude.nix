@@ -9,7 +9,6 @@ let
   claude = config.features.development.ai.claude;
   headroom = config.features.development.ai.headroom;
   skills = import ./skills;
-  configDir = config.programs.claude-code.configDir;
 
   claudeCode =
     if headroom.enable then
@@ -67,7 +66,6 @@ let
   };
 
   settings = {
-    "$schema" = "https://json.schemastore.org/claude-code-settings.json";
     env.CLAUDE_CODE_WALNUT_SPIRE = "1";
     model = "opus";
     effortLevel = "xhigh";
@@ -120,8 +118,6 @@ let
     };
   }
   // lib.optionalAttrs claude.yolo yoloSettings;
-
-  settingsFile = (pkgs.formats.json { }).generate "claude-settings.json" settings;
 in
 {
   config = lib.mkIf claude.enable {
@@ -129,6 +125,9 @@ in
       enable = true;
       package = claudeCode;
       outputStyles.silent = ./claude/silent.md;
+      # Read-only store symlink: changes made from inside Claude (/model,
+      # /config, plugin toggles) don't persist; edit them here instead.
+      inherit settings;
     };
 
     home.file = {
@@ -142,16 +141,5 @@ in
         value.source = ./skills/${name};
       }) skills.names
     );
-
-    /**
-      Claude Code rewrites settings.json itself (/model, /config, plugin
-      toggles), so it cannot be a read-only store symlink, which is what
-      programs.claude-code.settings would make. It is copied in on every
-      activation instead: this repository is the source of truth and any
-      change made from inside Claude is replaced on the next switch.
-    */
-    home.activation.claudeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run install -Dm0644 ${settingsFile} ${lib.escapeShellArg "${configDir}/settings.json"}
-    '';
   };
 }
