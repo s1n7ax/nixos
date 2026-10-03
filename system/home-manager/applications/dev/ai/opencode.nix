@@ -51,9 +51,14 @@ in
       };
       tui = {
         theme = "catppuccin";
+        # Mirrors claude/keybindings.json. No effort keys: opencode can only
+        # cycle model variants forward (variant_cycle, ctrl+t).
         keybinds = {
           messages_half_page_up = "ctrl+u";
           messages_half_page_down = "ctrl+d";
+          model_list = "<leader>m,ctrl+n";
+          "dialog.select.prev" = "up,ctrl+p,ctrl+e";
+          session_new = "<leader>n,ctrl+l";
         };
       };
       context = common.rules;
