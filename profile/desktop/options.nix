@@ -38,6 +38,7 @@
 
     virtualization = {
       microvm.enable = true;
+      docker.enable = true;
     };
 
     services = {
