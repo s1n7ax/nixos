@@ -416,6 +416,11 @@ with lib;
             default = false;
             description = "Claude Code AI assistant";
           };
+          yolo = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Run Claude Code in bypassPermissions mode with no permission prompts. Only for sandboxed hosts like the dev microvm";
+          };
         };
         pi = {
           enable = mkOption {
