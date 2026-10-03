@@ -288,6 +288,7 @@ with lib;
 
       z2m = {
         enable = mkEnableOption "Zigbee2MQTT";
+        permit_join_forever = mkEnableOption "the permit-join-forever extension (keeps the Zigbee network open to joins; insecure)";
       };
 
       adguard = {

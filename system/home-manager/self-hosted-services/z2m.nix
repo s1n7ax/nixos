@@ -76,10 +76,17 @@ with lib;
       '';
     };
 
-    home.activation.z2mExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD mkdir -p ${data_path}/external_extensions
-      $DRY_RUN_CMD cp -f ${permit_join_forever} ${data_path}/external_extensions/permit_join_forever.js
-    '';
+    home.activation.z2mExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      if config.features.homelab.z2m.permit_join_forever then
+        ''
+          $DRY_RUN_CMD mkdir -p ${data_path}/external_extensions
+          $DRY_RUN_CMD cp -f ${permit_join_forever} ${data_path}/external_extensions/permit_join_forever.js
+        ''
+      else
+        ''
+          $DRY_RUN_CMD rm -f ${data_path}/external_extensions/permit_join_forever.js
+        ''
+    );
 
     home.file."${data_path}/configuration.yaml".text = ''
       version: 5
