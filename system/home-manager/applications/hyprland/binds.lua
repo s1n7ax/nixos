@@ -133,18 +133,27 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 -- waveform from the recorder's own status.
 local dictating = false
 
+local function stop_dictation()
+	if not dictating then
+		return
+	end
+
+	dictating = false
+	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record stop"))
+end
+
+-- Releasing either key should stop recording. In practice Hyprland does not
+-- reliably deliver the K release once ALT is dropped first, so handle both.
+local dictation_release_opts = { release = true, ignore_mods = true, non_consuming = true }
+
 hl.bind("ALT + K", function()
+	if dictating == true then
+		return
+	end
+
 	dictating = true
 	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record start"))
 end)
 
--- A release bind only fires when its mods are still held, so releasing ALT
--- before K left the recorder running. Stop on any K release instead, and let
--- the key through so ordinary typing is untouched.
-hl.bind("K", function()
-	if not dictating then
-		return
-	end
-	dictating = false
-	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record stop"))
-end, { release = true, ignore_mods = true, non_consuming = true })
+hl.bind("K", stop_dictation, dictation_release_opts)
+hl.bind("ALT", stop_dictation, dictation_release_opts)
