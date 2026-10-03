@@ -12,6 +12,8 @@ let
   # adds native MCP support to Pi and automatically discovers the shared MCP
   # config from ~/.config/mcp/mcp.json that programs.mcp writes in mcp.nix.
   piSettings = builtins.toJSON {
+    defaultModel = "muse-spark-1.3";
+    defaultProvider = "meta";
     packages = [
       {
         source = "npm:pi-mcp-adapter@2.37.0";
