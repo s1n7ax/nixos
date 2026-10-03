@@ -86,7 +86,6 @@ in
     ++ lib.optionals f.multimedia.video.enable (
       with pkgs;
       [
-        vlc
         losslesscut
       ]
     )

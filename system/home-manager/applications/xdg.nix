@@ -122,7 +122,7 @@ lib.mkIf config.features.xdg.enable {
           web_content = [
             "firefox.desktop"
           ];
-          players = [ "vlc.desktop" ];
+          players = [ "mpv.desktop" ];
         in
         {
           "image/png" = image_viewers;
