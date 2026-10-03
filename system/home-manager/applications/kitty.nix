@@ -12,6 +12,9 @@ let
   homelab_session = pkgs.writeText "homelab.kitty-session" ''
     launch --title "Homelab" kitty +kitten ssh homelab
   '';
+  homelab_nvim_session = pkgs.writeText "homelab-nvim.kitty-session" ''
+    launch --title "Homelab Neovim" kitty +kitten ssh homelab "cd ~/Workspace/nixos && nvim"
+  '';
   dev_session = pkgs.writeText "dev.kitty-session" ''
     launch --title "Dev VM" kitty +kitten ssh dev
   '';
@@ -51,6 +54,7 @@ lib.mkIf config.features.terminal.kitty.enable {
       "ctrl+c" = "copy_or_interrupt";
       "alt+s>n" = "goto_session ${neovim_session}";
       "alt+s>t" = "goto_session ${homelab_session}";
+      "ctrl+s>t" = "goto_session ${homelab_nvim_session}";
       "alt+s>d" = "goto_session ${dev_session}";
       "alt+s>m" = "goto_session ${mac_session}";
       "alt+s>e" = "goto_session ${nix_session}";
