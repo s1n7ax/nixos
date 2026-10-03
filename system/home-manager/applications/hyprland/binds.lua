@@ -129,16 +129,22 @@ hl.bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- hyprwhspr-rs: hold ALT+K to dictate, with on-screen waveform indicator
-hl.bind(
-	"ALT + K",
-	hl.dsp.exec_cmd(
-		"sh -c 'pkill -f \"[v]oice-indicator/main.py\"; voice-indicator & hyprwhspr-rs record start'"
-	)
-)
-hl.bind(
-	"ALT + K",
-	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -f \"[v]oice-indicator/main.py\"'"),
-	{ release = true }
-)
+-- hyprwhspr-rs: hold ALT+K to dictate. The voice-indicator service shows the
+-- waveform from the recorder's own status.
+local dictating = false
 
+hl.bind("ALT + K", function()
+	dictating = true
+	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record start"))
+end)
+
+-- A release bind only fires when its mods are still held, so releasing ALT
+-- before K left the recorder running. Stop on any K release instead, and let
+-- the key through so ordinary typing is untouched.
+hl.bind("K", function()
+	if not dictating then
+		return
+	end
+	dictating = false
+	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record stop"))
+end, { release = true, ignore_mods = true, non_consuming = true })
