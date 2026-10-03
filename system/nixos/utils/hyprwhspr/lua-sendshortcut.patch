@@ -1,0 +1,46 @@
+diff --git a/src/input/hyprland.rs b/src/input/hyprland.rs
+index f50eb0f..4752181 100644
+--- a/src/input/hyprland.rs
++++ b/src/input/hyprland.rs
+@@ -31,32 +31,22 @@ impl HyprlandDispatcher {
+         } else {
+             &["ctrl"][..]
+         };
+-        self.send_shortcut(modifiers, "v", Some("active")).await
++        self.send_shortcut(modifiers, "v").await
+     }
+ 
+     pub(super) async fn send_global_paste_shortcut(&self) -> Result<()> {
+         // Universal paste: Shift+Insert works in most applications including terminals.
+-        self.send_shortcut(&["shift"], "Insert", Some("active"))
+-            .await
++        self.send_shortcut(&["shift"], "Insert").await
+     }
+ 
+-    async fn send_shortcut(
+-        &self,
+-        modifiers: &[&str],
+-        key: &str,
+-        target: Option<&str>,
+-    ) -> Result<()> {
+-        let mods_segment = if modifiers.is_empty() {
+-            String::new()
+-        } else {
++    async fn send_shortcut(&self, modifiers: &[&str], key: &str) -> Result<()> {
++        // Hyprland's Lua config runs `dispatch <args>` as `hl.dispatch(<args>)`,
++        // so the legacy `sendshortcut MODS, KEY, WINDOW` form is a Lua syntax
++        // error. Without a window the shortcut goes to the focused surface.
++        let command = format!(
++            "dispatch hl.dsp.send_shortcut({{ mods = \"{}\", key = \"{key}\" }})",
+             modifiers.join(" ")
+-        };
+-        let target_segment = target.map(|t| format!(", {t}")).unwrap_or_default();
+-        let command = if mods_segment.is_empty() {
+-            format!("dispatch sendshortcut {key}{target_segment}")
+-        } else {
+-            format!("dispatch sendshortcut {mods_segment}, {key}{target_segment}")
+-        };
++        );
+         let response = self.send_command(&command).await?;
+         if response.is_empty() || response.eq_ignore_ascii_case("ok") {
+             Ok(())

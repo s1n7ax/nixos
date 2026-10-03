@@ -26,7 +26,20 @@ in
   # unconditionally breaks `nix eval` on hosts like macbook that import the
   # whole home-manager tree.
   config = lib.mkIf config.features.desktop.hyprland.enable {
-    home.packages = [ voice-indicator ];
+    # Runs for the whole session and shows the dictation waveform whenever
+    # hyprwhspr-rs reports it is recording or transcribing.
+    systemd.user.services.voice-indicator = lib.mkIf config.features.desktop.hyprwhspr.enable {
+      Unit = {
+        Description = "On-screen indicator for hyprwhspr-rs dictation";
+        PartOf = [ "graphical-session.target" ];
+        After = [ "graphical-session.target" ];
+      };
+      Service = {
+        ExecStart = "${voice-indicator}/bin/voice-indicator";
+        Restart = "on-failure";
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
 
     services.hyprpaper = {
       enable = true;
