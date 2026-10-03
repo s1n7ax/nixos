@@ -1,0 +1,39 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "$docs": "https://code.claude.com/docs/en/keybindings",
+  "bindings": [
+    {
+      "context": "Transcript",
+      "bindings": {
+        "ctrl+u": "scroll:halfPageUp",
+        "ctrl+d": "scroll:halfPageDown"
+      }
+    },
+    {
+      "context": "Scroll",
+      "bindings": {
+        "ctrl+u": "scroll:halfPageUp",
+        "ctrl+d": "scroll:halfPageDown"
+      }
+    },
+    {
+      "context": "Chat",
+      "bindings": {
+        "ctrl+n": "chat:modelPicker"
+      }
+    },
+    {
+      "context": "Select",
+      "bindings": {
+        "ctrl+e": "select:previous"
+      }
+    },
+    {
+      "context": "ModelPicker",
+      "bindings": {
+        "ctrl+m": "modelPicker:decreaseEffort",
+        "ctrl+i": "modelPicker:increaseEffort"
+      }
+    }
+  ]
+}
