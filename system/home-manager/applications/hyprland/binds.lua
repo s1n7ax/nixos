@@ -142,9 +142,11 @@ local function stop_dictation()
 	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record stop"))
 end
 
--- Releasing either key should stop recording. In practice Hyprland does not
--- reliably deliver the K release once ALT is dropped first, so handle both.
-local dictation_release_opts = { release = true, ignore_mods = true, non_consuming = true }
+-- Releasing either key should stop recording. Releasing ALT re-shadows every
+-- bind whose key is still held, which silently swallowed the K release, so the
+-- release binds are transparent (never shadowed). ALT must be bound by keysym
+-- (Alt_L/Alt_R); a bare "ALT" is parsed as a modifier with no key and never fires.
+local dictation_release_opts = { release = true, ignore_mods = true, non_consuming = true, transparent = true }
 
 hl.bind("ALT + K", function()
 	if dictating == true then
@@ -156,4 +158,5 @@ hl.bind("ALT + K", function()
 end)
 
 hl.bind("K", stop_dictation, dictation_release_opts)
-hl.bind("ALT", stop_dictation, dictation_release_opts)
+hl.bind("Alt_L", stop_dictation, dictation_release_opts)
+hl.bind("Alt_R", stop_dictation, dictation_release_opts)
