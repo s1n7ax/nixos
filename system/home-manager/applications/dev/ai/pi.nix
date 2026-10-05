@@ -44,7 +44,6 @@ in
 
     home.file = {
       ".pi/agent/AGENTS.md".text = common.rules;
-      ".pi/agent/AGENT.md".text = common.rules;
       ".pi/agent/settings.json".text = piSettings;
     }
     // lib.listToAttrs (
