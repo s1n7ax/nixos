@@ -7,6 +7,7 @@
 }:
 let
   claude = config.features.development.ai.claude;
+  common = import ./common.nix { };
   headroom = config.features.development.ai.headroom;
   skills = import ./skills;
 
@@ -123,6 +124,7 @@ in
   config = lib.mkIf claude.enable {
     programs.claude-code = {
       enable = true;
+      context = common.rules;
       package = claudeCode;
       outputStyles.silent = ./claude/silent.md;
       # Read-only store symlink: changes made from inside Claude (/model,
