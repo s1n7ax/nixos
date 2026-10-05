@@ -438,6 +438,13 @@ with lib;
             description = "pi-coding-agent AI assistant (github.com/badlogic/pi-mono, pi.dev)";
           };
         };
+        cursor = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Cursor CLI coding agent (cursor-agent, cursor.com/cli). Unrelated to features.desktop.cursor (pointer theme).";
+          };
+        };
         headroom = {
           enable = mkOption {
             type = types.bool;

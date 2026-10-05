@@ -18,8 +18,10 @@
       llm.enable = true;
       ai = {
         enable = true;
+        cursor.enable = true;
         opencode.enable = false;
         claude.enable = false;
+        pi.enable = false;
         headroom.enable = false;
         mcp = {
           nixos.enable = true;
