@@ -7,6 +7,7 @@
 }:
 let
   claude = config.features.development.ai.claude;
+  common = import ./common.nix { };
   headroom = config.features.development.ai.headroom;
   skills = import ./skills;
 
@@ -70,7 +71,6 @@ let
     model = "opus";
     effortLevel = "xhigh";
     modelSettings.claude-opus-5-5.effortLevel = "xhigh";
-    outputStyle = "Silent";
     theme = "dark";
     tui = "fullscreen";
     autoCompactEnabled = true;
@@ -123,8 +123,8 @@ in
   config = lib.mkIf claude.enable {
     programs.claude-code = {
       enable = true;
+      context = common.rules;
       package = claudeCode;
-      outputStyles.silent = ./claude/silent.md;
       # Read-only store symlink: changes made from inside Claude (/model,
       # /config, plugin toggles) don't persist; edit them here instead.
       inherit settings;
