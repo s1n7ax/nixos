@@ -71,7 +71,6 @@ let
     model = "opus";
     effortLevel = "xhigh";
     modelSettings.claude-opus-5-5.effortLevel = "xhigh";
-    outputStyle = "Silent";
     theme = "dark";
     tui = "fullscreen";
     autoCompactEnabled = true;
@@ -126,7 +125,6 @@ in
       enable = true;
       context = common.rules;
       package = claudeCode;
-      outputStyles.silent = ./claude/silent.md;
       # Read-only store symlink: changes made from inside Claude (/model,
       # /config, plugin toggles) don't persist; edit them here instead.
       inherit settings;
