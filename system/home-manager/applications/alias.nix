@@ -5,6 +5,8 @@
   ...
 }:
 let
+  nixosConfigPath = if pkgs.stdenv.isDarwin then "~/nixos" else "~/Workspace/nixos";
+
   linuxNixAliases = {
     nixos = "cd ~/Workspace/nixos && sudo nix flake update && sudo nixos-rebuild switch --upgrade --flake ./#desktop";
     nixos-clean = "nix-collect-garbage -d && sudo nix-collect-garbage -d && sudo /run/current-system/bin/switch-to-configuration boot && sudo nix-store --optimise";
@@ -97,6 +99,7 @@ let
     # edit
     nh = "run-command-at 'nvim' ~/.config/home-manager; ";
     nn = "run-command-at 'nvim' ~/.config/nvim;";
+    nx = "run-command-at 'nvim' ${nixosConfigPath};";
     no = "run-command-at 'nvim' ~/Notes;";
     np = "run-command-at 'nvim' $(project-menu)";
 

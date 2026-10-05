@@ -129,16 +129,34 @@ hl.bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- hyprwhspr-rs: hold ALT+K to dictate, with on-screen waveform indicator
-hl.bind(
-	"ALT + K",
-	hl.dsp.exec_cmd(
-		"sh -c 'pkill -f \"[v]oice-indicator/main.py\"; voice-indicator & hyprwhspr-rs record start'"
-	)
-)
-hl.bind(
-	"ALT + K",
-	hl.dsp.exec_cmd("sh -c 'hyprwhspr-rs record stop; pkill -f \"[v]oice-indicator/main.py\"'"),
-	{ release = true }
-)
+-- hyprwhspr-rs: hold ALT+K to dictate. The voice-indicator service shows the
+-- waveform from the recorder's own status.
+local dictating = false
 
+local function stop_dictation()
+	if not dictating then
+		return
+	end
+
+	dictating = false
+	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record stop"))
+end
+
+-- Releasing either key should stop recording. Releasing ALT re-shadows every
+-- bind whose key is still held, which silently swallowed the K release, so the
+-- release binds are transparent (never shadowed). ALT must be bound by keysym
+-- (Alt_L/Alt_R); a bare "ALT" is parsed as a modifier with no key and never fires.
+local dictation_release_opts = { release = true, ignore_mods = true, non_consuming = true, transparent = true }
+
+hl.bind("ALT + K", function()
+	if dictating == true then
+		return
+	end
+
+	dictating = true
+	hl.dispatch(hl.dsp.exec_cmd("hyprwhspr-rs record start"))
+end)
+
+hl.bind("K", stop_dictation, dictation_release_opts)
+hl.bind("Alt_L", stop_dictation, dictation_release_opts)
+hl.bind("Alt_R", stop_dictation, dictation_release_opts)

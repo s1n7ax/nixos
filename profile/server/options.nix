@@ -52,9 +52,11 @@
       mqtt.enable = true;
       home-assistant.enable = true;
       z2m.enable = true;
+      dongle-m-serial-log.enable = true;
       adguard.enable = true;
       node-red.enable = true;
       paperless.enable = true;
+      dongle-m-reboot-monitor.enable = true;
       pairdrop.enable = false;
       homepage.enable = false;
 

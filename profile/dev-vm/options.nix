@@ -20,7 +20,10 @@
       ai = {
         enable = true;
         opencode.enable = true;
-        claude.enable = true;
+        claude = {
+          enable = true;
+          yolo = true;
+        };
         pi.enable = true;
         headroom.enable = false;
         mcp = {

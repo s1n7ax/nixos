@@ -288,6 +288,11 @@ with lib;
 
       z2m = {
         enable = mkEnableOption "Zigbee2MQTT";
+        permit_join_forever = mkEnableOption "the permit-join-forever extension (keeps the Zigbee network open to joins; insecure)";
+      };
+
+      dongle-m-serial-log = {
+        enable = mkEnableOption "the SONOFF Dongle-M serial console logger (logs the ESP32 reset reason of every reboot while the dongle is on USB-C)";
       };
 
       adguard = {
@@ -308,6 +313,10 @@ with lib;
 
       paperless = {
         enable = mkEnableOption "Paperless-ngx document management";
+      };
+
+      dongle-m-reboot-monitor = {
+        enable = mkEnableOption "the SONOFF Dongle-M reboot monitor (records every coordinator reboot and sends a Home Assistant notification for each)";
       };
 
       entertainment = {
@@ -416,12 +425,24 @@ with lib;
             default = false;
             description = "Claude Code AI assistant";
           };
+          yolo = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Run Claude Code in bypassPermissions mode with no permission prompts. Only for sandboxed hosts like the dev microvm";
+          };
         };
         pi = {
           enable = mkOption {
             type = types.bool;
             default = false;
             description = "pi-coding-agent AI assistant (github.com/badlogic/pi-mono, pi.dev)";
+          };
+        };
+        cursor = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Cursor CLI coding agent (cursor-agent, cursor.com/cli). Unrelated to features.desktop.cursor (pointer theme).";
           };
         };
         headroom = {

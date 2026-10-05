@@ -86,7 +86,6 @@ in
     ++ lib.optionals f.multimedia.video.enable (
       with pkgs;
       [
-        vlc
         losslesscut
       ]
     )
@@ -149,6 +148,7 @@ in
       [
         deno
         nodejs_24
+        fnm
         pnpm
         yarn
         emmet-language-server
