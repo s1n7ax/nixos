@@ -5,5 +5,6 @@
     ./claude.nix
     ./headroom.nix
     ./pi.nix
+    ./cursor.nix
   ];
 }
