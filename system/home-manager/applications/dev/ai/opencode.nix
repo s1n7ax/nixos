@@ -4,7 +4,7 @@
   ...
 }:
 let
-  common = import ./common.nix { };
+  commonRules = builtins.readFile ./AGENTS.md;
 in
 {
   config = lib.mkIf config.features.development.ai.opencode.enable {
@@ -56,7 +56,7 @@ in
           messages_half_page_down = "ctrl+d";
         };
       };
-      context = common.rules;
+      context = commonRules;
     };
   };
 }

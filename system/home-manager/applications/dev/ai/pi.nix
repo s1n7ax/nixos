@@ -5,7 +5,8 @@
   ...
 }:
 let
-  common = import ./common.nix { };
+  commonRules = builtins.readFile ./AGENTS.md;
+  skills = import ./skills;
 
   # Pi package declarations live in ~/.pi/agent/settings.json. pi-mcp-adapter
   # adds native MCP support to Pi and automatically discovers the shared MCP
@@ -38,7 +39,7 @@ in
     home.packages = [ pkgs-unstable.pi-coding-agent ];
 
     home.file = {
-      ".pi/agent/AGENTS.md".text = common.rules;
+      ".pi/agent/AGENTS.md".text = commonRules;
       ".pi/agent/settings.json".text = piSettings;
     };
   };
