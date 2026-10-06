@@ -7,7 +7,7 @@
 }:
 let
   claude = config.features.development.ai.claude;
-  common = import ./common.nix { };
+  commonRules = builtins.readFile ./AGENTS.md;
   headroom = config.features.development.ai.headroom;
   skills = import ./skills;
 
@@ -123,7 +123,7 @@ in
   config = lib.mkIf claude.enable {
     programs.claude-code = {
       enable = true;
-      context = common.rules;
+      context = commonRules;
       package = claudeCode;
       # Read-only store symlink: changes made from inside Claude (/model,
       # /config, plugin toggles) don't persist; edit them here instead.
