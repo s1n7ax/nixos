@@ -5,7 +5,7 @@
   ...
 }:
 let
-  common = import ./common.nix { };
+  commonRules = builtins.readFile ./AGENTS.md;
   ai = config.features.development.ai;
 in
 {
@@ -27,7 +27,7 @@ in
           description: Shared working-relationship rules for every repo
           alwaysApply: true
           ---
-          ${common.rules}
+          ${commonRules}
         '';
       }
 

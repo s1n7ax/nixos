@@ -5,7 +5,6 @@
   ...
 }:
 let
-  common = import ./common.nix { };
   ai = config.features.development.ai;
   cfg = ai.mcp;
 
