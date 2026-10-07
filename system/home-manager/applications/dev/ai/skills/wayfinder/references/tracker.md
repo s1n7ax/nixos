@@ -1,19 +1,84 @@
 # Tracker mechanics
 
-Where the map physically lives, and the exact commands to read and write it.
+Where the map physically lives, and the exact file commands.
 Read this when creating a map, resuming one, or finishing a step.
 
-## Which tracker
+Default is **local files, always**. A GitHub issue is opt-in only —
+see the bottom section. Never create one unless the user explicitly asks.
 
-```bash
-gh repo view --json nameWithOwner -q .nameWithOwner
+## Map location
+
+One directory per map, so a repo can hold several at once:
+
+```
+<repo-root>/.wayfinder/<slug>/map.md
 ```
 
-Succeeds → **GitHub issue** (below). Fails (no GitHub remote, no auth) → **file fallback** (bottom of this page). Never ask the user which one; the repo answers it.
+- `<slug>` is a short kebab-case name for the effort (`screen-recorder`, `auth-migration`). Derive it from the destination; keep it under ~30 chars.
+- The `.wayfinder/` dir is git-ignored globally — local-only scratch, never committed.
+- Step assets (prototypes, research notes, drafts) live beside `map.md` in the same dir.
+- Create it with `mkdir -p .wayfinder/<slug>` when it does not exist.
 
 ## Creating the map
 
-The label only needs creating once per repo; the `|| true` keeps a second run quiet.
+Write `.wayfinder/<slug>/map.md` with Destination filled in and everything
+else empty. That file is the live map from then on — every update edits it
+in place. Tell the user the slug and path.
+
+## Reading the map
+
+Read the file — Destination, Requirements, Out of scope, Map. Do not read
+every `## Results` subsection; zoom into one only when the current step
+needs what it holds.
+
+The current step is the first `- [ ]` line under `## Map`:
+
+```bash
+grep -n -m1 '^- \[ \]' .wayfinder/<slug>/map.md
+```
+
+## Finding maps
+
+```bash
+ls .wayfinder/*/map.md
+```
+
+An open map is one with an unticked `- [ ]` line. Exactly one map → take
+it. More than one and no slug given → ask the user which.
+
+```bash
+grep -l '^- \[ \]' .wayfinder/*/map.md
+```
+
+## Finishing a step
+
+Append one `### <Step line>` subsection per finished step under
+`## Results`, then tick its checklist line and link the anchor:
+
+```markdown
+- [x] research: screen capture on Wayland vs X11 — [result](#research-screen-capture-on-wayland-vs-x11)
+```
+
+Anchors are GitHub-style: lowercase the heading, drop punctuation,
+spaces → hyphens. Save the file once per wave — never leave one step
+ticked and another lost.
+
+For `implement:` steps, finish the code the way the repo finishes code
+(tests, branch, PR) and put the PR link in the Results subsection. Do not
+reference a map issue number — there isn't one in local mode.
+
+## Closing a finished map
+
+Only when the destination is actually reached and the user agrees: say so
+and leave the file as the record. Delete `.wayfinder/<slug>/` only if the
+user asks.
+
+## GitHub opt-in (only on explicit request)
+
+Create/mirror a map as a GitHub issue **only** when the user explicitly
+asks ("put this on GitHub", "track it as an issue", etc.). The local file
+stays the live map; the issue is a mirror, updated by pushing the file
+body. Never pick this on your own; the repo's remote does not decide it.
 
 ```bash
 gh label create "wayfinder:map" --color 0E8A16 --description "Wayfinder map" 2>/dev/null || true
@@ -21,93 +86,20 @@ gh label create "wayfinder:map" --color 0E8A16 --description "Wayfinder map" 2>/
 gh issue create \
   --title "Wayfinder: <short name>" \
   --label "wayfinder:map" \
-  --body-file <scratchpad>/wayfinder-map.md
+  --body-file .wayfinder/<slug>/map.md
 ```
 
-Keep the working copy of the body in the scratchpad (`wayfinder-map.md`) for the
-whole session. Every update is: edit the file, push the whole file. Hand-editing
-the body through a here-string loses the parts you did not retype.
+Push updates with:
 
 ```bash
-gh issue edit <N> --body-file <scratchpad>/wayfinder-map.md
+gh issue edit <N> --body-file .wayfinder/<slug>/map.md
 ```
 
-## Reading the map
+Step results still live in the file's `## Results`; a result comment on
+the issue is optional (`gh issue comment <N> --body-file <result-draft>`)
+and the checklist line keeps pointing at the file anchor, not the comment.
 
-Body plus metadata, no comments — this is the cheap read a resuming session starts with:
-
-```bash
-gh issue view <N> --json number,title,url,body,state -q .body
-```
-
-Save that output straight into the scratchpad file so later edits start from the live version:
-
-```bash
-gh issue view <N> --json body -q .body > <scratchpad>/wayfinder-map.md
-```
-
-The current step is the first `- [ ]` line under `## Map`:
-
-```bash
-grep -n -m1 '^- \[ \]' <scratchpad>/wayfinder-map.md
-```
-
-Comments (only when a step actually needs an earlier result):
-
-```bash
-gh issue view <N> --json comments -q '.comments[] | "\(.createdAt) \(.url)\n\(.body)\n"'
-```
-
-## Finding maps
-
-```bash
-gh issue list --label "wayfinder:map" --state open --json number,title,url
-```
-
-## Finishing a step
-
-Post the result comment first, because the checklist line has to link to it:
-
-```bash
-gh issue comment <N> --body-file <scratchpad>/step-result.md
-```
-
-That prints the comment URL. Then tick the line in `wayfinder-map.md` and link it:
-
-```markdown
-- [x] research: screen capture on Wayland vs X11 — [result](https://github.com/<owner>/<repo>/issues/42#issuecomment-123456789)
-```
-
-and push the body back with `gh issue edit <N> --body-file …`.
-
-For `implement:` steps, link the PR to the map so GitHub cross-references both ways — put `Part of #<N>` in the PR body (not `Closes`, which would close the whole map when one step merges):
-
-```bash
-gh pr create --title "<step title>" --body "Part of #<N>
-
-<what changed>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)"
-```
-
-## Closing a finished map
-
-Only when the destination is actually reached and the user agrees:
-
-```bash
-gh issue close <N> --comment "Destination reached: <one line>"
-```
-
-## File fallback
-
-No GitHub remote → the map is a markdown file at `.wayfinder/<slug>.md`, committed
-with the code. Same sections as the issue, with two differences:
-
-- Step results are `## Results` subsections appended to the same file instead of comments; checklist lines link to the heading anchor (`— [result](#research-screen-capture)`).
-- Finding maps is `ls .wayfinder/*.md`, and an open map is one with an unticked `- [ ]` line.
-
-Commit the map file with each update so the history shows how the map moved:
-
-```bash
-git add .wayfinder/<slug>.md && git commit -m "docs(wayfinder): <what changed>"
-```
+For `implement:` steps in opt-in mode, link the PR to the map issue with
+`Part of #<N>` in the PR body (not `Closes`, which would close the whole
+map when one step merges). Resume with `/wayfinder <slug>` as usual —
+read the file, not the issue.
