@@ -1,29 +1,31 @@
 ---
 name: wayfinder
-description: Chart a big, foggy piece of work as ONE ticket holding the whole roadmap as a checklist, then walk that checklist one step per session. Only use when the user explicitly runs the /wayfinder command; never trigger on your own.
+description: Chart a big, foggy piece of work as ONE local file holding the whole roadmap as a checklist, then walk that checklist one step per session. Only use when the user explicitly runs the /wayfinder command; never trigger on your own.
 ---
 
 # Wayfinder
 
-A big idea has arrived and the way to it is fogged. Wayfinder charts that way as **one ticket** — the map — and then walks it, **one step per session**, until the thing is built.
+A big idea has arrived and the way to it is fogged. Wayfinder charts that way as **one file** — the map — and then walks it, **one step per session**, until the thing is built.
 
 Three rules hold the whole skill up. Everything below is detail.
 
-1. **One ticket holds everything.** The map, the requirements, every answer, every step's report. Nothing lives anywhere else.
+1. **One file holds everything.** The map, the requirements, every answer, every step's report. Nothing lives anywhere else.
 2. **Ask about requirements, never about implementation.** The user decides what it must do. You decide how to build it.
 3. **One user step per session; subagent waves chain on their own.** A step that needs the user (`grill:`, `prototype:`, `task:`) runs in your session, and at most one of them per session. `research:` and `implement:` steps always run as subagents, and you launch them yourself, wave after wave, without waiting for a prompt, until this session has used about **30% of its context window**. Past that line, launch a wave only when the user says so. Every step is sized to fit one fresh ~100K-token context.
 
+Maps are **local-only by default**. They live as files under `<repo-root>/.wayfinder/` (git-ignored, never committed). Never create a GitHub issue for a map unless the user explicitly asks for one — see `references/tracker.md` for the opt-in.
+
 ## Why sessions stay short
 
-Long sessions rot: by step four the context is full of step one's dead ends and the work gets worse. The ticket is the memory instead of the context window. So a session does at most one step with the user in it, writes what it learned back, and ends clean. The next session starts fresh and loses nothing, because the ticket has it all.
+Long sessions rot: by step four the context is full of step one's dead ends and the work gets worse. The map file is the memory instead of the context window. So a session does at most one step with the user in it, writes what it learned back, and ends clean. The next session starts fresh and loses nothing, because the map file has it all.
 
 A subagent is a fresh context too. That is why `research:` and `implement:` steps, the ones with no user in them, always go to subagents: each subagent loads the map itself, does its one step, and hands back a report. Your context sees the reports, not the dead ends behind them. That is also why you can chain waves without asking: each wave costs your context only its briefs and reports. The 30% line is where that cost starts to matter. Once you cross it, stop chaining and let the user decide.
 
-This is also why the ticket is created **early**, before the requirements are finished: if the session dies mid-grilling, the answers already given are safe on the ticket.
+This is also why the map file is created **early**, before the requirements are finished: if the session dies mid-grilling, the answers already given are safe in the file.
 
-## The map ticket
+## The map file
 
-One GitHub issue, labelled `wayfinder:map`, titled `Wayfinder: <short name>`. See `references/tracker.md` for the exact `gh` commands and for the markdown-file fallback when the repo has no GitHub remote.
+One map per effort, at `.wayfinder/<slug>/map.md`, where `<slug>` is a short kebab-case name for the effort (e.g. `screen-recorder`). The directory per map means a repo can hold several maps at once — `.wayfinder/screen-recorder/map.md`, `.wayfinder/auth-migration/map.md` — and leaves room beside `map.md` for step assets (prototypes, research notes). See `references/tracker.md` for slug rules and exact file commands.
 
 ```markdown
 ## Destination
@@ -46,8 +48,8 @@ One GitHub issue, labelled `wayfinder:map`, titled `Wayfinder: <short name>`. Se
 
 ## Map
 
-- [x] grill: how recording starts and stops — [result](<comment link>)
-- [x] research: screen capture on Wayland vs X11 — [result](<comment link>)
+- [x] grill: how recording starts and stops — [result](#grill-how-recording-starts-and-stops)
+- [x] research: screen capture on Wayland vs X11 — [result](#research-screen-capture)
 - [ ] implement: hotkey listener
 - [ ] implement: encoder pipeline
 - [ ] implement: mux audio into the output — needs: encoder pipeline
@@ -57,11 +59,21 @@ One GitHub issue, labelled `wayfinder:map`, titled `Wayfinder: <short name>`. Se
 <!-- decisions YOU made, not the user; listed so they can object -->
 
 - ffmpeg over OBS — already a dependency, no GUI needed
+
+## Results
+
+### Grill: how recording starts and stops
+
+<full result of that step>
+
+### Research: screen capture
+
+<full findings of that step>
 ```
 
 A step that cannot start before another step's result exists ends with `— needs: <the other step's name>`. No marker means nothing blocks it, and unblocked solo steps run side by side — see **Running steps in parallel**.
 
-Each finished step gets a **comment** on this same issue holding its full result, and the checklist line is ticked and linked to that comment. The body stays a low-resolution index; the comments hold the detail. That way a resuming session reads one body to know where it is, and zooms into comments only when it needs them.
+Each finished step gets a **`## Results` subsection** in this same file holding its full result, and the checklist line is ticked and linked to that subsection's anchor. The body stays a low-resolution index up top; the Results hold the detail. That way a resuming session reads the top to know where it is, and zooms into a Result only when it needs it.
 
 ## Step types
 
@@ -70,7 +82,7 @@ The prefix on a checklist line tells the next session what kind of work it is, s
 | Prefix | What happens | Who drives |
 | --- | --- | --- |
 | `grill:` | Requirement questions to the user, one at a time (see below) | with the user |
-| `research:` | Read docs, APIs, the codebase; write findings as a comment | you alone |
+| `research:` | Read docs, APIs, the codebase; write findings as a result section | you alone |
 | `prototype:` | Build something cheap and throwaway so the user can react to something real | with the user |
 | `task:` | Manual work that unblocks a decision — sign up for a service, provision access, move data | whoever can do it |
 | `implement:` | Write the real code, test it, commit, open a PR | you alone |
@@ -91,14 +103,14 @@ Any other prefix ends the wave: a `grill:`, `prototype:` or `task:` step is walk
 
 Each brief carries what the agent cannot get for itself, and nothing more:
 
-- the map issue number, and the instruction to read its body with `gh issue view <N> --json body -q .body`
+- the map file path (`.wayfinder/<slug>/map.md`), and the instruction to read it with the Read tool
 - the checklist line it owns, copied verbatim
-- which earlier comments to read, if its step needs one
-- **it must not touch the issue** — no comment, no `gh issue edit`. You own the ticket; concurrent writers lose each other's edits.
+- which `## Results` sections to read, if its step needs one
+- **it must not touch the map file** — no edits, no appends. You own the file; concurrent writers lose each other's edits.
 - what to hand back: what it did, what it found, every decision it made that the user did not, and for `implement:` the PR link
 - if its step turns out bigger than one context, it stops and hands back the split it would make instead of pushing through
 
-**Collect, then write once.** When every agent in the wave has reported, post one comment per step, then tick all those lines and push the body a single time. A wave must never leave one step ticked and another lost.
+**Collect, then write once.** When every agent in the wave has reported, append one `## Results` subsection per step, then tick all those lines and save the file a single time. A wave must never leave one step ticked and another lost.
 
 If an agent hands back a split instead of a result, do not tick that line — replace it on the map with the sub-steps it named, and say so in the hand-off.
 
@@ -160,33 +172,33 @@ Three things can come back:
 
 …then the same question and the same three options go into `AskUserQuestion`, plus *Explain more first* — and the user can always ignore all four and type a fourth way to stop a recording into *Other*.
 
-Record each answer on the ticket under **Requirements** right away — one line, in the user's words, not yours. Do not batch them up until the end; a dead session must not lose an answer.
+Record each answer in the map file under **Requirements** right away — one line, in the user's words, not yours. Do not batch them up until the end; a dead session must not lose an answer.
 
 ## Charting a new map
 
 The user arrives with a loose idea and no map.
 
 1. **Find the destination.** One requirement question: what does "done" look like? Use the question shape above.
-2. **Create the ticket now** with Destination filled in and everything else empty. Everything from here is written to it as it happens. Tell the user the issue number and link.
+2. **Create the map file now** at `.wayfinder/<slug>/map.md` with Destination filled in and everything else empty. Everything from here is written to it as it happens. Tell the user the slug and path.
 3. **Grill for requirements, breadth-first.** Sweep the whole space before going deep on any corner; depth on a corner that later gets cut is wasted. After each answer, append it to **Requirements**, and write anything newly visible but still blurry into **Open questions**. Anything the user rules out goes to **Out of scope** with its reason.
 4. **Stop grilling when the fog is requirement-free** — when nothing is left that only the user can answer. Remaining unknowns that *you* could answer by reading or trying are research steps, not questions.
 5. **Write the `## Map` checklist**: the ordered steps from here to the destination, each with a type prefix and sized to one session. End a step with `— needs: <step name>` when it cannot start before that step's result exists; leave the rest unmarked, because unmarked solo steps are what a later session runs in parallel. Chart only what you can see; more steps get added as fog clears.
-6. **Stop.** Charting is a whole session's work. Do not start step one — tell the user to run `/wayfinder <issue>` in a fresh session.
+6. **Stop.** Charting is a whole session's work. Do not start step one — tell the user to run `/wayfinder <slug>` in a fresh session.
 
 ## Resuming a map
 
-The user runs `/wayfinder <issue number or URL>`, or `/wayfinder` alone.
+The user runs `/wayfinder <slug>`, or `/wayfinder` alone.
 
-1. **Find the map.** With an argument, load that issue. Without one, list open `wayfinder:map` issues in the repo; if there is exactly one, take it, otherwise ask which.
-2. **Read the body only** — Destination, Requirements, Out of scope, Map. Do not read every comment; zoom into a comment only when the current step needs what it holds.
+1. **Find the map.** With an argument, load `.wayfinder/<slug>/map.md`. Without one, list `.wayfinder/*/map.md`; if there is exactly one map, take it, otherwise ask which. An open map is one with an unticked `- [ ]` line.
+2. **Read the file only** — Destination, Requirements, Out of scope, Map. Do not read every Result; zoom into a Result subsection only when the current step needs what it holds.
 3. **Take the next step.** The first `- [ ]` line in `## Map` is the step. Its prefix decides what happens next. Do not ask the user what to work on, and do not re-decide the order. If it is `research:` or `implement:`, take the following such lines that nothing unticked blocks too, up to three, and run them as subagents (see **Running steps in parallel**). Any other prefix: that one step, alone, in this session, with the user.
 4. **Finish it** (see **Finishing a step**), then go to **What comes next**.
 
-If the map has no unticked steps: check whether the destination is actually reached. If it is, say so and offer to close the issue. If it is not, the fog moved — chart the next steps and stop.
+If the map has no unticked steps: check whether the destination is actually reached. If it is, say so — the file stays as the record. If it is not, the fog moved — chart the next steps and stop.
 
 ## What comes next
 
-After every finished step or wave, the ticket is already up to date. Look at the new first unticked line and pick one:
+After every finished step or wave, the map file is already up to date. Look at the new first unticked line and pick one:
 
 | Next step | Context used so far | Do this |
 | --- | --- | --- |
@@ -195,19 +207,19 @@ After every finished step or wave, the ticket is already up to date. Look at the
 | `grill:` / `prototype:` / `task:` | any | Stop and hand off. A user step always starts in a fresh session. |
 | none left | any | Check the destination (see above). |
 
-The context line is your own session's context window, not the subagents'. Judge it from what is loaded: the map body, the user step you ran, and every brief and report so far. When unsure, treat it as crossed.
+The context line is your own session's context window, not the subagents'. Judge it from what is loaded: the map file, the user step you ran, and every brief and report so far. When unsure, treat it as crossed.
 
-Example: the map is `grill, grill, implement, implement, research, grill, …`. Session 1 runs the first grill and hands off, because the next step is a grill. Session 2 runs the second grill, writes it to the ticket, then at once launches the two `implement:` steps and the `research:` step as one wave. When they report, the next step is a grill, so it hands off.
+Example: the map is `grill, grill, implement, implement, research, grill, …`. Session 1 runs the first grill and hands off, because the next step is a grill. Session 2 runs the second grill, writes it to the map file, then at once launches the two `implement:` steps and the `research:` step as one wave. When they report, the next step is a grill, so it hands off.
 
 ## Finishing a step
 
 Every step ends the same way, whatever its type:
 
-1. **Post a comment** on the map issue — one per step in the wave: what was done, what was found, and every decision made that the user did not make. For `implement:`, include the PR link.
-2. **Tick the checklist lines** in the body, each linked to its own comment, and push the body once for the whole wave.
-3. **Update the rest of the body**: new requirements learned, fog that is now sharp enough to become steps, anything now out of scope, implementation decisions under **Implementation notes**.
-4. **Go to What comes next.** Do steps 1–3 before any new subagent launches, so the subagents read an up-to-date body.
+1. **Append a `## Results` subsection** to the map file — one per step in the wave: what was done, what was found, and every decision made that the user did not make. For `implement:`, include the PR link.
+2. **Tick the checklist lines**, each linked to its own Results anchor, and save the file once for the whole wave.
+3. **Update the rest of the file**: new requirements learned, fog that is now sharp enough to become steps, anything now out of scope, implementation decisions under **Implementation notes**.
+4. **Go to What comes next.** Do steps 1–3 before any new subagent launches, so the subagents read an up-to-date file.
 
-When **What comes next** says hand off: end the session with the issue link, one line per step done in this session, and the next steps, then tell the user to start a fresh session (`/clear`, then `/wayfinder <issue>`). Never run a second user step in the same session: the next session's clean context is worth more than the minutes saved.
+When **What comes next** says hand off: end the session with the map path, one line per step done in this session, and the next steps, then tell the user to start a fresh session (`/clear`, then `/wayfinder <slug>`). Never run a second user step in the same session: the next session's clean context is worth more than the minutes saved.
 
-For `implement:` steps, finish the code the way this repo finishes code — tests run, committed on a branch, PR opened and linked back to the map issue. A subagent does this inside its own worktree, so its branch and PR are its own. If the repo has skills for testing or committing (`/tdd`, `/git-commit`, `/code-review`), use them; the map does not replace how this repo works.
+For `implement:` steps, finish the code the way this repo finishes code — tests run, committed on a branch, PR opened. A subagent does this inside its own worktree, so its branch and PR are its own. If the repo has skills for testing or committing (`/tdd`, `/git-commit`, `/code-review`), use them; the map does not replace how this repo works.

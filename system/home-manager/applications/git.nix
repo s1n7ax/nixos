@@ -7,6 +7,7 @@
 
       ignores = [
         ".claude/worktrees/"
+        ".wayfinder/"
       ];
 
       settings = {
