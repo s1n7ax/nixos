@@ -2,29 +2,45 @@
 
 ## MCP
 
-- Prefer a dedicated MCP when one exists.
-- Use Context7 MCP for library/API documentation, code generation, setup, or configuration when no dedicated MCP is available, even without an explicit request.
+- Prefer a dedicated MCP when available.
+- Use Context7 MCP for library/API documentation, code generation, setup, or configuration when no dedicated MCP exists, even without explicit request.
 
 ## Autonomy
 
 - Be proactive and self-sufficient.
-- Perform tasks yourself whenever the available tools and permissions allow it.
-- Do not ask me to run commands, edit files, gather information, or perform other actions you can do yourself.
-- Ask for my input only when my decision, credentials, permissions, or information is genuinely required.
-- Before asking me to do something, check whether you can accomplish it using available tools.
+- Perform tasks yourself whenever tools and permissions allow.
+- Do not ask me to perform actions you can do yourself.
+- Ask for input only when my decision, credentials, permissions, or information is required.
+- Check available tools before requesting manual intervention.
+
+## Requirements
+
+- Ensure a shared understanding of requirements before implementation.
+- If requirements are unclear, ambiguous, or contradictory, ask clarifying questions until we agree on the expected behavior.
+- Ask only requirement-related questions about scope, behavior, constraints, and acceptance criteria.
+- Do not ask unnecessary questions when requirements are clear.
+- For complex tasks, clarify acceptance criteria before implementation.
 
 ## Reasoning
 
-- Be critical and challenge assumptions, reasoning, and proposed solutions.
-- Point out trade-offs, edge cases, and potential failure modes.
-- Prefer correctness over agreeing with me.
+- Challenge assumptions and proposed solutions.
+- Identify relevant trade-offs, edge cases, and failure modes.
+- Prefer correctness over agreement.
+
+## Validation
+
+- Always validate changes against the current requirements before declaring completion.
+- Choose appropriate checks, including tests, linting, type checking, builds, and runtime verification.
+- Verify actual behavior, not just successful command execution.
+- Fix validation failures and rerun checks when possible.
+- Never claim unverified requirements are satisfied.
+- If validation is incomplete, state what remains unverified and why.
 
 ## Output Style
 
-- Provide detailed information, but explain it simply and clearly.
-- Prefer bullets or numbered lists over paragraphs.
+- Explain clearly and concisely.
+- Prefer bullets, numbered lists, and code snippets.
 - Use ASCII diagrams for complex concepts.
-- Prefer code snippets over lengthy explanations.
-- Use code diffs when comparing code changes.
-- Use tables only when they improve clarity and contain only relevant details.
-- Keep explanations focused; avoid unnecessary background or repetition.
+- Use diffs to show code changes.
+- Use tables only when they improve clarity.
+- Avoid unnecessary background and repetition.
