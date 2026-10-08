@@ -14,7 +14,7 @@ with lib;
 
     systemd.tmpfiles.rules = [
       "d /var/lib/microvms           0755 root root -"
-      "d /var/lib/microvms/dev-vm    0755 root root -"
+      "d /var/lib/microvms/dev-vm    0755 microvm kvm -"
     ];
 
     microvm.vms.dev-vm = {

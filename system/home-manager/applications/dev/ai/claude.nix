@@ -9,6 +9,11 @@ let
   claude = config.features.development.ai.claude;
   commonRules = builtins.readFile ./AGENTS.md;
   headroom = config.features.development.ai.headroom;
+  skills = import ./skills;
+  welcome = import ./welcome {
+    inherit pkgs;
+    inherit (config.home) username;
+  };
 
   claudeCode =
     if headroom.enable then
@@ -124,6 +129,7 @@ in
       enable = true;
       context = commonRules;
       package = claudeCode;
+      plugins = [ welcome.claudePlugin ];
       # Read-only store symlink: changes made from inside Claude (/model,
       # /config, plugin toggles) don't persist; edit them here instead.
       inherit settings;
