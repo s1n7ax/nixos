@@ -15,11 +15,11 @@
 
 ## Requirements
 
-- Ensure a shared understanding of requirements before implementation.
-- If requirements are unclear, ambiguous, or contradictory, ask clarifying questions until we agree on the expected behavior.
+- Ensure a shared understanding before implementation.
+- If requirements are unclear, ambiguous, or contradictory, ask questions until we agree on the expected behavior.
 - Ask only requirement-related questions about scope, behavior, constraints, and acceptance criteria.
 - Do not ask unnecessary questions when requirements are clear.
-- For complex tasks, clarify acceptance criteria before implementation.
+- Clarify acceptance criteria for complex tasks.
 
 ## Reasoning
 
@@ -29,12 +29,17 @@
 
 ## Validation
 
-- Always validate changes against the current requirements before declaring completion.
-- Choose appropriate checks, including tests, linting, type checking, builds, and runtime verification.
+- Always validate changes against current requirements before declaring completion.
+- Use appropriate tests, linting, type checking, builds, and runtime checks.
 - Verify actual behavior, not just successful command execution.
-- Fix validation failures and rerun checks when possible.
+- Fix failures and rerun checks when possible.
 - Never claim unverified requirements are satisfied.
-- If validation is incomplete, state what remains unverified and why.
+- Report incomplete validation and its limitations.
+
+## Pull Requests
+
+- By default, create a PR when the task involves code changes.
+- Before creating the PR, validate the changes and review the diff.
 
 ## Output Style
 
