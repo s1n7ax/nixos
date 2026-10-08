@@ -49,14 +49,24 @@ let
     '';
 in
 {
-  /** A plugin directory for `programs.claude-code.plugins`. */
+  /**
+    A plugin directory for `programs.claude-code.plugins`.
+  */
   claudePlugin = withBanner "claude-welcome" ./claude "hooks";
 
-  /** A directory extension: Pi loads its index.ts. */
-  piExtension = withBanner "pi-welcome" (pkgs.writeTextDir "index.ts" (builtins.readFile ./pi.ts)) ".";
+  /**
+    A directory extension: Pi loads its index.ts.
+  */
+  piExtension = withBanner "pi-welcome" (pkgs.writeTextDir "index.ts" (
+    builtins.readFile ./pi.ts
+  )) ".";
 
-  /** A file path for tui.json's `plugin` list. */
+  /**
+    A file path for tui.json's `plugin` list.
+  */
   opencodePlugin = "${
-    withBanner "opencode-welcome" (pkgs.writeTextDir "welcome.tsx" (builtins.readFile ./opencode.tsx)) "."
+    withBanner "opencode-welcome" (pkgs.writeTextDir "welcome.tsx" (
+      builtins.readFile ./opencode.tsx
+    )) "."
   }/welcome.tsx";
 }
