@@ -131,7 +131,7 @@ in
     };
 
     home.file = {
-      ".claude/keybindings.json".source = ./claude/keybindings.json;
+      ".claude/keybindings.json".source = ./keybindings.json;
     }
     # Custom skills, version-controlled here so they're the same on every
     # machine instead of hand-edited under ~/.claude/skills.

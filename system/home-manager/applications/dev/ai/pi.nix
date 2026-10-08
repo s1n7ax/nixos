@@ -45,6 +45,7 @@ in
     home.file = {
       ".pi/agent/AGENTS.md".text = commonRules;
       ".pi/agent/settings.json".text = piSettings;
+      ".pi/agent/keybindings.json".source = ./keybindings.json;
     }
     // lib.listToAttrs (
       map (name: {
