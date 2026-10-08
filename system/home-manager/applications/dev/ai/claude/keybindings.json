@@ -20,7 +20,7 @@
       "context": "Chat",
       "bindings": {
         "ctrl+n": "chat:modelPicker",
-        "ctrl+l": "chat:clear"
+        "ctrl+l": "command:clear"
       }
     },
     {

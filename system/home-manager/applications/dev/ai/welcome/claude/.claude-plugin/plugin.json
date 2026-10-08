@@ -1,0 +1,6 @@
+{
+  "name": "welcome",
+  "version": "0.1.0",
+  "description": "Greets you with the shared wordmark above the prompt until the first message",
+  "types": "./types/index.d.ts"
+}
