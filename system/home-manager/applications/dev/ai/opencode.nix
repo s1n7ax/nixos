@@ -1,10 +1,15 @@
 {
+  pkgs,
   config,
   lib,
   ...
 }:
 let
   commonRules = builtins.readFile ./AGENTS.md;
+  welcome = import ./welcome {
+    inherit pkgs;
+    inherit (config.home) username;
+  };
 in
 {
   config = lib.mkIf config.features.development.ai.opencode.enable {
@@ -12,6 +17,11 @@ in
       enable = true;
       enableMcpIntegration = true;
       settings = {
+        /**
+          Nix pins the version, so the "update now?" dialog that covers the
+          home screen on every new release could never succeed anyway.
+        */
+        autoupdate = false;
         permission = {
           bash = {
             "*" = "ask";
@@ -51,6 +61,7 @@ in
       };
       tui = {
         theme = "catppuccin";
+        plugin = [ welcome.opencodePlugin ];
         keybinds = {
           messages_half_page_up = "ctrl+u";
           messages_half_page_down = "ctrl+d";

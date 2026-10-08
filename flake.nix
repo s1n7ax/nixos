@@ -16,11 +16,29 @@
       system = "x86_64-linux";
       darwinPlatform = "aarch64-darwin";
 
+      # TODO: Remove telaCircleFix overlay once upstream fixes dangling symlinks.
+      # https://github.com/s1n7ax/nixos/issues/183
+      #
+      # Upstream tela-circle-icon-theme 2026-07-07 ships 3 dangling symlinks
+      # (org.xfce.appfinder.svg -> edit-find.svg, xsi-addon-symbolic.svg ->
+      # application-x-addon-symbolic.svg x2) which trips nixpkgs'
+      # `noBrokenSymlinks` fixup check. Drop the danglers and skip the check
+      # until upstream fixes it. See: vinceliuice/Tela-circle-icon-theme.
+      telaCircleFix = final: prev: {
+        tela-circle-icon-theme = prev.tela-circle-icon-theme.overrideAttrs (old: {
+          dontCheckForBrokenSymlinks = true;
+          postFixup = (old.postFixup or "") + ''
+            find $out/share/icons -xtype l -delete || true
+          '';
+        });
+      };
+
       importPkgs =
         nixpkgsInput: targetSystem:
         import nixpkgsInput {
           system = targetSystem;
           config.allowUnfree = true;
+          overlays = [ telaCircleFix ];
         };
 
       pkgs = importPkgs nixpkgs system;
@@ -55,6 +73,7 @@
                 inherit extraSpecialArgs;
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                backupFileExtension = "hm-backup";
                 users.s1n7ax = import ./profile/desktop/home.nix;
               };
             }
@@ -76,6 +95,7 @@
                 inherit extraSpecialArgs;
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                backupFileExtension = "hm-backup";
                 users.s1n7ax = import ./profile/server/home.nix;
               };
             }
