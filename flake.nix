@@ -73,6 +73,7 @@
                 inherit extraSpecialArgs;
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                backupFileExtension = "hm-backup";
                 users.s1n7ax = import ./profile/desktop/home.nix;
               };
             }
@@ -94,6 +95,7 @@
                 inherit extraSpecialArgs;
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                backupFileExtension = "hm-backup";
                 users.s1n7ax = import ./profile/server/home.nix;
               };
             }
