@@ -19,20 +19,24 @@
     {
       "context": "Chat",
       "bindings": {
-        "ctrl+n": "chat:modelPicker"
+        "ctrl+n": "chat:modelPicker",
+        "ctrl+l": "command:clear"
       }
     },
     {
       "context": "Select",
       "bindings": {
-        "ctrl+e": "select:previous"
+        "ctrl+e": "select:previous",
+        "ctrl+n": "select:next"
       }
     },
     {
       "context": "ModelPicker",
       "bindings": {
         "ctrl+m": "modelPicker:decreaseEffort",
-        "ctrl+i": "modelPicker:increaseEffort"
+        "ctrl+i": "modelPicker:increaseEffort",
+        "ctrl+e": "select:previous",
+        "ctrl+n": "select:next"
       }
     }
   ]

@@ -90,6 +90,15 @@ in
         programs.claude-code.mcpServers = servers;
       })
 
+      /**
+        Pi's built-in MCP support reads only ~/.pi/agent/mcp.json, so link it
+        to the shared file. The link is read-only: toggling a server globally
+        in Pi's `/mcp` fails; "Disable in this project" writes .pi/mcp.json.
+      */
+      (lib.mkIf ai.pi.enable {
+        home.file.".pi/agent/mcp.json".source = config.xdg.configFile."mcp/mcp.json".source;
+      })
+
       (lib.mkIf cfg.home-assistant.enable {
         sops.secrets."home-assistant/mcp_token" = { };
       })
