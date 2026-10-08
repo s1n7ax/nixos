@@ -1,7 +1,13 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  pkgs-unstable,
+  ...
+}:
 lib.mkIf config.features.cli.yazi.enable {
   programs.yazi = {
     enable = true;
+    package = pkgs-unstable.yazi;
     enableFishIntegration = true;
     shellWrapperName = "y";
     keymap = {
