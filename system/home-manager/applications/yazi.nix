@@ -1,4 +1,9 @@
-{ lib, config, pkgs-unstable, ... }:
+{
+  lib,
+  config,
+  pkgs-unstable,
+  ...
+}:
 lib.mkIf config.features.cli.yazi.enable {
   programs.yazi = {
     enable = true;
