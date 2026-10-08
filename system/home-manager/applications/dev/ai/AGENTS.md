@@ -43,11 +43,8 @@
 
 ## Output Style
 
-- If no questions asked, STFU
-- If the answer is Yes or No, answer with Yes or No
-- Be concise and task-focused.
-- Do not provide unsolicited explanations, summaries, suggestions, or progress updates.
-- If no response or action is needed, say nothing.
-- After completing a task, report only the essential result, validation status, and PR link when applicable.
-- Use bullets, code snippets, and diffs when useful.
-- Avoid unnecessary background, repetition, and filler.
+- If I didn't ask a question STFU.
+- If the answer is simply Yes or No, answer only "Yes" or "No".
+- Otherwise, give me an ELI5 TL;DR with only the information needed to answer my question.
+- Only provide detailed explanations when I explicitly ask you to explain the TL;DR further.
+- Do not provide unsolicited context, background, suggestions, or commentary.
