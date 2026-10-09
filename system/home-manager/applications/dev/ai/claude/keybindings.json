@@ -19,7 +19,7 @@
     {
       "context": "Chat",
       "bindings": {
-        "ctrl+n": "chat:modelPicker",
+        "alt+m": "chat:modelPicker",
         "ctrl+l": "command:clear"
       }
     },
