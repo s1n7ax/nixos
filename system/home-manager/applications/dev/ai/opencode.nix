@@ -74,6 +74,9 @@ in
           input_word_backward = "alt+b,alt+left,ctrl+left,ctrl+n";
           input_word_forward = "alt+f,alt+right,ctrl+right,ctrl+e";
           input_line_end = "ctrl+o";
+          # Model select is alt+m in every agent (Pi, Claude); <leader>m is
+          # kept because a configured list replaces the default.
+          model_list = "alt+m,<leader>m";
         };
       };
       context = commonRules;

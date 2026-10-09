@@ -47,9 +47,11 @@ let
     ctrl+o jumps to line end (ctrl+a line start and ctrl+w kill-word are
     already Pi editor defaults). App-level actions are checked before the
     editor, so model select moves off ctrl+n to alt+m and tool expand off
-    ctrl+o to alt+o -- diverging from Claude's ctrl+n modelPicker, which
-    stays: Claude Code can't rebind cursor-movement keys at all.
-    Configured key lists replace Pi's defaults, so those are repeated.
+    ctrl+o to alt+o. alt+m is the shared model-select key across Claude,
+    Pi and OpenCode (Cursor CLI can't rebind keys at all); Claude's own
+    ctrl+n/ctrl+e/ctrl+o input behavior is fixed, since it can't rebind
+    cursor-movement keys. Configured key lists replace Pi's defaults, so
+    those are repeated.
   */
   piKeybindings = builtins.toJSON {
     "tui.altScreen.halfPageUp" = "ctrl+u";
