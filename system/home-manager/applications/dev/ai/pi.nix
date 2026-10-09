@@ -42,11 +42,20 @@ let
       it moves off ctrl+n for ctrl+n to move down there.
     - Claude's ctrl+m / ctrl+i effort keys have no Pi equivalent: Pi only
       cycles thinking (shift+tab), and ctrl+i is tab in most terminals.
+
+    Editor cursor movement mirrors fish.nix: ctrl+n/ctrl+e move by word and
+    ctrl+o jumps to line end (ctrl+a line start and ctrl+w kill-word are
+    already Pi editor defaults). App-level actions are checked before the
+    editor, so model select moves off ctrl+n to alt+m and tool expand off
+    ctrl+o to alt+o -- diverging from Claude's ctrl+n modelPicker, which
+    stays: Claude Code can't rebind cursor-movement keys at all.
+    Configured key lists replace Pi's defaults, so those are repeated.
   */
   piKeybindings = builtins.toJSON {
     "tui.altScreen.halfPageUp" = "ctrl+u";
     "tui.altScreen.halfPageDown" = "ctrl+d";
-    "app.model.select" = "ctrl+n";
+    "app.model.select" = "alt+m";
+    "app.tools.expand" = "alt+o";
     "app.session.new" = "ctrl+l";
     "tui.select.up" = [
       "up"
@@ -57,6 +66,22 @@ let
       "ctrl+n"
     ];
     "app.session.toggleNamedFilter" = "alt+n";
+    "tui.editor.cursorWordLeft" = [
+      "alt+left"
+      "ctrl+left"
+      "alt+b"
+      "ctrl+n"
+    ];
+    "tui.editor.cursorWordRight" = [
+      "alt+right"
+      "ctrl+right"
+      "alt+f"
+      "ctrl+e"
+    ];
+    "tui.editor.cursorLineEnd" = [
+      "end"
+      "ctrl+o"
+    ];
   };
 
   # Pi loads skills from ~/.agents/skills, following the same Agent Skills
