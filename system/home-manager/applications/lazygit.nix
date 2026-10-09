@@ -7,24 +7,6 @@ lib.mkIf config.features.cli.lazygit.enable {
         scrollHeight = 1;
         skipNoStagedFilesWarning = true;
         showIcons = true;
-        # status panel omitted to hide it; jump keys 1-4 map to these in order
-        sidePanels = [
-          [
-            "files"
-            "worktrees"
-            "submodules"
-          ]
-          [
-            "branches"
-            "remotes"
-            "tags"
-          ]
-          [
-            "commits"
-            "reflog"
-          ]
-          [ "stash" ]
-        ];
       };
       git = {
         mainBranches = [ "main" ];
@@ -42,6 +24,15 @@ lib.mkIf config.features.cli.lazygit.enable {
           nextBlock-alt = "<disabled>";
           prevBlock-alt2 = "<disabled>";
           nextBlock-alt2 = "<disabled>";
+
+          # order: status, files, branches, commits, stash
+          jumpToBlock = [
+            "0"
+            "1"
+            "2"
+            "3"
+            "4"
+          ];
 
           nextMatch = "k";
           prevMatch = "K";
