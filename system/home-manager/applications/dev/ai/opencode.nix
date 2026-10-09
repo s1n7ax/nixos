@@ -65,6 +65,18 @@ in
         keybinds = {
           messages_half_page_up = "ctrl+u";
           messages_half_page_down = "ctrl+d";
+          /**
+            Editor cursor movement mirrors fish.nix: ctrl+n/ctrl+e move by
+            word, ctrl+o jumps to line end. ctrl+a line start and ctrl+w
+            kill-word are already OpenCode defaults. A configured list
+            replaces the defaults, so those are repeated.
+          */
+          input_word_backward = "alt+b,alt+left,ctrl+left,ctrl+n";
+          input_word_forward = "alt+f,alt+right,ctrl+right,ctrl+e";
+          input_line_end = "ctrl+o";
+          # Model select is alt+m in every agent (Pi, Claude); <leader>m is
+          # kept because a configured list replaces the default.
+          model_list = "alt+m,<leader>m";
         };
       };
       context = commonRules;
