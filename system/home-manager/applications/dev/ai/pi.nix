@@ -7,7 +7,6 @@
 }:
 let
   commonRules = builtins.readFile ./AGENTS.md;
-  skills = import ./skills;
   welcome = import ./welcome {
     inherit pkgs;
     inherit (config.home) username;
@@ -85,11 +84,6 @@ let
       "ctrl+o"
     ];
   };
-
-  # Pi loads skills from ~/.agents/skills, following the same Agent Skills
-  # spec as Claude Code's SKILL.md -- so the same directories are portable.
-  # On activation, home-manager moves any hand-installed skill of the same
-  # name aside to <name>.hm-backup (backupFileExtension).
 in
 {
   config = lib.mkIf config.features.development.ai.pi.enable {
@@ -113,12 +107,6 @@ in
       ".pi/agent/settings.json".text = piSettings;
       ".pi/agent/keybindings.json".text = piKeybindings;
       ".pi/agent/extensions/welcome".source = welcome.piExtension;
-    }
-    // lib.listToAttrs (
-      map (name: {
-        name = ".agents/skills/${name}";
-        value.source = ./skills/${name};
-      }) skills.names
-    );
+    };
   };
 }

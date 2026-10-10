@@ -9,7 +9,6 @@ let
   claude = config.features.development.ai.claude;
   commonRules = builtins.readFile ./AGENTS.md;
   headroom = config.features.development.ai.headroom;
-  skills = import ./skills;
   welcome = import ./welcome {
     inherit pkgs;
     inherit (config.home) username;
@@ -135,7 +134,8 @@ in
       inherit settings;
     };
 
-    # Skills: see ./skills (mounted under ~/.claude/skills when ai.enable).
+    # Skills: see ./skills (mounted under ~/.claude/skills when ai.enable is
+    # also set).
     home.file.".claude/keybindings.json".source = ./claude/keybindings.json;
   };
 }
