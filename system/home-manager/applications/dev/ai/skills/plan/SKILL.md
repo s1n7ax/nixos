@@ -1,18 +1,34 @@
 ---
 name: plan
-description: Turn a confirmed requirement into an implementation plan another agent can execute with no questions asked. Explores the codebase, then asks the user only about approach forks, significant stretches, requirement gaps, and unverified assumptions — one question at a time. Only use when the user explicitly runs the /plan command; never trigger on your own.
+description: Turn a confirmed requirement into an implementation plan another agent can execute with no questions asked. Starts by analyzing the code — asking for access first when the code is out of reach — and asks the user only as a last resort, about approach forks, significant stretches, requirement gaps, and unverified assumptions — one question at a time. Only use when the user explicitly runs the /plan command; never trigger on your own.
 ---
 
 # Plan
 
 This skill is implementation planning. The user arrives with a sharp requirement — usually written by the `/requirement` skill — and the skill works out how to build it: explore the code, find the viable ways, settle every decision that needs the user's taste or risk appetite, and write a plan another agent can execute with no questions asked.
 
-Two rules hold the whole skill up. Everything below is detail.
+Three rules hold the whole skill up. Everything below is detail.
 
-1. **Ask only the four allowed question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs.
-2. **One question per turn.** Never stack questions, never ask two things in one message.
+1. **Code first, questions last.** Analyzing the code is always the first move. A question is the last option — only when the code, the docs, and your tools cannot settle it.
+2. **Ask only the four allowed question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs. The one exception is asking for code access (see Code first).
+3. **One question per turn.** Never stack questions, never ask two things in one message.
 
 The user is a senior engineer but not a native English speaker: use real software words, and keep the sentences around them short and plain.
+
+## Code first
+
+Jump straight into the code. Read every project the requirement touches and work out the plan from what is there. Do not ask the user anything the code can tell you.
+
+### When the code is out of reach
+
+If a project the requirement touches is not readable, getting access comes first — before any planning question.
+
+1. **Use what already works.** A local checkout, a connected MCP for the code host, or an authenticated CLI such as `gh` that can read the repo. If one works, read the code and carry on — no question.
+2. **Otherwise, ask for access.** One question, in the usual shape. Suggestions, ranked:
+   - **Clone the project — recommended.** Full, fast local reads.
+   - **Add an MCP** for the code host.
+   - **Set up a CLI** such as `gh` to read the repo remotely.
+3. **Never plan blind.** Do not guess the code, and do not replace reading it with questions. If access cannot be had, say which project is blocked and stop.
 
 ## The four allowed question types
 
@@ -54,7 +70,7 @@ The gate test for any decision:
 
 Yes → decide it yourself, silently. No → it must fit one of the four types to be asked. If it fits none, decide it yourself and record it in the plan's Decisions section.
 
-Never ask for facts you could fetch. If the code or docs hold the answer, go read them.
+Never ask for facts you could fetch. If the code or docs hold the answer, go read them. Before any question, check the code, the docs, and your tools first — asking is the last option.
 
 ## The shape of one question
 
@@ -93,7 +109,7 @@ Then stop and wait. Four things can come back:
 ## Running the session
 
 1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.agent/requirement/*/requirement.md`; if there are several or none, picking which one is the first question.
-2. **Read the code before asking anything.** Explore every project the requirement touches. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
+2. **Analyze the code before asking anything.** If a project is out of reach, get access first (see Code first). Explore every project the requirement touches. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
 3. **Ask breadth-first.** Settle the big forks and stretches in dependency order before any detail; detail on an approach that later gets rejected is wasted.
 4. **Track decisions visibly.** After each answer, briefly note what is now decided and what has been ruled out.
 5. **Stop when nothing is left that needs the user** — when every remaining decision passes the gate test as yours to make.
@@ -156,7 +172,8 @@ Group changes per project. When a step in one project depends on a step in anoth
 ## Never
 
 - Never run unless the user typed `/plan`.
-- Never ask a question outside the four allowed types.
+- Never ask a planning question before analyzing the code.
+- Never ask a question outside the four allowed types — asking for code access is the only exception.
 - Never ask more than one question per turn.
 - Never present more than 3 suggestions.
 - Never drop the "None of these" escape hatch.
