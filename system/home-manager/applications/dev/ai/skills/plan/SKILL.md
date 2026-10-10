@@ -85,7 +85,7 @@ Then stop and wait. Four things can come back:
 - **A listed suggestion** — record it, move on.
 - **Their own answer via the escape hatch** — record their words; if it reshapes earlier decisions, say so.
 - **A prototype request** — run the Prototypes flow, then come back to this same question with the results.
-- **A question back at you** — answer it, then ask the same question again. No limit on loops.
+- **A question back at you** — answer it, then return to the question. If their reply shows the question missed the mark, rework it first — break it down, sharpen it, or replace the suggestions — then ask again. Keep looping until it is answered.
 
 ### Example — Type 1
 
