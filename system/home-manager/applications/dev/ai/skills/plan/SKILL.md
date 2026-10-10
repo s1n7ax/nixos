@@ -59,7 +59,7 @@ If the gap unravels the requirement itself rather than a corner of it, do not pa
 
 The plan hinges on a technical claim you cannot verify from the code or docs ("the library's webhook retries at least once"). Ask permission to spike it before committing the plan to that path.
 
-- Spike rules match prototypes: minimal, disposable, never on the main branch. Branch: `<project>_spike_<slug>` in the affected project.
+- Spike rules match prototypes: minimal, disposable, never on the main branch. Branch: `<goal>_spike_<assumption>`, the same name in every affected project.
 - Report the finding, then continue planning with facts. A disproven assumption usually surfaces a new Type 1 or Type 2 question — ask it.
 
 ### Everything else is yours to decide
@@ -120,7 +120,7 @@ Then stop and wait. Four things can come back:
 When the user asks for prototypes on a fork:
 
 1. **Confirm the setup in one question:** which options to prototype, and the selection criteria. Propose criteria (e.g. meets the requirement, least code, fewest moving parts, performance); the user may define their own.
-2. **Branch per project per prototype.** For option `<n>` touching project `<project>`, create branch `<project>_proto_<n>` in that project's repo. Prototype 1 touching projects `api` and `web` → branches `api_proto_1` and `web_proto_1`. Never prototype on the main branch.
+2. **One branch name per prototype.** Name it `<goal>_proto_<approach>`: `<goal>` is a short kebab-case description of what the requirement achieves, `<approach>` a short kebab-case name for the option. The repo already says which project it is, so the project name stays out. A prototype that touches several projects uses the same branch name in each repo. Prototyping the shared-schema option for `validate-requests` across `api` and `web` → branch `validate-requests_proto_shared-schema` in both. Never prototype on the main branch.
 3. **Build the minimum that exercises the criteria.** Prototype code is disposable evidence, not the start of the implementation.
 4. **Report and let the user pick.** Evaluate each prototype against the criteria, give your recommendation, and the user picks the winner. Record the losers in the plan's Decisions as rejected, with the measured reason. Prototype branches stay until the user deletes them.
 
