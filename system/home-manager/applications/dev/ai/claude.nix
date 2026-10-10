@@ -9,7 +9,6 @@ let
   claude = config.features.development.ai.claude;
   commonRules = builtins.readFile ./AGENTS.md;
   headroom = config.features.development.ai.headroom;
-  skills = import ./skills;
   welcome = import ./welcome {
     inherit pkgs;
     inherit (config.home) username;
@@ -135,16 +134,8 @@ in
       inherit settings;
     };
 
-    home.file = {
-      ".claude/keybindings.json".source = ./claude/keybindings.json;
-    }
-    # Custom skills, version-controlled here so they're the same on every
-    # machine instead of hand-edited under ~/.claude/skills.
-    // lib.listToAttrs (
-      map (name: {
-        name = ".claude/skills/${name}";
-        value.source = ./skills/${name};
-      }) skills.names
-    );
+    # Skills: see ./skills (mounted under ~/.claude/skills when ai.enable is
+    # also set).
+    home.file.".claude/keybindings.json".source = ./claude/keybindings.json;
   };
 }
