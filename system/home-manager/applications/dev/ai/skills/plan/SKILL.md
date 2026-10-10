@@ -14,8 +14,6 @@ Four rules hold the whole skill up. Everything below is detail.
 3. **One question per turn.** Never stack questions, never ask two things in one message.
 4. **Never implement.** The plan is the only deliverable; another agent builds it. The only code you write is a throwaway spike that proves a claim the plan depends on.
 
-The user is a senior engineer but not a native English speaker: use real software words, and keep the sentences around them short and plain.
-
 ## Code first
 
 Jump straight into the code. Read every project the requirement touches and work out the plan from what is there. Do not ask the user anything the code can tell you.
