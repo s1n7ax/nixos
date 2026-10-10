@@ -12,8 +12,6 @@ Two rules hold the whole skill up. Everything below is detail.
 1. **Ask about the requirement, never about implementation.** The user decides what it must do. How to build it is decided later, by you, outside this session.
 2. **One question per turn.** Never stack questions, never ask two things in one message.
 
-The user is a senior engineer but not a native English speaker: use real software words (idempotent, retry, schema, race), and keep the sentences around them short and plain. Short words, not small ideas.
-
 ## Requirement or implementation?
 
 Only requirement questions may be asked. The test:
@@ -22,13 +20,13 @@ Only requirement questions may be asked. The test:
 
 Yes → requirement, ask it. No → implementation, out of bounds for this skill.
 
-| Question | Verdict |
-| --- | --- |
-| "How does the user start a recording — hotkey, command, or tray icon?" | Requirement |
-| "OBS or ffmpeg?" | Implementation — never ask |
-| "If the app crashes mid-recording, should the half-finished file survive?" | Requirement |
-| "SQLite or a JSON file for settings?" | Implementation — never ask |
-| "Where do recordings get saved, and can the user change it?" | Requirement |
+| Question                                                                   | Verdict                    |
+| -------------------------------------------------------------------------- | -------------------------- |
+| "How does the user start a recording — hotkey, command, or tray icon?"     | Requirement                |
+| "OBS or ffmpeg?"                                                           | Implementation — never ask |
+| "If the app crashes mid-recording, should the half-finished file survive?" | Requirement                |
+| "SQLite or a JSON file for settings?"                                      | Implementation — never ask |
+| "Where do recordings get saved, and can the user change it?"               | Requirement                |
 
 When a tool choice leaks into the user's world, rewrite it as the consequence they feel. Not "ffmpeg or OBS?" but "Is it OK if the user has to install another program first, or must this work on its own?" The tool stays yours; the trade-off is theirs.
 
@@ -46,7 +44,7 @@ Then stop and wait. Three things can come back:
 
 - **A listed suggestion** — record it, move to the next question.
 - **Their own answer via the escape hatch** — the best case; they saw something you missed. Record their words, and if it reshapes earlier answers, say so.
-- **A question back at you** — answer it, then ask the same question again with the same suggestions. There is no limit on loops, and no limit on the number of questions overall. Thirty answered questions is a good session, not a long one.
+- **A question back at you** — answer it, then return to the question. If their reply shows the question missed the mark, rework it first — break it down, sharpen it, or replace the suggestions — then ask again. Keep looping until it is answered.
 
 ### Example
 
@@ -61,7 +59,7 @@ Then stop and wait. Three things can come back:
 
 ## Running the session
 
-1. **Restate the fuzzy requirement** in one or two sentences and confirm the restatement is right. If it is too fuzzy to even restate, the restatement attempt *is* the first question.
+1. **Restate the fuzzy requirement** in one or two sentences and confirm the restatement is right. If it is too fuzzy to even restate, the restatement attempt _is_ the first question.
 2. **Grill breadth-first.** Sweep the whole space before going deep on any corner; depth on a corner that later gets cut is wasted. Cover at least: who uses it, what "done" looks like, what it must do, what it must never do, what happens on failure, and what is explicitly out of scope.
 3. **Track the answers visibly.** After each answer, briefly note what is now decided and what has been ruled out, so the user watches the requirement take shape.
 4. **Stop when the fog is requirement-free** — when nothing is left that only the user can answer. Unknowns you could answer yourself by reading code or docs are not questions for this skill.
@@ -72,7 +70,7 @@ When the requirement is clear, first **summarize it back in full**: the goal, wh
 
 Then ask — using the same one-question shape — where the requirement should live. Exactly two options:
 
-1. **Local document.** Write it to `.agent/requirement/<slug>/requirement.md` under the repo root, where `<slug>` is a short kebab-case name for the effort (e.g. `screen-recorder`).
+1. **Local document.** Write it to `.agent/goals/<goal>/requirement/requirement.md` under the repo root, where `<goal>` is a short kebab-case description of what we are trying to achieve (e.g. `record-screen-demos`).
 2. **Project ticket.** Create a ticket in the project's management tool. Check what is available first — `gh` for a GitHub repo, or a Jira / Linear MCP or CLI if the project is set up for one. If more than one tool fits, that choice is part of the question.
 
 Either way, the content is the same:
@@ -98,7 +96,7 @@ Either way, the content is the same:
 
 ## Open questions
 
-<anything still fuzzy, or "None">
+<only what cannot be cleared during requirement gathering — unknowns that depend on something outside this session (a third party, a future event, a decision the user explicitly deferred). Anything the user could answer here and now must be asked and settled before documenting, never parked in this section. "None" if none.>
 ```
 
 ## Never
@@ -109,3 +107,4 @@ Either way, the content is the same:
 - Never present more than 3 suggestions.
 - Never drop the "None of these" escape hatch.
 - Never document before the user has confirmed the full summary.
+- Never leave an open question in the document that could have been asked and answered during the session.
