@@ -112,7 +112,8 @@ Then stop and wait. Four things can come back:
 2. **Analyze the code before asking anything.** If a project is out of reach, get access first (see Code first). Explore every project the requirement touches. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
 3. **Ask breadth-first.** Settle the big forks and stretches in dependency order before any detail; detail on an approach that later gets rejected is wasted.
 4. **Track decisions visibly.** After each answer, briefly note what is now decided and what has been ruled out.
-5. **Stop when nothing is left that needs the user** — when every remaining decision passes the gate test as yours to make.
+5. **Stop asking when nothing is left that needs the user** — when every remaining decision passes the gate test as yours to make.
+6. **Write the plan, then stop.** Follow Writing the plan. The session ends once the plan is saved — do not start implementing.
 
 ## Prototypes
 
