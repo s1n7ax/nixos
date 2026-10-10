@@ -1,17 +1,18 @@
 ---
 name: plan
-description: Turn a confirmed requirement into an implementation plan another agent can execute with no questions asked. Starts by analyzing the code — asking for access first when the code is out of reach — and asks the user only as a last resort, about approach forks, significant stretches, requirement gaps, and unverified assumptions — one question at a time. Only use when the user explicitly runs the /plan command; never trigger on your own.
+description: Turn a confirmed requirement into an implementation plan another agent can execute with no questions asked. Starts by analyzing the code — asking for access first when the code is out of reach — and proves unverified claims hands-on with throwaway spikes. Asks the user only as a last resort, about approach forks, significant stretches, and requirement gaps — one question at a time. Never implements. Only use when the user explicitly runs the /plan command; never trigger on your own.
 ---
 
 # Plan
 
 This skill is implementation planning. The user arrives with a sharp requirement — usually written by the `/requirement` skill — and the skill works out how to build it: explore the code, find the viable ways, settle every decision that needs the user's taste or risk appetite, and write a plan another agent can execute with no questions asked.
 
-Three rules hold the whole skill up. Everything below is detail.
+Four rules hold the whole skill up. Everything below is detail.
 
-1. **Code first, questions last.** Analyzing the code is always the first move. A question is the last option — only when the code, the docs, and your tools cannot settle it.
-2. **Ask only the four allowed question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs. The one exception is asking for code access (see Code first).
+1. **Code first, questions last.** Analyzing the code is always the first move. A question is the last option — only when the code, the docs, a spike, and your tools cannot settle it.
+2. **Ask only the three allowed question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs. The one exception is asking for code access (see Code first).
 3. **One question per turn.** Never stack questions, never ask two things in one message.
+4. **Never implement.** The plan is the only deliverable; another agent builds it. The only code you write is a throwaway spike that proves a claim the plan depends on.
 
 The user is a senior engineer but not a native English speaker: use real software words, and keep the sentences around them short and plain.
 
@@ -30,14 +31,22 @@ If a project the requirement touches is not readable, getting access comes first
    - **Set up a CLI** such as `gh` to read the repo remotely.
 3. **Never plan blind.** Do not guess the code, and do not replace reading it with questions. If access cannot be had, say which project is blocked and stop.
 
-## The four allowed question types
+### When the code cannot prove it
+
+The plan hinges on a technical claim the code and docs cannot prove ("the library's webhook retries at least once"). Do not guess and do not ask — prove it yourself. Planning is hands-on.
+
+1. **Read deeper first.** The library's source, its tests, its issue tracker.
+2. **Still unproven → spike it.** Make the smallest change that proves or disproves the claim — in a new throwaway project, or on a `<goal>_spike_<claim>` branch in an existing project. `<goal>` is a short kebab-case description of what the requirement achieves (e.g. `validate-requests`), `<claim>` a short kebab-case name for the claim. Never on the main branch, never merged: a spike is evidence, not implementation.
+3. **Plan with facts.** Record the finding, and where the spike lives, in the plan's Decisions. A disproven claim usually surfaces a new Type 1 or Type 2 question — ask it.
+
+## The three allowed question types
 
 ### Type 1 — Fork in the road
 
 Two or more clearly viable approaches exist, and every one of them satisfies the requirement. Ask which one the user prefers.
 
 - Always rank the suggestions by **most maintainable, most scalable, simplest first**. Mark your recommendation and say why in one line.
-- The user may request prototypes for one or more options instead of picking — see the Prototypes section.
+- The user may keep two or more options instead of picking one — see Multiple approaches.
 
 ### Type 2 — Significant stretch
 
@@ -55,22 +64,15 @@ Planning reveals the requirement itself is silent on something that forks the pl
 
 If the gap unravels the requirement itself rather than a corner of it, do not patch it one question at a time: name the gap, tell the user it needs another `/requirement` pass, and stop until it is resolved.
 
-### Type 4 — Unverified assumption
-
-The plan hinges on a technical claim you cannot verify from the code or docs ("the library's webhook retries at least once"). Ask permission to spike it before committing the plan to that path.
-
-- Spike rules match prototypes: minimal, disposable, never on the main branch. Branch: `<goal>_spike_<assumption>`, the same name in every affected project.
-- Report the finding, then continue planning with facts. A disproven assumption usually surfaces a new Type 1 or Type 2 question — ask it.
-
 ### Everything else is yours to decide
 
 The gate test for any decision:
 
 > Could a strong engineer, given this requirement and this codebase, decide this without the user's taste or risk appetite?
 
-Yes → decide it yourself, silently. No → it must fit one of the four types to be asked. If it fits none, decide it yourself and record it in the plan's Decisions section.
+Yes → decide it yourself, silently. No → it must fit one of the three types to be asked. If it fits none, decide it yourself and record it in the plan's Decisions section.
 
-Never ask for facts you could fetch. If the code or docs hold the answer, go read them. Before any question, check the code, the docs, and your tools first — asking is the last option.
+Never ask for facts you could fetch or prove. If the code or docs hold the answer, go read them; if only running code can tell, spike it. Before any question, check the code, the docs, and your tools first — asking is the last option.
 
 ## The shape of one question
 
@@ -84,7 +86,7 @@ Then stop and wait. Four things can come back:
 
 - **A listed suggestion** — record it, move on.
 - **Their own answer via the escape hatch** — record their words; if it reshapes earlier decisions, say so.
-- **A prototype request** — run the Prototypes flow, then come back to this same question with the results.
+- **Several options kept** (Type 1 only) — record each as an approach (see Multiple approaches), move on.
 - **A question back at you** — answer it, then return to the question. If their reply shows the question missed the mark, rework it first — break it down, sharpen it, or replace the suggestions — then ask again. Keep looping until it is answered.
 
 ### Example — Type 1
@@ -109,24 +111,25 @@ Then stop and wait. Four things can come back:
 ## Running the session
 
 1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.agent/requirement/*/requirement.md`; if there are several or none, picking which one is the first question.
-2. **Analyze the code before asking anything.** If a project is out of reach, get access first (see Code first). Explore every project the requirement touches. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
+2. **Analyze the code before asking anything.** If a project is out of reach, get access first (see Code first). Explore every project the requirement touches, and spike any claim the plan would hinge on. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
 3. **Ask breadth-first.** Settle the big forks and stretches in dependency order before any detail; detail on an approach that later gets rejected is wasted.
 4. **Track decisions visibly.** After each answer, briefly note what is now decided and what has been ruled out.
 5. **Stop asking when nothing is left that needs the user** — when every remaining decision passes the gate test as yours to make.
 6. **Write the plan, then stop.** Follow Writing the plan. The session ends once the plan is saved — do not start implementing.
 
-## Prototypes
+## Multiple approaches
 
-When the user asks for prototypes on a fork:
+When the user keeps more than one option at a fork, the plan carries each kept option as a full approach. The implementing agent builds every approach; the user then picks the one that ships.
 
-1. **Confirm the setup in one question:** which options to prototype, and the selection criteria. Propose criteria (e.g. meets the requirement, least code, fewest moving parts, performance); the user may define their own.
-2. **One branch name per prototype.** Name it `<goal>_proto_<approach>`: `<goal>` is a short kebab-case description of what the requirement achieves, `<approach>` a short kebab-case name for the option. The repo already says which project it is, so the project name stays out. A prototype that touches several projects uses the same branch name in each repo. Prototyping the shared-schema option for `validate-requests` across `api` and `web` → branch `validate-requests_proto_shared-schema` in both. Never prototype on the main branch.
-3. **Build the minimum that exercises the criteria.** Prototype code is disposable evidence, not the start of the implementation.
-4. **Report and let the user pick.** Evaluate each prototype against the criteria, give your recommendation, and the user picks the winner. Record the losers in the plan's Decisions as rejected, with the measured reason. Prototype branches stay until the user deletes them.
+1. **Production-ready, never throwaway.** Plan every approach to the same standard as a single-approach plan — any of them may be the one that ships.
+2. **An approach spans every project.** If option 1 in project `api` forces a matching change in `web`, approach 1 covers both: its `api` and `web` changes ship or drop together.
+3. **At most 3 approaches in total.** When more than one fork is kept open, each approach is one end-to-end combination of the kept options. If the combinations would exceed 3, ask which ones to keep — one question, in the usual shape.
+4. **One branch name per approach.** `<goal>_approach_<approach>`, with `<goal>` as for spikes and `<approach>` a short kebab-case name for the approach. The repo already says which project it is, so the same name in every repo ties one approach's PRs together: the shared-schema approach for `validate-requests` across `api` and `web` → branch `validate-requests_approach_shared-schema` in both.
+5. **The user picks after the PRs exist.** One PR per project per approach. The user reviews them and picks one approach; its PRs get merged, the others closed.
 
 ## Writing the plan
 
-First **summarize the plan back in full**: the chosen approach, every decision with its reason, the changes per project in execution order, and what is explicitly out. Get a "yes, that's it" before writing anything down.
+First **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Get a "yes, that's it" before writing anything down.
 
 The plan lives next to the requirement it implements: a local requirement doc gets `plan.md` in the same directory; a ticket gets the plan added to the ticket.
 
@@ -143,6 +146,8 @@ Implements: <path or link to the requirement>
 
 Ordered in execution order. One step = one change: what changes, where, and
 which requirement it serves. Words, file paths, and symbol names — never code.
+With several approaches, this section holds only the steps every approach
+shares; each approach branch starts with them.
 
 ### <project name>
 
@@ -152,6 +157,20 @@ which requirement it serves. Words, file paths, and symbol names — never code.
 ### <project name>
 
 1. ...
+
+## Approaches
+
+Only when the user kept several options; drop the section otherwise. Build
+every approach in full, one PR per project on the approach's branch. The user
+picks one approach: merge its PRs, close the rest.
+
+### <approach> — branch `<goal>_approach_<approach>`
+
+<what sets this approach apart, in one line>
+
+#### <project name>
+
+1. <change> — <requirement it serves>
 
 ## Verification
 
@@ -174,10 +193,11 @@ Group changes per project. When a step in one project depends on a step in anoth
 
 - Never run unless the user typed `/plan`.
 - Never ask a planning question before analyzing the code.
-- Never ask a question outside the four allowed types — asking for code access is the only exception.
+- Never ask a question outside the three allowed types — asking for code access is the only exception.
 - Never ask more than one question per turn.
 - Never present more than 3 suggestions.
 - Never drop the "None of these" escape hatch.
+- Never implement — the only code you write is a spike, never on the main branch.
+- Never plan more than 3 approaches.
 - Never put code snippets in the plan.
-- Never implement the plan in this session — prototypes on `_proto_` branches are the only exception.
 - Never write the plan before the user has confirmed the full summary.
