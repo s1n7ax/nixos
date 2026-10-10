@@ -1,6 +1,7 @@
 ---
 name: plan
 description: Turn a confirmed requirement into an implementation plan another agent can execute with no questions asked. Starts by analyzing the code — asking for access first when the code is out of reach — and proves unverified claims hands-on with throwaway spikes. Asks the user only as a last resort, about approach forks, significant stretches, and requirement gaps — one question at a time. Never implements. Only use when the user explicitly runs the /plan command; never trigger on your own.
+disable-model-invocation: true
 ---
 
 # Plan
@@ -10,7 +11,7 @@ This skill is implementation planning. The user arrives with a sharp requirement
 Four rules hold the whole skill up. Everything below is detail.
 
 1. **Code first, questions last.** Analyzing the code is always the first move. A question is the last option — only when the code, the docs, a spike, and your tools cannot settle it.
-2. **Ask only the three allowed question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs. The one exception is asking for code access (see Code first).
+2. **Ask only the three allowed question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs. The only exceptions are the session's own bookkeeping: asking for code access or permission for a spike that leaves your machine (see Code first), which requirement to plan (see Running the session), and confirming the final summary (see Writing the plan).
 3. **One question per turn.** Never stack questions, never ask two things in one message.
 4. **Never implement.** The plan is the only deliverable; another agent builds it. The only code you write is a throwaway spike that proves a claim the plan depends on.
 
@@ -34,7 +35,7 @@ If a project the requirement touches is not readable, getting access comes first
 The plan hinges on a technical claim the code and docs cannot prove ("the library's webhook retries at least once"). Do not guess and do not ask — prove it yourself. Planning is hands-on.
 
 1. **Read deeper first.** The library's source, its tests, its issue tracker.
-2. **Still unproven → spike it.** Make the smallest change that proves or disproves the claim — in a new throwaway project, or on a `<goal>_spike_<claim>` branch in an existing project. `<goal>` is a short kebab-case description of what the requirement achieves (e.g. `validate-requests`), `<claim>` a short kebab-case name for the claim. Never on the main branch, never merged: a spike is evidence, not implementation.
+2. **Still unproven → spike it.** Make the smallest change that proves or disproves the claim — in a new throwaway project outside every repo, or on a `<goal>_spike_<claim>` branch in a separate git worktree of an existing project, so the user's checkout, its current branch, and its uncommitted changes stay untouched. `<goal>` is the requirement's goal: its directory name under `.agent/goals/`, or for a ticket a short kebab-case description of what the requirement achieves (e.g. `validate-requests`); `<claim>` a short kebab-case name for the claim. Never on the main branch, never pushed, never a PR, never merged: a spike is evidence, not implementation. Keep it local — no shared or production systems, real secrets, or paid resources; if proving the claim needs one, ask permission first, one question in the usual shape.
 3. **Plan with facts.** Record the finding, and where the spike lives, in the plan's Decisions. A disproven claim usually surfaces a new Type 1 or Type 2 question — ask it.
 
 ## The three allowed question types
@@ -108,7 +109,7 @@ Then stop and wait. Four things can come back:
 
 ## Running the session
 
-1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.agent/requirement/*/requirement.md`; if there are several or none, picking which one is the first question.
+1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.agent/goals/*/requirement/requirement.md`, where `/requirement` writes it. One found → use it. Several → picking which one is the first question. None → ask for a path or ticket, or tell the user to run `/requirement` first, and stop until there is one.
 2. **Analyze the code before asking anything.** If a project is out of reach, get access first (see Code first). Explore every project the requirement touches, and spike any claim the plan would hinge on. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
 3. **Ask breadth-first.** Settle the big forks and stretches in dependency order before any detail; detail on an approach that later gets rejected is wasted.
 4. **Track decisions visibly.** After each answer, briefly note what is now decided and what has been ruled out.
@@ -127,9 +128,9 @@ When the user keeps more than one option at a fork, the plan carries each kept o
 
 ## Writing the plan
 
-First **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Get a "yes, that's it" before writing anything down.
+First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Get a "yes, that's it" before writing anything down.
 
-The plan lives next to the requirement it implements: a local requirement doc gets `plan.md` in the same directory; a ticket gets the plan added to the ticket.
+The plan lives next to the requirement it implements: a local requirement doc at `.agent/goals/<goal>/requirement/requirement.md` gets its plan at `.agent/goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket.
 
 ```markdown
 # Plan: <title>
@@ -181,7 +182,7 @@ picks one approach: merge its PRs, close the rest.
 
 ### The no-questions test
 
-Before writing, check every step: could an agent that never saw this conversation execute it without choosing anything? If a step forces a choice, the plan is not done — make the choice yourself, or ask it if it fits one of the allowed types.
+Before the summary, check every step: could an agent that never saw this conversation execute it without choosing anything? If a step forces a choice, the plan is not done — make the choice yourself, or ask it if it fits one of the allowed types. Any change after the user confirmed the summary needs a fresh summary and confirmation.
 
 ### Multiple projects
 
@@ -189,13 +190,13 @@ Group changes per project. When a step in one project depends on a step in anoth
 
 ## Never
 
-- Never run unless the user typed `/plan`.
+- Never run unless the user explicitly invoked this skill (`/plan`, or `/skill:plan` in pi).
 - Never ask a planning question before analyzing the code.
-- Never ask a question outside the three allowed types — asking for code access is the only exception.
+- Never ask a question outside the three allowed types — the session's bookkeeping questions (code access, spike permission, which requirement, summary confirmation) are the only exceptions.
 - Never ask more than one question per turn.
 - Never present more than 3 suggestions.
 - Never drop the "None of these" escape hatch.
-- Never implement — the only code you write is a spike, never on the main branch.
+- Never implement — the only code you write is a spike: never on the main branch, never pushed, never in the user's checkout.
 - Never plan more than 3 approaches.
 - Never put code snippets in the plan.
 - Never write the plan before the user has confirmed the full summary.
