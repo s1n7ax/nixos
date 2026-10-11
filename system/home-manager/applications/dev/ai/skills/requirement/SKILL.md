@@ -113,6 +113,14 @@ Either way, the content is the same:
 <only unknowns that depend on something outside this session — a third party, a future event, a decision the user explicitly deferred. "None" if none.>
 ```
 
+## Handing off to the next step
+
+Once the requirement document is saved, the workflow's next step is `/plan <goal>`, where `<goal>` is the goal's directory name (or the kebab-case name used for a ticket).
+
+1. **Tell the user** the next step: run `/plan <goal>`.
+2. **Copy the command to the clipboard** so the user can paste it: run `printf '%s' '/plan <goal>' | wl-copy` (Wayland; fall back to `xclip -selection clipboard` or `xsel --clipboard` when wl-copy is unavailable).
+3. **Confirm the copy worked** — say the command is on the clipboard.
+
 ## Never
 
 - Never run unless the user explicitly invoked this skill.
