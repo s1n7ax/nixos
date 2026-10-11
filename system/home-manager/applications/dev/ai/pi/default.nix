@@ -119,6 +119,7 @@ in
       ".pi/agent/settings.json".text = piSettings;
       ".pi/agent/keybindings.json".text = piKeybindings;
       ".pi/agent/extensions/welcome".source = welcome.piExtension;
+      ".pi/agent/extensions/persistent-model.ts".source = ./persistent-model.ts;
       ".pi/agent/extensions/subagent/index.ts".source = "${subagentExample}/index.ts";
       ".pi/agent/extensions/subagent/agents.ts".source = "${subagentExample}/agents.ts";
 
