@@ -1,83 +1,104 @@
 ---
 name: simplify
-description: Clean up the changed code without changing behavior — review the changed code for reuse, simplification, efficiency, and altitude cleanups, then apply the fixes. Quality only — it does not hunt for bugs; use the code-review skill for that. Use when the user asks to simplify, clean up, or reduce complexity in recently changed code.
+description: Clean up changed code without changing intended behavior or deviating from the documented requirement and implementation plan. Review for reuse, simplification, efficiency, and architectural alignment, then apply justified fixes. Quality only; does not hunt for bugs. Use when asked to simplify, refactor, clean up, or reduce complexity in code.
 ---
 
 # Simplify
 
-Ported from Anthropic's built-in Claude Code `/simplify` skill (v2.1.289), made portable: "the subagent tool" means whatever agent-spawning tool the harness provides (Agent/Task), with Anthropic's own single-pass fallback when none exists.
+Review and improve code quality while preserving intended behavior and aligning the implementation with its documented requirement and implementation plan. Identify duplication, unnecessary complexity, wasted work, and architectural inconsistencies. Apply justified improvements directly.
 
-Usage: `/simplify [<target>]`
+Usage: `/simplify [target]`
 
-`/simplify → 4 cleanup agents in parallel → apply the fixes`
+## Phase 0 — Establish scope and context
 
-You are improving the quality of the changed code, not hunting for bugs. Review
-it for reuse, simplification, efficiency, and altitude issues, then fix what you
-find. Do not look for correctness bugs — that is what `/code-review` is for.
+Identify the code to review:
 
-If a target was passed as an argument, start with `Review target: \`<target>\``.
+- If a target is provided, review that target.
+- Otherwise, inspect the current changes using the relevant version-control diff.
+- Include uncommitted changes when present.
+- If no changes are available, ask for a target or identify a reasonable scope from the current context.
 
-## Phase 0 — Gather the diff
+Locate the relevant goal documentation under `.goal/<goal_name>/`:
 
-Run `git diff @{upstream}...HEAD` (or `git diff main...HEAD` / `git diff HEAD~1`
-if there's no upstream) to get the unified diff under review. If there are
-uncommitted changes, or the range diff is empty, also run `git diff HEAD` and
-include the working-tree changes in scope — the review often runs before the
-commit. If a PR number, branch name, or file path was passed as an argument,
-review that target instead. Treat this diff as the review scope.
+- Requirement: `.goal/<goal_name>/requirement/requirement.md`
+- Implementation plan: `.goal/<goal_name>/plan/plan.md`
 
-## Phase 1 — Review (4 cleanup agents in parallel)
+Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing.
 
-Launch **4 independent review agents** via the subagent tool, all in a
-single message so they run concurrently. Pass each agent the diff and one of
-the four angles below. Each returns its findings with `file`, `line`, a
-one-line `summary`, and the concrete cost (what is duplicated, wasted, or
-harder to maintain).
+Read both documents before making changes. If either document is missing or ambiguous, identify the limitation and avoid assuming undocumented requirements or architectural decisions.
 
-**If the subagent tool isn't available in this context**, the usual 4-agent
-fan-out can't run: work through all four angles below yourself, in this same
-context, in one pass — do not skip an angle for lack of fan-out.
+Treat the identified code changes as the primary review scope. Use the requirement and implementation plan as constraints for evaluating the implementation.
 
-### Reuse
+## Phase 1 — Review
 
-Flag new code that re-implements something the codebase
-already has — Grep shared/utility modules and files adjacent to the change,
-and name the existing helper to call instead.
+Review the implementation from four perspectives. Use independent review passes or parallel agents when available and useful.
 
-### Simplification
+### Requirement alignment
 
-Flag unnecessary complexity the diff adds: redundant or derivable state,
-copy-paste with slight variation, deep nesting, dead code left behind. Name
-the simpler form that does the same job.
+- Verify that the implementation satisfies the documented requirements.
+- Identify unnecessary functionality, missing implementation details, and behavior that conflicts with the requirements.
+- Preserve explicitly required behavior, constraints, interfaces, and compatibility.
+- Do not expand the feature scope or reinterpret requirements during cleanup.
 
-### Efficiency
+### Implementation-plan alignment
 
-Flag wasted work the diff introduces: redundant computation or repeated I/O,
-independent operations run sequentially, blocking work added to startup or
-hot paths. Also flag long-lived objects built from closures or captured
-environments — they keep the entire enclosing scope alive for the object's
-lifetime (a memory leak when that scope holds large values); prefer a
-class/struct that copies only the fields it needs. Name the cheaper
-alternative.
+- Verify that the implementation follows the documented architecture, responsibilities, interfaces, and sequencing where relevant.
+- Identify deviations that introduce unnecessary complexity, duplicate mechanisms, or violate the intended design.
+- Prefer the abstractions and shared mechanisms specified in the plan.
+- Do not silently redesign or override the plan. If the plan appears inconsistent with the requirement or existing constraints, report the conflict instead of inventing a resolution.
 
-### Altitude
+### Reuse and simplification
 
-Check that each change fixes the root cause at the right depth rather than
-patching a symptom with a fragile bandaid. Special cases layered on shared
-infrastructure are a sign the fix isn't deep enough — prefer the simpler, more
-general change to the underlying mechanism over adding special cases, and name
-that change.
+- Identify functionality that duplicates existing code, utilities, abstractions, or established patterns.
+- Remove unnecessary complexity, redundant state, repeated logic, excessive nesting, avoidable indirection, and obsolete code.
+- Prefer straightforward implementations over clever or overly generic solutions.
+- Search the surrounding codebase before introducing new helpers or abstractions.
 
-## Phase 2 — Apply the fixes
+### Efficiency and architecture
 
-Wait for all four agents to complete (or finish your single pass), dedup
-findings that point at the same line or mechanism, and fix each remaining one
-directly. Skip any finding whose fix would change intended behavior, require
-changes well outside the reviewed diff, or that you judge to be a false
-positive — note the skip rather than arguing with it. Finish with a brief
-summary of what was fixed and what was skipped (or confirm the code was
-already clean).
+- Identify unnecessary computation, repeated I/O, avoidable allocations, sequential execution of independent operations, and work performed on critical paths.
+- Evaluate resource lifetimes and memory retention where relevant.
+- Check whether responsibilities belong at the current level or in an existing shared mechanism.
+- Avoid speculative optimizations and architectural changes without a concrete benefit.
 
-If you did a single-pass review without the subagent tool, state clearly in
-your summary that this was a single-pass review, not the full 4-agent
-fan-out, so whoever reads it isn't misled about what actually ran.
+For every actionable finding, identify:
+
+- File and relevant code location.
+- The quality issue and its maintenance, complexity, or performance cost.
+- How it relates to the requirement or implementation plan.
+- A concrete improvement that preserves the intended behavior and documented design.
+
+Do not manufacture findings to fill categories. Distinguish confirmed deviations from potential improvements.
+
+## Phase 2 — Consolidate and apply
+
+1. Consolidate duplicate findings.
+2. Validate each proposed improvement against the requirement, implementation plan, existing implementation, and surrounding code.
+3. Apply justified fixes directly.
+4. Prefer small, focused changes over broad rewrites.
+5. Preserve public interfaces, compatibility, and required behavior unless the documentation explicitly calls for a change.
+6. Do not introduce features, abstractions, dependencies, or architectural changes outside the documented scope.
+7. If the existing implementation conflicts with the requirement or plan, make only changes that can be justified by the documentation. Do not silently modify the requirement or plan to match the code.
+8. If a conflict prevents a safe decision, stop that part of the refactoring and explain the conflict.
+9. Do not turn this task into a general bug hunt. Report unrelated correctness issues separately without expanding the cleanup scope.
+
+## Phase 3 — Verify
+
+1. Review the final diff and confirm every change has a concrete quality benefit.
+2. Verify that the implementation remains aligned with the requirement and implementation plan.
+3. Run relevant tests, formatters, and static checks when available.
+4. Confirm that intended behavior, public interfaces, and compatibility remain unchanged.
+5. Revert unjustified changes and report verification that could not be completed.
+
+Do not claim tests or checks passed unless they were actually run and passed.
+
+## Phase 4 — Report
+
+Summarize:
+
+- Improvements applied.
+- Relevant requirement or implementation-plan alignment.
+- Tests and checks performed, including failures or checks not run.
+- Any unresolved conflicts or deviations requiring a decision.
+
+Do not report changes that were not made or claim compliance that was not verified.
