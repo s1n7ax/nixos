@@ -28,8 +28,25 @@ interface Memory {
   directories: Record<string, MemoryEntry>;
 }
 
-const agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
+/** Mirror pi's normalizePath tilde expansion for PI_CODING_AGENT_DIR. */
+function expandTilde(path: string): string {
+  if (path === "~") return homedir();
+  if (path.startsWith("~/")) return join(homedir(), path.slice(2));
+  return path;
+}
+
+const agentDir = process.env.PI_CODING_AGENT_DIR
+  ? expandTilde(process.env.PI_CODING_AGENT_DIR)
+  : join(homedir(), ".pi", "agent");
 const memoryPath = join(agentDir, "model-memory.json");
+
+/** Only entries with a string provider and modelId are usable. */
+function toEntry(value: unknown): MemoryEntry | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const { provider, modelId } = value as Record<string, unknown>;
+  if (typeof provider !== "string" || typeof modelId !== "string") return undefined;
+  return { provider, modelId };
+}
 
 /** Missing or malformed memory is treated as empty. */
 function loadMemory(): Memory {
@@ -37,12 +54,14 @@ function loadMemory(): Memory {
     if (!existsSync(memoryPath)) return { directories: {} };
     const parsed = JSON.parse(readFileSync(memoryPath, "utf8"));
     if (typeof parsed !== "object" || parsed === null) return { directories: {} };
-    return {
-      lastUsed: parsed.lastUsed,
-      directories: typeof parsed.directories === "object" && parsed.directories !== null
-        ? parsed.directories
-        : {},
-    };
+    const directories: Record<string, MemoryEntry> = {};
+    if (typeof parsed.directories === "object" && parsed.directories !== null) {
+      for (const [cwd, value] of Object.entries(parsed.directories)) {
+        const entry = toEntry(value);
+        if (entry) directories[cwd] = entry;
+      }
+    }
+    return { lastUsed: toEntry(parsed.lastUsed), directories };
   } catch {
     return { directories: {} };
   }
@@ -68,7 +87,11 @@ export default function (pi: ExtensionAPI) {
     const memory = loadMemory();
     memory.directories[ctx.cwd] = entry;
     memory.lastUsed = entry;
-    saveMemory(memory);
+    try {
+      saveMemory(memory);
+    } catch {
+      // A persistence failure must not break model selection itself.
+    }
   });
 
   pi.on("session_start", async (event, ctx) => {
@@ -81,9 +104,17 @@ export default function (pi: ExtensionAPI) {
     const model = ctx.modelRegistry.find(entry.provider, entry.modelId);
     if (!model) return;
 
+    // Already the active model: applying again would only append a
+    // redundant model_change entry to the session transcript.
+    if (ctx.model?.provider === entry.provider && ctx.model?.id === entry.modelId) return;
+
     applyingMemory = true;
     try {
+      // false (no auth) or a rejected promise (auth check failed): leave
+      // pi's built-in initial-model fallback untouched.
       await pi.setModel(model);
+    } catch {
+      // Unavailable remembered models get pi's default handling.
     } finally {
       applyingMemory = false;
     }
