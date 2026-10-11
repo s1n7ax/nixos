@@ -26,8 +26,8 @@ If a project the requirement touches is not readable, getting access comes first
 1. **Use what already works.** A local checkout, a connected MCP for the code host, or an authenticated CLI such as `gh` that can read the repo. If one works, read the code and carry on — no question.
 2. **Otherwise, ask for access.** Suggestions, ranked:
    - **Clone the project — recommended.** Full, fast local reads.
-   - **Add an MCP** for the code host.
    - **Set up a CLI** such as `gh` to read the repo remotely.
+   - **Add an MCP** for the code host.
 3. **Never plan blind.** Do not guess the code, and do not replace reading it with questions. If access cannot be had, say which project is blocked and stop.
 
 ### When the code cannot prove it
