@@ -13,7 +13,7 @@
  * keeps the extension's own setModel call from being recorded, so an
  * auto-applied lastUsed does not pin a fresh directory.
  */
-import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -51,7 +51,6 @@ function toEntry(value: unknown): MemoryEntry | undefined {
 /** Missing or malformed memory is treated as empty. */
 function loadMemory(): Memory {
   try {
-    if (!existsSync(memoryPath)) return { directories: {} };
     const parsed = JSON.parse(readFileSync(memoryPath, "utf8"));
     if (typeof parsed !== "object" || parsed === null) return { directories: {} };
     const directories: Record<string, MemoryEntry> = {};
