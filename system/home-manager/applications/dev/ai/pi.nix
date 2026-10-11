@@ -24,6 +24,18 @@ let
   };
 
   /**
+    Subagent extension shipped with the pi package as an official example
+    (examples/extensions/subagent in the pi-monorepo; README there documents
+    the security model). Registers a `subagent` tool that spawns an isolated
+    `pi` subprocess per task. Sourced from the package so it stays in lockstep
+    with the installed pi version. Only index.ts and agents.ts are linked, as
+    the example's own install instructions do; its sample agents and workflow
+    prompts are skipped -- agents live in ./agents instead, and the workflow
+    prompts would shadow the /implement skill of the same name.
+  */
+  subagentExample = "${pkgs-unstable.pi-coding-agent}/lib/node_modules/pi-monorepo/examples/extensions/subagent";
+
+  /**
     Pi's ~/.pi/agent/keybindings.json is a flat `{ "<action id>": key | [keys] }`
     map, not Claude Code's `{ bindings = [ { context; bindings; } ]; }` schema,
     so claude/keybindings.json can't be shared: Pi silently drops every entry.
@@ -107,6 +119,12 @@ in
       ".pi/agent/settings.json".text = piSettings;
       ".pi/agent/keybindings.json".text = piKeybindings;
       ".pi/agent/extensions/welcome".source = welcome.piExtension;
+      ".pi/agent/extensions/subagent/index.ts".source = "${subagentExample}/index.ts";
+      ".pi/agent/extensions/subagent/agents.ts".source = "${subagentExample}/agents.ts";
+
+      # User-level subagent definitions (~/.pi/agent/agents/*.md). The subagent
+      # extension discovers these fresh on every invocation.
+      ".pi/agent/agents".source = ./agents;
     };
   };
 }
