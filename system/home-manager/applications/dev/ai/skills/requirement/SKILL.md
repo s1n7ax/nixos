@@ -37,9 +37,22 @@ If the code or docs hold the answer, look it up — questions are for decisions 
 
 Every question follows this shape:
 
-1. **Explain the question clearly first.** One plain sentence for the question itself, then enough context for the user to see why it matters and what depends on the answer.
-2. **Dive deep, then list at most 3 suggestions.** Think of every reasonable answer first, then present **only the top 3**, most recommended first. For each: what it means in practice, why you would pick it, what it costs. Mark your recommendation and say why in one line.
-3. **Always add the escape hatch.** The last option is always "None of these — let me explain".
+1. **Ask one decision, phrased so it could be answered with yes, no, or a single word.** The options are direct answers to that question — never pre-packaged bundles of several decisions. If a topic contains several decisions, ask a gate question first ("Do you want X?" → Yes / No), then branch: each follow-up question covers exactly one of the sub-decisions, and only if the earlier answers make it relevant.
+2. **Explain the question clearly first.** One plain sentence for the question itself, then enough context for the user to see why it matters and what depends on the answer.
+3. **Dive deep, then list at most 3 suggestions.** Think of every reasonable answer first, then present **only the top 3**, most recommended first. For each: what it means in practice, why you would pick it, what it costs. Mark your recommendation and say why in one line.
+4. **Always add the escape hatch.** The last option is always "None of these — let me explain".
+
+Bad question — one option set smuggling in two decisions (sync? plus a settings UI?):
+
+> **What is out of scope?**
+> 1. Out of scope: syncing across machines.
+> 2. Out of scope: syncing across machines AND any UI for managing saved entries.
+> 3. Nothing is out of scope.
+
+The user cannot pick option 1 if they want sync ruled out but a management UI ruled in — and "nothing is out of scope" forces them to accept everything or explain. Same territory, asked properly as a chain of single decisions:
+
+> **Should the selection sync across your machines?** → Yes / No / None of these
+> (if No) **Should there be a way to view or clear the saved entries, or is picking them the only interaction?** → …
 
 Then stop and wait. Three things can come back:
 
@@ -105,6 +118,7 @@ Either way, the content is the same:
 - Never run unless the user explicitly invoked this skill.
 - Never ask an implementation question.
 - Never ask more than one question per turn.
+- Never bundle multiple decisions into one question's options — each option must answer the question as asked, not add extra scope rulings on top.
 - Never present more than 3 suggestions.
 - Never drop the "None of these" escape hatch.
 - Never document before the user has confirmed the full summary.
