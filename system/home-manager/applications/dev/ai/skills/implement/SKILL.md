@@ -90,7 +90,11 @@ Run `/simplify` on the changes. It reviews the diff against the same requirement
 
 - With approaches: one PR per project per approach, on the approach's branch, so the user can pick.
 - Otherwise: one PR per project, unless the project says otherwise.
-- Report: what was built, review findings fixed vs skipped, what simplify changed, validation results, PR links.
+- Report: what was built, review findings fixed vs skipped, what simplify changed, validation results, then the PRs as a list — one bullet per PR with the PR title and URL, grouped by project (and by approach when there are approaches).
+
+## Handing off to the next step
+
+`/implement` is the last step of the workflow. After finishing, **tell the user the workflow is complete** — there is no next command to run or copy. If review or validation left unresolved work, name it explicitly instead of implying a next step.
 
 ## Never
 

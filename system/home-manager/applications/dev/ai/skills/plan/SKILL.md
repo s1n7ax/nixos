@@ -185,6 +185,14 @@ Check every step: could an agent that never saw this conversation execute it wit
 
 Group changes per project. When a step in one project depends on a step in another, say so explicitly in the step text — the executing agent must see the dependency order without guessing.
 
+## Handing off to the next step
+
+Once the plan is saved, the workflow's next step is `/implement <goal>`, where `<goal>` is the goal's directory name (or the kebab-case name used for a ticket).
+
+1. **Tell the user** the next step: run `/implement <goal>`.
+2. **Copy the command to the clipboard** so the user can paste it: run `printf '%s' '/implement <goal>' | wl-copy` (Wayland; fall back to `xclip -selection clipboard` or `xsel --clipboard` when wl-copy is unavailable).
+3. **Confirm the copy worked** — say the command is on the clipboard.
+
 ## Never
 
 - Never run unless the user explicitly invoked this skill.
