@@ -21,6 +21,15 @@ let
   piSettings = builtins.toJSON {
     defaultModel = "muse-spark-1.3";
     defaultProvider = "meta";
+
+    /**
+      @juicesharp/rpiv-ask-user-question (npm; github.com/juicesharp/rpiv-mono):
+      gives the model an ask_user_question tool -- a structured questionnaire
+      with typed options -- so it can ask instead of guessing. Declared here
+      so Pi loads it from ~/.pi/agent/npm (`pi install` npm dir) on every
+      launch; `pi update --extensions` refreshes it.
+    */
+    packages = [ "npm:@juicesharp/rpiv-ask-user-question" ];
   };
 
   /**
