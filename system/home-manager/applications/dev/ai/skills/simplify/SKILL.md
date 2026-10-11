@@ -1,6 +1,7 @@
 ---
 name: simplify
 description: Clean up changed code without changing intended behavior or deviating from the documented requirement and implementation plan. Review for reuse, simplification, efficiency, and architectural alignment, then apply justified fixes. Quality only; does not hunt for bugs. Use when asked to simplify, refactor, clean up, or reduce complexity in code.
+disable-model-invocation: true
 ---
 
 # Simplify

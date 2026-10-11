@@ -1,6 +1,7 @@
 ---
 name: code-review
 description: Review a code diff, commit range, branch, change request, or file path for correctness bugs and high-value reuse, simplification, efficiency, and maintainability issues. Supports configurable review effort, optional fixes, and optional review comments.
+disable-model-invocation: true
 ---
 
 # Code Review
