@@ -14,13 +14,23 @@ let
     )
   );
 
+  # Claude Code ships these as built-in skills; the copies in this tree were
+  # ported from its binary for the other agents. Mounting them into
+  # ~/.claude/skills would shadow the richer bundled versions (effort memory,
+  # --fix status tracking, structured reporting), so Claude Code is excluded
+  # for these names.
+  claudeBuiltins = [
+    "code-review"
+    "simplify"
+  ];
+
   mountSkills =
-    prefix:
+    prefix: names:
     lib.listToAttrs (
       map (name: {
         name = "${prefix}/${name}";
         value.source = ./. + "/${name}";
-      }) skillNames
+      }) names
     );
 in
 {
@@ -32,8 +42,10 @@ in
   # same directory, where agents still load it; delete it once reviewed.
   config = lib.mkIf ai.enable (
     lib.mkMerge [
-      { home.file = mountSkills ".agents/skills"; }
-      (lib.mkIf ai.claude.enable { home.file = mountSkills ".claude/skills"; })
+      { home.file = mountSkills ".agents/skills" skillNames; }
+      (lib.mkIf ai.claude.enable {
+        home.file = mountSkills ".claude/skills" (lib.subtractLists claudeBuiltins skillNames);
+      })
     ]
   );
 }
