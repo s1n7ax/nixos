@@ -4,7 +4,7 @@
     ./opencode.nix
     ./claude.nix
     ./headroom.nix
-    ./pi.nix
+    ./pi
     ./cursor.nix
     ./skills
   ];

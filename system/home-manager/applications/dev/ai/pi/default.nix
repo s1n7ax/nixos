@@ -6,8 +6,8 @@
   ...
 }:
 let
-  commonRules = builtins.readFile ./AGENTS.md;
-  welcome = import ./welcome {
+  commonRules = builtins.readFile ../AGENTS.md;
+  welcome = import ../welcome {
     inherit pkgs;
     inherit (config.home) username;
   };
@@ -30,7 +30,7 @@ let
     `pi` subprocess per task. Sourced from the package so it stays in lockstep
     with the installed pi version. Only index.ts and agents.ts are linked, as
     the example's own install instructions do; its sample agents and workflow
-    prompts are skipped -- agents live in ./agents instead, and the workflow
+    prompts are skipped -- agents live in ../agents instead, and the workflow
     prompts would shadow the /implement skill of the same name.
   */
   subagentExample = "${pkgs-unstable.pi-coding-agent}/lib/node_modules/pi-monorepo/examples/extensions/subagent";
@@ -119,12 +119,13 @@ in
       ".pi/agent/settings.json".text = piSettings;
       ".pi/agent/keybindings.json".text = piKeybindings;
       ".pi/agent/extensions/welcome".source = welcome.piExtension;
+      ".pi/agent/extensions/persistent-model.ts".source = ./persistent-model.ts;
       ".pi/agent/extensions/subagent/index.ts".source = "${subagentExample}/index.ts";
       ".pi/agent/extensions/subagent/agents.ts".source = "${subagentExample}/agents.ts";
 
       # User-level subagent definitions (~/.pi/agent/agents/*.md). The subagent
       # extension discovers these fresh on every invocation.
-      ".pi/agent/agents".source = ./agents;
+      ".pi/agent/agents".source = ../agents;
     };
   };
 }
