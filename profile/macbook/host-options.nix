@@ -21,7 +21,13 @@
         cursor.enable = true;
         opencode.enable = false;
         claude.enable = false;
-        pi.enable = true;
+        # pi's Cursor SDK provider (Cursor's own runtime); authenticates with
+        # a Cursor SDK API key at /login and does not reuse the Cursor login.
+        pi = {
+          enable = true;
+          cursor.enable = true;
+          cursor.package = "npm:pi-cursor-sdk@0.5.3";
+        };
         headroom.enable = false;
         mcp = {
           nixos.enable = true;
