@@ -8,12 +8,13 @@ disable-model-invocation: true
 
 This skill is implementation planning. The user arrives with a sharp requirement — usually written by the `/requirement` skill — and the skill works out how to build it: explore the code, find the viable ways, settle every decision that needs the user's taste or risk appetite, and write a plan another agent can execute with no questions asked.
 
-Four rules hold the whole skill up. Everything below is detail.
+Five rules hold the whole skill up. Everything below is detail.
 
 1. **Code first, questions last.** Analyzing the code is always the first move. A question is the last option — only when the code, the docs, a spike, and your tools cannot settle it.
 2. **Ask only the three allowed planning question types.** Every other decision — tools, files, patterns, defaults — you make yourself by reading the code and docs. Questions that only keep the session moving — code access, spike permission, which requirement or approaches to plan, confirming the summary — are not planning questions; ask them when the session needs them.
-3. **One question per turn.** Never stack questions, never ask two things in one message.
-4. **Never implement.** The plan is the only deliverable; another agent builds it. The only code you write is a throwaway spike that proves a claim the plan depends on.
+3. **Every question passes the `questions` skill.** It owns the dumbness score and the shape of one question; the three types below decide which questions are in bounds.
+4. **One question per turn.** Never stack questions, never ask two things in one message.
+5. **Never implement.** The plan is the only deliverable; another agent builds it. The only code you write is a throwaway spike that proves a claim the plan depends on.
 
 ## Code first
 
@@ -72,18 +73,7 @@ Never ask for facts you could fetch or prove. If the code or docs hold the answe
 
 ## The shape of one question
 
-Every question — the session's own included — follows this shape, every time:
-
-1. **Explain the question clearly first.** One plain sentence for the question itself, then enough context to see why it matters and what depends on the answer.
-2. **Dive deep, then list at most 3 suggestions.** Think of every reasonable answer first. Rank them — most maintainable, most scalable, simplest first. Present **only the top 3**. For each: what it means in practice, why you would pick it, what it costs. Mark your recommendation and say why in one line.
-3. **Always add the escape hatch.** The last option is always "None of these — let me explain".
-
-Then stop and wait. Four things can come back:
-
-- **A listed suggestion** — record it, move on.
-- **Their own answer via the escape hatch** — record their words; if it reshapes earlier decisions, say so.
-- **Several options kept** (Type 1 only) — record each as an approach (see Multiple approaches), move on.
-- **A question back at you** — answer it, then return to the question. If their reply shows the question missed the mark, rework it first — break it down, sharpen it, or replace the suggestions — then ask again. Keep looping until it is answered.
+Scoring and shaping a question is the `questions` skill's job — read it before the first one. Plan adds only the three allowed types above. When several options are kept at a Type 1 fork, record each as an approach (see Multiple approaches) and move on. The examples below show the shape on plan-shaped decisions.
 
 ### Example — Type 1
 
@@ -198,9 +188,9 @@ Once the plan is saved, the workflow's next step is `/implement <goal>`, where `
 - Never run unless the user explicitly invoked this skill.
 - Never ask a planning question before analyzing the code.
 - Never ask a planning question outside the three allowed types.
+- Never ask a question that scores 3 or more on the `questions` skill's dumbness score.
 - Never ask more than one question per turn.
-- Never present more than 3 suggestions.
-- Never drop the "None of these" escape hatch.
+- Never break a `questions` skill rule — the option cap, the escape hatch, or the ask-question tool.
 - Never implement — the only code you write is a spike, kept as When the code cannot prove it says.
 - Never plan more than 3 approaches.
 - Never put code snippets in the plan.

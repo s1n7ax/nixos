@@ -23,7 +23,7 @@ Resolve the `<goal>`:
 - The user gave a goal name or path → use it.
 - The current branch name starts with a goal directory name under `.agent/goals/` → use that goal.
 - Exactly one goal under `.agent/goals/` has a plan → use it.
-- Several candidates → ask which one, and wait.
+- Several candidates → ask which one, following the `questions` skill, and wait.
 - None → tell the user to run `/requirement` and `/plan` first, and stop.
 
 Read `.agent/goals/<goal>/requirement/requirement.md` and `.agent/goals/<goal>/plan/plan.md`. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
@@ -99,6 +99,7 @@ Run `/simplify` on the changes. It reviews the diff against the same requirement
 ## Never
 
 - Never run unless the user explicitly invoked this skill.
+- Never ask a question outside the `questions` skill.
 - Never start without both the requirement and the plan.
 - Never deviate from the plan silently — a plan that cannot be executed goes back to `/plan`.
 - Never skip the review, the fix pass, or the simplify pass.
