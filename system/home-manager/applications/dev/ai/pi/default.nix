@@ -12,6 +12,9 @@ let
     inherit (config.home) username;
   };
 
+  # Read by both the packages list below and the assertion in the module body.
+  piCursor = config.features.development.ai.pi.cursor;
+
   /**
     MCP comes from Pi's built-in `mcp` extension, which reads
     ~/.pi/agent/mcp.json; mcp.nix links that to the shared programs.mcp
@@ -37,10 +40,7 @@ let
     packages = [
       "npm:@juicesharp/rpiv-ask-user-question"
     ]
-    ++ lib.optional (
-      config.features.development.ai.pi.cursor.enable
-      && config.features.development.ai.pi.cursor.package != ""
-    ) config.features.development.ai.pi.cursor.package;
+    ++ lib.optional (piCursor.enable && piCursor.package != "") piCursor.package;
   };
 
   /**
@@ -122,9 +122,7 @@ in
   # leaving /login without Cursor and no hint why. Fail the build instead.
   assertions = [
     {
-      assertion =
-        !config.features.development.ai.pi.cursor.enable
-        || config.features.development.ai.pi.cursor.package != "";
+      assertion = !piCursor.enable || piCursor.package != "";
       message = "features.development.ai.pi.cursor.enable requires features.development.ai.pi.cursor.package";
     }
   ];
