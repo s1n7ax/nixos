@@ -54,7 +54,6 @@ lib.mkIf config.features.terminal.kitty.enable {
       "ctrl+c" = "copy_or_interrupt";
       "alt+s>n" = "goto_session ${neovim_session}";
       "alt+s>t" = "goto_session ${homelab_session}";
-      "ctrl+s>t" = "goto_session ${homelab_nvim_session}";
       "alt+s>d" = "goto_session ${dev_session}";
       "alt+s>m" = "goto_session ${mac_session}";
       "alt+s>e" = "goto_session ${nix_session}";
