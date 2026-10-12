@@ -614,7 +614,7 @@ with lib;
         useNightly = mkOption {
           type = types.bool;
           default = false;
-          description = "Use nightly Neovim build instead of stable.";
+          description = "Use nightly Neovim build instead of nixpkgs-unstable.";
         };
       };
     };

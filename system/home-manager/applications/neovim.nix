@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkgs-unstable,
   lib,
   config,
   inputs,
@@ -10,7 +11,7 @@ let
     if config.features.editor.neovim.useNightly then
       inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatform.system}.default
     else
-      pkgs.neovim-unwrapped;
+      pkgs-unstable.neovim-unwrapped;
 in
 lib.mkIf config.features.editor.neovim.enable {
   # Also expose tree-sitter as a standalone CLI (grammar generation, `tree-sitter parse`, etc.),
