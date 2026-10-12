@@ -118,16 +118,16 @@ let
   };
 in
 {
-  # cursor.enable without a cursor.package would silently declare no provider,
-  # leaving /login without Cursor and no hint why. Fail the build instead.
-  assertions = [
-    {
-      assertion = !piCursor.enable || piCursor.package != "";
-      message = "features.development.ai.pi.cursor.enable requires features.development.ai.pi.cursor.package";
-    }
-  ];
-
   config = lib.mkIf config.features.development.ai.pi.enable {
+    # cursor.enable without a cursor.package would silently declare no provider,
+    # leaving /login without Cursor and no hint why. Fail the build instead.
+    assertions = [
+      {
+        assertion = !piCursor.enable || piCursor.package != "";
+        message = "features.development.ai.pi.cursor.enable requires features.development.ai.pi.cursor.package";
+      }
+    ];
+
     # pi-coding-agent (github.com/badlogic/pi-mono, pi.dev) -- Claude-Code-style
     # CLI coding agent, packaged in nixpkgs unstable. Not to be confused with
     # Inflection AI's "Pi" chatbot.
