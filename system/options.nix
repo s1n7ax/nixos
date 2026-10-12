@@ -446,7 +446,7 @@ with lib;
             package = mkOption {
               type = types.str;
               default = "";
-              description = "Pinned npm spec of the pi Cursor provider plugin to load (e.g. npm:pi-cursor-sdk@0.5.3); only declared when cursor.enable and non-empty";
+              description = "Pinned npm spec (npm:-prefixed) of the pi Cursor provider plugin to load, set by the host profile; only declared when cursor.enable is set and non-empty";
             };
           };
         };
