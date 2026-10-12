@@ -524,6 +524,13 @@ with lib;
               description = "Chakra UI MCP server (@chakra-ui/react-mcp, via npx)";
             };
           };
+          jira = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Official Atlassian remote MCP (Jira, Confluence, etc. via https://mcp.atlassian.com/v2/mcp; OAuth in the client)";
+            };
+          };
           home-assistant = {
             enable = mkOption {
               type = types.bool;
