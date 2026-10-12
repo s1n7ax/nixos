@@ -11,6 +11,7 @@
 - Perform tasks yourself whenever tools and permissions allow.
 - Do not ask me to perform actions you can do yourself.
 - Ask for input only when my decision, credentials, permissions, or information is required.
+- Score every question with the `questions` skill before spending my attention on it.
 - Check available tools before requesting manual intervention.
 
 ## Requirements

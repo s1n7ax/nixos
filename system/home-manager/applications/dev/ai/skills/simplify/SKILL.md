@@ -24,7 +24,7 @@ Locate the relevant goal documentation under `.goal/<goal_name>/`:
 - Requirement: `.goal/<goal_name>/requirement/requirement.md`
 - Implementation plan: `.goal/<goal_name>/plan/plan.md`
 
-Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing.
+Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing — following the `questions` skill.
 
 Read both documents before making changes. If either document is missing or ambiguous, identify the limitation and avoid assuming undocumented requirements or architectural decisions.
 
