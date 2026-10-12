@@ -21,7 +21,12 @@
         cursor.enable = true;
         opencode.enable = false;
         claude.enable = false;
-        pi.enable = true;
+        # pi's Cursor provider reuses the Cursor login already on this machine.
+        pi = {
+          enable = true;
+          cursor.enable = true;
+          cursor.package = "npm:@rahularya01/pi-cursor@1.4.39";
+        };
         headroom.enable = false;
         mcp = {
           nixos.enable = true;
