@@ -12,6 +12,9 @@ let
     inherit (config.home) username;
   };
 
+  # Read by both the packages list below and the assertion in the module body.
+  piCursor = config.features.development.ai.pi.cursor;
+
   /**
     MCP comes from Pi's built-in `mcp` extension, which reads
     ~/.pi/agent/mcp.json; mcp.nix links that to the shared programs.mcp
@@ -28,8 +31,16 @@ let
       with typed options -- so it can ask instead of guessing. Declared here
       so Pi loads it from ~/.pi/agent/npm (`pi install` npm dir) on every
       launch; `pi update --extensions` refreshes it.
+
+      features.development.ai.pi.cursor.package appends a pi Cursor provider
+      plugin when that option is enabled, which makes Cursor show up in /login
+      on hosts that opt in. Both the existing entry and this one are additive:
+      nothing is replaced or removed.
     */
-    packages = [ "npm:@juicesharp/rpiv-ask-user-question" ];
+    packages = [
+      "npm:@juicesharp/rpiv-ask-user-question"
+    ]
+    ++ lib.optional (piCursor.enable && piCursor.package != "") piCursor.package;
   };
 
   /**
@@ -108,6 +119,15 @@ let
 in
 {
   config = lib.mkIf config.features.development.ai.pi.enable {
+    # cursor.enable without a cursor.package would silently declare no provider,
+    # leaving /login without Cursor and no hint why. Fail the build instead.
+    assertions = [
+      {
+        assertion = !piCursor.enable || piCursor.package != "";
+        message = "features.development.ai.pi.cursor.enable requires features.development.ai.pi.cursor.package";
+      }
+    ];
+
     # pi-coding-agent (github.com/badlogic/pi-mono, pi.dev) -- Claude-Code-style
     # CLI coding agent, packaged in nixpkgs unstable. Not to be confused with
     # Inflection AI's "Pi" chatbot.
