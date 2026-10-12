@@ -437,6 +437,18 @@ with lib;
             default = false;
             description = "pi-coding-agent AI assistant (github.com/badlogic/pi-mono, pi.dev)";
           };
+          cursor = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Cursor provider for pi, declared through pi's packages list (requires cursor.package), so Cursor appears in pi's /login flow";
+            };
+            package = mkOption {
+              type = types.str;
+              default = "";
+              description = "Pinned npm spec of the pi Cursor provider plugin to load (e.g. npm:pi-cursor-sdk@0.5.3); only declared when cursor.enable and non-empty";
+            };
+          };
         };
         cursor = {
           enable = mkOption {

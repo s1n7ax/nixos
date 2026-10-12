@@ -28,8 +28,19 @@ let
       with typed options -- so it can ask instead of guessing. Declared here
       so Pi loads it from ~/.pi/agent/npm (`pi install` npm dir) on every
       launch; `pi update --extensions` refreshes it.
+
+      features.development.ai.pi.cursor.package appends a pi Cursor provider
+      plugin when that option is enabled, which makes Cursor show up in /login
+      on hosts that opt in. Both the existing entry and this one are additive:
+      nothing is replaced or removed.
     */
-    packages = [ "npm:@juicesharp/rpiv-ask-user-question" ];
+    packages = [
+      "npm:@juicesharp/rpiv-ask-user-question"
+    ]
+    ++ lib.optional (
+      config.features.development.ai.pi.cursor.enable
+      && config.features.development.ai.pi.cursor.package != ""
+    ) config.features.development.ai.pi.cursor.package;
   };
 
   /**

@@ -21,7 +21,7 @@
         cursor.enable = true;
         opencode.enable = false;
         claude.enable = false;
-        pi.enable = false;
+        pi.enable = true;
         headroom.enable = false;
         mcp = {
           nixos.enable = true;
