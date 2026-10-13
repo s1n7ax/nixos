@@ -6,6 +6,8 @@
   settings.font.size = 26;
 
   features = {
+    desktop.aerospace.enable = true;
+
     terminal.kitty.enable = true;
 
     shell = {
@@ -36,6 +38,7 @@
           nextjs.enable = true;
           tailwindcss.enable = true;
           chakra-ui.enable = true;
+          jira.enable = true;
           home-assistant.enable = false;
         };
       };

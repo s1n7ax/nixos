@@ -69,6 +69,9 @@ in
   # Auto-hide the Dock.
   system.defaults.dock.autohide = true;
 
+  # Window manager + hotkeys: programs.aerospace via home-manager.
+  services.skhd.enable = false;
+
   programs.fish.enable = true;
 
   # Make the terminal font available system-wide for kitty.

@@ -69,6 +69,9 @@ let
         ];
       };
     }
+    // lib.optionalAttrs cfg.jira.enable {
+      jira.url = "https://mcp.atlassian.com/v2/mcp";
+    }
     // lib.optionalAttrs cfg.home-assistant.enable {
       home-assistant.command = "${homeAssistantMcp}";
     };
