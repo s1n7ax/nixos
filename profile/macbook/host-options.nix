@@ -6,6 +6,8 @@
   settings.font.size = 26;
 
   features = {
+    desktop.aerospace.enable = true;
+
     terminal.kitty.enable = true;
 
     shell = {

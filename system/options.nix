@@ -147,6 +147,10 @@ with lib;
         enable = mkEnableOption "Hyprland window manager";
       };
 
+      aerospace = {
+        enable = mkEnableOption "AeroSpace tiling window manager (macOS)";
+      };
+
       hyprwhspr = {
         enable = mkEnableOption "hyprwhspr-rs speech-to-text dictation";
       };

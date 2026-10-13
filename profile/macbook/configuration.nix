@@ -69,12 +69,8 @@ in
   # Auto-hide the Dock.
   system.defaults.dock.autohide = true;
 
-  # Global hotkey: ⌘⌥N opens a Chrome Incognito window.
-  # Grant Accessibility to skhd once in System Settings → Privacy & Security.
-  services.skhd.enable = true;
-  services.skhd.skhdConfig = ''
-    cmd + alt - n : open -na "Google Chrome" --args --incognito
-  '';
+  # Window manager + hotkeys: programs.aerospace via home-manager.
+  services.skhd.enable = false;
 
   programs.fish.enable = true;
 
