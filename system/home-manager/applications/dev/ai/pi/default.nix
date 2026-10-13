@@ -26,19 +26,22 @@ let
     defaultProvider = "meta";
 
     /**
-      @juicesharp/rpiv-ask-user-question (npm; github.com/juicesharp/rpiv-mono):
-      gives the model an ask_user_question tool -- a structured questionnaire
-      with typed options -- so it can ask instead of guessing. Declared here
-      so Pi loads it from ~/.pi/agent/npm (`pi install` npm dir) on every
-      launch; `pi update --extensions` refreshes it.
+      Packages declared here load from ~/.pi/agent/npm (`pi install` npm dir)
+      on every launch; `pi update --extensions` refreshes them.
+
+      - @juicesharp/rpiv-ask-user-question (npm; github.com/juicesharp/rpiv-mono):
+        ask_user_question tool -- structured questionnaire with typed options.
+      - pi-memory (npm; github.com/jayzeng/pi-memory):
+        memory with qmd-powered semantic search across daily logs, long-term
+        memory, and scratchpad.
 
       features.development.ai.pi.cursor.package appends a pi Cursor provider
       plugin when that option is enabled, which makes Cursor show up in /login
-      on hosts that opt in. Both the existing entry and this one are additive:
-      nothing is replaced or removed.
+      on hosts that opt in. Entries are additive: nothing is replaced or removed.
     */
     packages = [
       "npm:@juicesharp/rpiv-ask-user-question"
+      "npm:pi-memory"
     ]
     ++ lib.optional (piCursor.enable && piCursor.package != "") piCursor.package;
   };
