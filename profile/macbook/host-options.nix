@@ -36,6 +36,7 @@
           nextjs.enable = true;
           tailwindcss.enable = true;
           chakra-ui.enable = true;
+          jira.enable = true;
           home-assistant.enable = false;
         };
       };

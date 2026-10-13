@@ -32,12 +32,10 @@ in
       }
 
       # The CLI automatically detects MCP servers from ~/.cursor/mcp.json, so
-      # mirror the shared fleet there (same shape programs.mcp writes to
-      # ~/.config/mcp/mcp.json in mcp.nix).
+      # link the shared fleet there (same transformed file programs.mcp writes
+      # to ~/.config/mcp/mcp.json in mcp.nix — includes type = http|stdio).
       (lib.mkIf (config.programs.mcp.servers != { }) {
-        home.file.".cursor/mcp.json".text = builtins.toJSON {
-          mcpServers = config.programs.mcp.servers;
-        };
+        home.file.".cursor/mcp.json".source = config.xdg.configFile."mcp/mcp.json".source;
       })
     ]
   );
