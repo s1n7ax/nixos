@@ -155,6 +155,10 @@ with lib;
         enable = mkEnableOption "hyprwhspr-rs speech-to-text dictation";
       };
 
+      sinhala = {
+        enable = mkEnableOption "Sinhala input method (fcitx5 + m17n Singlish transliteration)";
+      };
+
       xdg = {
         enable = mkEnableOption "XDG desktop portals";
       };
