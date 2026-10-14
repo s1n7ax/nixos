@@ -10,7 +10,9 @@
     ./eza.nix
     ./gitleaks.nix
     ./fish.nix
+    ./aerospace.nix
     ./hyprland.nix
+    ./sinhala.nix
     ./bluetui.nix
     ./zellij.nix
     ./tmux.nix

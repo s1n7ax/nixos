@@ -13,6 +13,7 @@ let
 
   data_path = "${config.home.homeDirectory}/.homelab/frigate";
   storage_path = "${config.settings.frigateStoragePath}/.homelab/frigate";
+  plus_model = "18b3eac7fab969b5bae8991600d0426f";
   model = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/google-coral/test_data/master/efficientdet_lite3_512_ptq_edgetpu.tflite";
     sha256 = "sha256-T5jwmHJATZ4odE0/9pTYQnqWjdtGeprsCshhvZ89uhQ=";
@@ -151,7 +152,7 @@ with lib;
           # Frigate+ model: only `path` should be set. The model ships its
           # own labelmap (person, car, motorcycle, bicycle, dog, cat, ...),
           # so no COCO-index remapping — that mislabeled e.g. dogs as cars.
-          path: plus://4fbc78ad29050be9be33683038148af6
+          path: plus://${plus_model}
 
         #--------------------------------------------------------------------#
         #                               DETECT                               #

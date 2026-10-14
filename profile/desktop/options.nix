@@ -14,6 +14,7 @@
       dconf.enable = true;
       hyprland.enable = true;
       hyprwhspr.enable = true;
+      sinhala.enable = true;
       xdg.enable = true;
       kdeconnect.enable = true;
       dunst.enable = true;
@@ -103,6 +104,7 @@
           nextjs.enable = true;
           tailwindcss.enable = true;
           chakra-ui.enable = true;
+          jira.enable = false;
           home-assistant.enable = false;
         };
       };

@@ -263,6 +263,17 @@ in
               (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("${config.settings.terminal}")'')
             ];
           }
+        ]
+        # Toggle between English and Sinhala (the Sinhala side is whichever
+        # scheme was used last). Hyprland consumes the key before fcitx5 sees
+        # it, so fcitx5's own TriggerKeys cannot double-toggle.
+        ++ lib.optionals config.features.desktop.sinhala.enable [
+          {
+            _args = [
+              "SUPER + Space"
+              (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("fcitx5-remote -t")'')
+            ];
+          }
         ];
       };
 

@@ -147,8 +147,16 @@ with lib;
         enable = mkEnableOption "Hyprland window manager";
       };
 
+      aerospace = {
+        enable = mkEnableOption "AeroSpace tiling window manager (macOS)";
+      };
+
       hyprwhspr = {
         enable = mkEnableOption "hyprwhspr-rs speech-to-text dictation";
+      };
+
+      sinhala = {
+        enable = mkEnableOption "Sinhala input method (fcitx5 + m17n Singlish transliteration)";
       };
 
       xdg = {
@@ -522,6 +530,13 @@ with lib;
               type = types.bool;
               default = false;
               description = "Chakra UI MCP server (@chakra-ui/react-mcp, via npx)";
+            };
+          };
+          jira = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Official Atlassian remote MCP (Jira, Confluence, etc. via https://mcp.atlassian.com/v2/mcp; OAuth in the client)";
             };
           };
           home-assistant = {
