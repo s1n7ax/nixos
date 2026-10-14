@@ -34,16 +34,6 @@ lib.mkIf config.features.xdg.enable {
       };
     }
     // lib.optionalAttrs config.features.desktop.xdg.enable {
-      whatsapp = {
-        name = "WhatsApp";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://web.whatsapp.com";
-        icon = "whatsapp";
-        terminal = false;
-        categories = [
-          "Network"
-          "InstantMessaging"
-        ];
-      };
       facebook = {
         name = "Facebook";
         exec = "${pkgs.google-chrome}/bin/google-chrome-stable --app=https://facebook.com";

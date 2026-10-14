@@ -47,6 +47,9 @@ in
         nsxiv
         kdePackages.gwenview
 
+        # communication
+        pkgs-unstable.nchat
+
         # other
         wl-clipboard
         trash-cli
