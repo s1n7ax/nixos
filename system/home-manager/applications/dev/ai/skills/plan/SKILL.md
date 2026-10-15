@@ -115,7 +115,7 @@ When the user keeps more than one option at a fork, the plan carries each kept o
 
 ## Writing the plan
 
-First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Get a "yes, that's it" before writing anything down. Any change after the user confirmed the summary needs a fresh summary and confirmation.
+First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Print the summary as regular output, never inside the ask-question tool; the tool's question is only a short "Is this summary correct?". Get a "yes, that's it" before writing anything down. Any change after the user confirmed the summary needs a fresh summary and confirmation.
 
 The plan lives next to the requirement it implements: a local requirement doc gets its plan at `.agent/goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket.
 
@@ -160,7 +160,7 @@ picks one approach: merge its PRs, close the rest.
 
 ## Verification
 
-- <observable check that proves one requirement item — one per item>
+- <observable check that proves one acceptance criterion — at least one per criterion>
 
 ## Non-goals
 
@@ -177,6 +177,8 @@ Group changes per project. When a step in one project depends on a step in anoth
 
 ## Handing off to the next step
 
+When `/ship` is driving this skill, skip this section — `/ship` moves on by itself.
+
 Once the plan is saved, the workflow's next step is `/implement <goal>`, where `<goal>` is the goal's directory name (or the kebab-case name used for a ticket).
 
 1. **Tell the user** the next step: run `/implement <goal>`.
@@ -185,7 +187,7 @@ Once the plan is saved, the workflow's next step is `/implement <goal>`, where `
 
 ## Never
 
-- Never run unless the user explicitly invoked this skill.
+- Never run unless the user explicitly invoked this skill or `/ship`.
 - Never ask a planning question before analyzing the code.
 - Never ask a planning question outside the three allowed types.
 - Never ask a question that scores 3 or more on the `questions` skill's dumbness score.
@@ -195,3 +197,4 @@ Once the plan is saved, the workflow's next step is `/implement <goal>`, where `
 - Never plan more than 3 approaches.
 - Never put code snippets in the plan.
 - Never write the plan before the user has confirmed the full summary.
+- Never put the summary inside the ask-question tool.

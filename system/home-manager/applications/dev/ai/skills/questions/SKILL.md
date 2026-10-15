@@ -19,8 +19,8 @@ Score every candidate before it reaches the user. Add the points for each flag i
 
 **Blockers — any one of these means the question does not reach the user:**
 
-| Flag                   | Points | Meaning                                                                                     |
-| ---------------------- | ------ | ------------------------------------------------------------------------------------------- |
+| Flag                   | Points | Meaning                                                                                      |
+| ---------------------- | ------ | -------------------------------------------------------------------------------------------- |
 | **Self-answerable**    | +3     | The code, the docs, a tool, or a spike can answer it.                                        |
 | **Obvious default**    | +3     | One option is what any competent person would pick; the others are absurd or strictly worse. |
 | **Already answered**   | +3     | The user said it, or it follows directly from what they said.                                |
@@ -29,8 +29,8 @@ Score every candidate before it reaches the user. Add the points for each flag i
 
 **Softeners — cheap to fix, so sharpen before asking:**
 
-| Flag                   | Points | Meaning                                                                            |
-| ---------------------- | ------ | ---------------------------------------------------------------------------------- |
+| Flag                   | Points | Meaning                                                                             |
+| ---------------------- | ------ | ----------------------------------------------------------------------------------- |
 | **False dilemma**      | +1     | The options miss the real alternatives, or smuggle extra decisions into the choice. |
 | **Speculative**        | +1     | The decision is not needed yet, or is outside the current scope.                    |
 | **Cheaply reversible** | +1     | You can change the decision later at little cost.                                   |
@@ -89,8 +89,9 @@ Prefer the native structured question tool when the agent has one. It keeps the 
 When the tool is available:
 
 - **One decision per question.** The tool may accept several questions at once; that is not a licence to bundle. Do not use the multi-question form to sneak a second decision into the first.
-- **2–4 options.** The recommendation goes first and is marked. Each option gets a short label and a description of the trade-off.
+- **2–3 options.** The recommendation goes first and is marked. Each option gets a short label and a description of the trade-off.
 - **Do not author the escape hatch.** The tool appends its own "Type something" row. Adding a "None of these" option on top of it duplicates it.
+- **Keep the question short.** The tool's dialog clips long text and cannot be scrolled. Print the context, summaries, and anything longer than a sentence or two as regular output first; the tool's question is one short sentence.
 - **The header is a topic, not a sentence.** A few words, not the whole question.
 - **`multiSelect` only when several answers can be true at once.** Otherwise it is a single choice.
 - **A preview only when the options are artifacts to compare** — a layout, a schema, a config — never for a plain preference.
@@ -113,6 +114,7 @@ Stop and wait. Then handle what comes back:
 - Never ask a question whose answer does not change the work.
 - Never bundle several decisions into one question.
 - Never present more than 3 options.
+- Never put long context or summaries inside the ask-question tool; print them as regular output.
 - Never ask more than one question per turn.
 - Never author a "None of these" escape hatch when the tool already supplies one.
 - Never present an option you already know is absurd; if it is absurd, drop it and decide.

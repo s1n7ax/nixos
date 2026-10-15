@@ -222,6 +222,96 @@ with lib;
       firmware = {
         enable = mkEnableOption "Hardware firmware support";
       };
+
+      power-profile = {
+        enable = mkEnableOption "runtime CPU/GPU power profiles (the `power-profile` CLI; amd-pstate-epp CPU, NVIDIA power limit)";
+        profiles = mkOption {
+          type = types.listOf types.str;
+          internal = true;
+          readOnly = true;
+          default = [
+            "strict"
+            "short-boosts"
+            "full-speed-heavy"
+            "disabled"
+            "full-power"
+          ];
+          description = "Profile names the `power-profile` CLI accepts. The scripts under system/nixos/hardware/power-profile/ list them too; keep them in sync.";
+        };
+        defaultProfile = mkOption {
+          type = types.enum config.features.hardware.power-profile.profiles;
+          default = "disabled";
+          description = "Profile used until one is picked with `power-profile set`. `disabled` leaves the stock settings untouched.";
+        };
+        pcieAspmPolicy = mkOption {
+          type = types.nullOr (
+            types.enum [
+              "default"
+              "performance"
+              "powersave"
+              "powersupersave"
+            ]
+          );
+          default = "powersave";
+          description = "PCIe ASPM policy set with the `pcie_aspm.policy` kernel parameter, in every profile (like a BIOS toggle). null keeps the kernel default.";
+        };
+        shortBoostsMaxFreq = mkOption {
+          type = types.ints.positive;
+          default = 4000000;
+          description = "CPU frequency cap of the Short boosts profile, in kHz. Clamped at runtime to the CPU's range.";
+        };
+        strictMaxFreq = mkOption {
+          type = types.ints.positive;
+          default = 2000000;
+          description = "CPU frequency cap of the Strict profile (boost off), in kHz. Clamped at runtime to [amd_pstate_lowest_nonlinear_freq, cpuinfo_max_freq].";
+        };
+        shortBoostsGpuPowerLimit = mkOption {
+          type = types.ints.positive;
+          default = 102;
+          description = "GPU power limit of the Short boosts profile, in watts: about 85 % of the baseline CS2 p95 draw (120 W). Clamped at runtime to the card's [power.min_limit, power.default_limit].";
+        };
+
+        # Desktop display per profile: the CLI switches Hyprland between
+        # "eco" and "full" (system/home-manager/applications/hyprland/power-display.lua).
+        display = {
+          ecoMode = mkOption {
+            type = types.strMatching "[0-9]+x[0-9]+@[0-9]+(\\.[0-9]+)?(Hz)?";
+            default = "3440x1440@60.00Hz";
+            description = "Hyprland monitor mode of the power-saving profiles (Strict caps, Short boosts, Full speed heavy), which also turn animations, blur and shadows off. After a game ends, the switch back to this mode waits for the next idle screen-off (`power-profile display apply`).";
+          };
+          fullMode = mkOption {
+            type = types.strMatching "[0-9]+x[0-9]+@[0-9]+(\\.[0-9]+)?(Hz)?";
+            default = "3440x1440@144.00Hz";
+            description = "Hyprland monitor mode of Full power (forced or during a game) and Disabled (stock), with the effects as configured.";
+          };
+          file = mkOption {
+            type = types.str;
+            internal = true;
+            readOnly = true;
+            default = "/var/lib/power-profile/display";
+            description = "Display mode the screen is in (`eco` or `full`): written by the `power-profile` CLI, read by the Hyprland config on every load.";
+          };
+        };
+
+        # Game detection (the power-watch user unit).
+        games = {
+          apps = mkOption {
+            type = types.listOf (types.strMatching "[^/[:cntrl:]]+");
+            default = [ ];
+            example = [
+              "minecraft-launcher"
+              "Game.exe"
+            ];
+            description = "Programs that count as games besides every Steam launch. Matches the process name, `.<name>-wrapped` or the argv0 basename (process names are cut to 15 characters, so longer names match through argv0 only).";
+          };
+          ignoredSteamAppIds = mkOption {
+            type = types.listOf types.ints.unsigned;
+            default = [ ];
+            example = [ 228980 ];
+            description = "Steam AppIds whose launches never count as a game (e.g. 228980, Steamworks Common Redistributables, if it lingers after a first Proton launch).";
+          };
+        };
+      };
     };
 
     virtualization = {
@@ -537,6 +627,13 @@ with lib;
               type = types.bool;
               default = false;
               description = "Official Atlassian remote MCP (Jira, Confluence, etc. via https://mcp.atlassian.com/v2/mcp; OAuth in the client)";
+            };
+          };
+          slack = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Official Slack remote MCP (https://mcp.slack.com/mcp; OAuth in the client)";
             };
           };
           home-assistant = {
