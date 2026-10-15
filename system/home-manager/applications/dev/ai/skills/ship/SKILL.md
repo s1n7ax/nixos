@@ -40,11 +40,18 @@ Overrides while `/ship` drives:
 
 ### Resuming
 
-When the argument names an existing goal (a directory under `.agent/goals/`), start at the first stage whose output is missing: no `requirement/requirement.md` → stage 1; no `plan/plan.md` → stage 2; otherwise stage 3 (or 4 without `--critical`). Never redo a finished stage unless a check sends work back to it.
+When the argument names an existing goal (a directory under `.agent/goals/`, or a ticket), start at the first stage that is not finished:
+
+- No requirement → stage 1. No plan → stage 2.
+- No commits on the goal's branch yet → stage 3 (stage 4 without `--critical`).
+- Commits but no simplify pass yet → stage 4, picking up `/implement` at its first unfinished step (the `code-review/` files show whether review and fixes are done).
+- Otherwise → the first check without a PASS report in `verification/` that is newer than the latest commit.
+
+Never redo a finished stage unless a check sends work back to it.
 
 ## Subagents
 
-Dispatch each check with whatever the environment offers: pi's `subagent` tool with the named agent, or Claude Code's Agent tool with a general-purpose agent and the brief below. Every brief names the goal, the paths of the requirement and plan, the branch, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
+Dispatch each check with whatever the environment offers: pi's `subagent` tool with the named agent, or Claude Code's Agent tool with a general-purpose agent, given the rules from the `verifier` agent (`~/.pi/agent/agents/verifier.md`, or restated in the prompt when that file is absent) and the brief below. Every brief names the goal, where the requirement and plan live (paths or ticket), the branch, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
 
 | Check            | pi agent        | Writes files?          |
 | ---------------- | --------------- | ---------------------- |

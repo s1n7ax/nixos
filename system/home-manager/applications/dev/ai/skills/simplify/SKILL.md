@@ -24,7 +24,9 @@ Locate the relevant goal documentation under `.agent/goals/<goal>/`:
 - Requirement: `.agent/goals/<goal>/requirement/requirement.md`
 - Implementation plan: `.agent/goals/<goal>/plan/plan.md`
 
-Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing — following the `questions` skill.
+Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing — following the `questions` skill. When running as a subagent that cannot ask, stop and report the ambiguity instead.
+
+When the goal was documented in a project ticket instead, read the requirement and plan from the ticket.
 
 Read both documents before making changes. If either document is missing or ambiguous, identify the limitation and avoid assuming undocumented requirements or architectural decisions.
 

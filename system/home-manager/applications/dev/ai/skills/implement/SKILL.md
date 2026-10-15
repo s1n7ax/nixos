@@ -26,7 +26,7 @@ Resolve the `<goal>`:
 - Several candidates → ask which one, following the `questions` skill, and wait.
 - None → tell the user to run `/requirement` and `/plan` first, and stop.
 
-Read `.agent/goals/<goal>/requirement/requirement.md` and `.agent/goals/<goal>/plan/plan.md`. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
+Read the requirement and the plan: `.agent/goals/<goal>/requirement/requirement.md` and `.agent/goals/<goal>/plan/plan.md`, or — when `/requirement` and `/plan` wrote them to a project ticket — the ticket. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
 
 ### 2. Set up the workspace
 
@@ -42,7 +42,7 @@ When a step cannot be executed as written — the code contradicts it, a spike f
 
 Before review, prove the implementation works:
 
-- Run every check in the plan's Verification section — one per requirement item.
+- Run every check in the plan's Verification section — at least one per acceptance criterion.
 - Run the project's formatter, linters, type checks, tests and builds.
 
 Fix failures and rerun until green. Never move to review with failing checks, and never claim a check passed that was not run.
