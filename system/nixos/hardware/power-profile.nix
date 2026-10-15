@@ -12,6 +12,10 @@
 # applied one after resume. Stock CPU values are saved once per boot in
 # /run/power-profile/stock; `disabled` restores them.
 #
+# The CLI also switches Hyprland between display.ecoMode without effects and
+# display.fullMode (Hyprland's power-display.lua) and shows a notification on
+# every change. `power-profile menu` (SUPER+ALT+E) is the rofi front end.
+#
 # Journal: `journalctl -b -u 'power-profile-*'`.
 let
   cfg = config.features.hardware.power-profile;
@@ -36,6 +40,20 @@ let
     lib.mapAttrsToList (name: value: "export ${name}=${lib.escapeShellArg value}\n") env
   );
 
+  # Display switching and notifications run in the user CLI only (boot and
+  # resume have no Hyprland session). hyprctl comes from the system Hyprland,
+  # the compositor that actually runs.
+  cliEnv = {
+    POWER_PROFILE_DISPLAY_FILE = cfg.display.file;
+    POWER_PROFILE_DISPLAY_ECO_MODE = cfg.display.ecoMode;
+    POWER_PROFILE_DISPLAY_FULL_MODE = cfg.display.fullMode;
+    POWER_PROFILE_HYPRCTL = lib.optionalString config.programs.hyprland.enable "${config.programs.hyprland.package}/bin/hyprctl";
+  };
+
+  exportCliEnv = lib.concatStrings (
+    lib.mapAttrsToList (name: value: "export ${name}=${lib.escapeShellArg value}\n") cliEnv
+  );
+
   ctl = pkgs.writeShellApplication {
     name = "power-profile-ctl";
     runtimeInputs = with pkgs; [
@@ -51,8 +69,10 @@ let
       pkgs.coreutils
       pkgs.util-linux
       config.systemd.package
+      # notify-send; rofi (menu) comes from the user's PATH.
+      pkgs.libnotify
     ];
-    text = exportEnv + builtins.readFile ./power-profile/power-profile.sh;
+    text = exportEnv + exportCliEnv + builtins.readFile ./power-profile/power-profile.sh;
   };
 
   sleepTargets = [
