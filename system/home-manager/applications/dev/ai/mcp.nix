@@ -22,8 +22,9 @@ let
     Slack's MCP has no dynamic client registration, so each client needs a
     pre-registered Slack app. The IDs below are the public ones Slack's docs
     give for Claude Code and Cursor (docs.slack.dev/ai/slack-mcp-server);
-    Claude Code's app is registered for http://localhost:3118/callback, and
-    Pi reuses it by sending that exact redirect URI.
+    Claude Code's app is registered for http://localhost:3118/callback and
+    Cursor's for http://localhost:8787/callback; Pi reuses Cursor's app by
+    sending that exact redirect URI.
   */
   slackUrl = "https://mcp.slack.com/mcp";
   slackClaudeClientId = "1601185624273.8899143856786";
@@ -141,8 +142,8 @@ in
         home.file.".pi/agent/mcp.json".source = mkMcpJson "pi-mcp.json" (
           lib.optionalAttrs cfg.slack.enable {
             slack.oauth = {
-              clientId = slackClaudeClientId;
-              callbackUrl = "http://localhost:3118/callback";
+              clientId = slackCursorClientId;
+              callbackUrl = "http://localhost:8787/callback";
             };
           }
         );
