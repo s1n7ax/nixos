@@ -35,28 +35,26 @@ let
         memory with qmd-powered semantic search across daily logs, long-term
         memory, and scratchpad.
 
+      pi-subagents (npm; github.com/nicopreme/pi-subagents) is the third-party
+      descendant of the subagent extension shipped as an example with the pi
+      package. It registers the same `subagent` tool but adds builtin agents
+      (scout, researcher, reviewer, oracle, worker, ...), scripted workflows
+      and `/council`, plus a background runner and the fleet inspector, so it
+      replaces the hand-linked example extension that used to live in
+      home.file below. Declared here so Pi loads it from ~/.pi/agent/npm on
+      every launch; `pi update --extensions` refreshes it.
+
       features.development.ai.pi.cursor.package appends a pi Cursor provider
       plugin when that option is enabled, which makes Cursor show up in /login
       on hosts that opt in. Entries are additive: nothing is replaced or removed.
     */
     packages = [
       "npm:@juicesharp/rpiv-ask-user-question"
+      "npm:pi-subagents"
       "npm:pi-memory"
     ]
     ++ lib.optional (piCursor.enable && piCursor.package != "") piCursor.package;
   };
-
-  /**
-    Subagent extension shipped with the pi package as an official example
-    (examples/extensions/subagent in the pi-monorepo; README there documents
-    the security model). Registers a `subagent` tool that spawns an isolated
-    `pi` subprocess per task. Sourced from the package so it stays in lockstep
-    with the installed pi version. Only index.ts and agents.ts are linked, as
-    the example's own install instructions do; its sample agents and workflow
-    prompts are skipped -- agents live in ../agents instead, and the workflow
-    prompts would shadow the /implement skill of the same name.
-  */
-  subagentExample = "${pkgs-unstable.pi-coding-agent}/lib/node_modules/pi-monorepo/examples/extensions/subagent";
 
   /**
     Pi's ~/.pi/agent/keybindings.json is a flat `{ "<action id>": key | [keys] }`
@@ -152,11 +150,12 @@ in
       ".pi/agent/keybindings.json".text = piKeybindings;
       ".pi/agent/extensions/welcome".source = welcome.piExtension;
       ".pi/agent/extensions/persistent-model.ts".source = ./persistent-model.ts;
-      ".pi/agent/extensions/subagent/index.ts".source = "${subagentExample}/index.ts";
-      ".pi/agent/extensions/subagent/agents.ts".source = "${subagentExample}/agents.ts";
 
-      # User-level subagent definitions (~/.pi/agent/agents/*.md). The subagent
-      # extension discovers these fresh on every invocation.
+      # User-level subagent definitions (~/.pi/agent/agents/*.md). pi-subagents
+      # discovers these fresh on every invocation; they have higher priority
+      # than its builtins, so worker.md here replaces the packaged `worker`
+      # outright (a custom file shadowing a builtin does not inherit omitted
+      # frontmatter, e.g. acceptanceRole).
       ".pi/agent/agents".source = ../agents;
     };
   };
