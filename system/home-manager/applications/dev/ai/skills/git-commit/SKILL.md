@@ -1,5 +1,5 @@
 ---
-name: git-committer
+name: git-commit
 description: Use whenever the user asks to commit changes — runs the commit workflow with conventional-commit syntax. Never modifies the codebase; only commits what is already staged or present.
 ---
 
