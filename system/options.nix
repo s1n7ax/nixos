@@ -292,6 +292,25 @@ with lib;
             description = "Display mode the screen is in (`eco` or `full`): written by the `power-profile` CLI, read by the Hyprland config on every load.";
           };
         };
+
+        # Game detection (the power-watch user unit).
+        games = {
+          apps = mkOption {
+            type = types.listOf (types.strMatching "[^/[:cntrl:]]+");
+            default = [ ];
+            example = [
+              "minecraft-launcher"
+              "Game.exe"
+            ];
+            description = "Programs that count as games besides every Steam launch. Matches the process name, `.<name>-wrapped` or the argv0 basename (process names are cut to 15 characters, so longer names match through argv0 only).";
+          };
+          ignoredSteamAppIds = mkOption {
+            type = types.listOf types.ints.unsigned;
+            default = [ ];
+            example = [ 228980 ];
+            description = "Steam AppIds whose launches never count as a game (e.g. 228980, Steamworks Common Redistributables, if it lingers after a first Proton launch).";
+          };
+        };
       };
     };
 
