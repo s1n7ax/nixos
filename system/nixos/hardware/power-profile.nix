@@ -83,6 +83,24 @@ let
   ];
 
   unitRegex = "^power-profile-apply@(${lib.concatStringsSep "|" cfg.profiles})\\.service$";
+
+  # Game watcher: feeds the games file + `power-profile sync` and holds an
+  # idle inhibitor while a game runs. Journal: `journalctl --user -u power-watch`.
+  watch = pkgs.writeShellApplication {
+    name = "power-watch";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnused
+      pkgs.procps
+      config.systemd.package
+      cli
+    ];
+    text = ''
+      export POWER_WATCH_APPS=${lib.escapeShellArg (lib.concatStringsSep "\n" cfg.games.apps)}
+      export POWER_WATCH_IGNORED_APPIDS=${lib.escapeShellArg (toString cfg.games.ignoredSteamAppIds)}
+    ''
+    + builtins.readFile ./power-profile/power-watch.sh;
+  };
 in
 {
   config = lib.mkIf cfg.enable {
@@ -149,5 +167,22 @@ in
         }
       });
     '';
+
+    # Game watcher, for the main user's graphical session. ExecStopPost
+    # drops the games so a stopped watcher returns to the picked profile; a
+    # restart picks running games up again.
+    systemd.user.services.power-watch = {
+      description = "Full power and no idle while a game runs";
+      wantedBy = [ "graphical-session.target" ];
+      partOf = [ "graphical-session.target" ];
+      after = [ "graphical-session.target" ];
+      unitConfig.ConditionUser = username;
+      serviceConfig = {
+        ExecStart = "${lib.getExe watch} run";
+        ExecStopPost = "${lib.getExe watch} stop";
+        Restart = "always";
+        RestartSec = 5;
+      };
+    };
   };
 }
