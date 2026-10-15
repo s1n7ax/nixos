@@ -10,6 +10,27 @@ let
   cursor_name = config.settings.cursor.name;
   cursor_size = config.settings.cursor.size;
   voice-indicator = pkgs.callPackage ./hyprland/voice-indicator { };
+  powerProfile = config.features.hardware.power-profile;
+
+  monitor = {
+    output = "";
+    mode = "3440x1440@144.00Hz";
+    position = "auto";
+    scale = 1.25;
+  };
+
+  # PowerDisplay(mode) for the power-profile CLI: eco/full refresh rate and
+  # effects, loaded from the CLI's display file.
+  powerDisplayLua =
+    builtins.replaceStrings
+      [ "@file@" "@output@" "@ecoMode@" "@fullMode@" ]
+      [
+        powerProfile.display.file
+        monitor.output
+        powerProfile.display.ecoMode
+        powerProfile.display.fullMode
+      ]
+      (builtins.readFile ./hyprland/power-display.lua);
 in
 {
   disabledModules = [
@@ -221,12 +242,7 @@ in
           }
         ];
 
-        monitor = {
-          output = "";
-          mode = "3440x1440@144.00Hz";
-          position = "auto";
-          scale = 1.25;
-        };
+        inherit monitor;
 
         animation = [
           {
@@ -274,10 +290,22 @@ in
               (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("fcitx5-remote -t")'')
             ];
           }
+        ]
+        # Power profile menu (E for energy): pick a profile or toggle
+        # "Auto (follow games)".
+        ++ lib.optionals powerProfile.enable [
+          {
+            _args = [
+              "SUPER + ALT + E"
+              (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("power-profile menu")'')
+            ];
+          }
         ];
       };
 
-      extraConfig = builtins.readFile ./hyprland/binds.lua;
+      extraConfig =
+        builtins.readFile ./hyprland/binds.lua
+        + lib.optionalString powerProfile.enable ("\n" + powerDisplayLua);
     };
 
     home.file."Workspace/nixos/system/home-manager/applications/hyprland/.luarc.json".source =

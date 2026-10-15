@@ -1,1 +1,1 @@
-globals = { "hl" }
+globals = { "hl", "PowerDisplay" }

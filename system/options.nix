@@ -270,6 +270,28 @@ with lib;
           default = 102;
           description = "GPU power limit of the Short boosts profile, in watts: about 85 % of the baseline CS2 p95 draw (120 W). Clamped at runtime to the card's [power.min_limit, power.default_limit].";
         };
+
+        # Desktop display per profile: the CLI switches Hyprland between
+        # "eco" and "full" (system/home-manager/applications/hyprland/power-display.lua).
+        display = {
+          ecoMode = mkOption {
+            type = types.strMatching "[0-9]+x[0-9]+@[0-9]+(\\.[0-9]+)?(Hz)?";
+            default = "3440x1440@60.00Hz";
+            description = "Hyprland monitor mode of the power-saving profiles (Strict caps, Short boosts, Full speed heavy), which also turn animations, blur and shadows off. After a game ends, the switch back to this mode waits for the next idle screen-off (`power-profile display apply`).";
+          };
+          fullMode = mkOption {
+            type = types.strMatching "[0-9]+x[0-9]+@[0-9]+(\\.[0-9]+)?(Hz)?";
+            default = "3440x1440@144.00Hz";
+            description = "Hyprland monitor mode of Full power (forced or during a game) and Disabled (stock), with the effects as configured.";
+          };
+          file = mkOption {
+            type = types.str;
+            internal = true;
+            readOnly = true;
+            default = "/var/lib/power-profile/display";
+            description = "Display mode the screen is in (`eco` or `full`): written by the `power-profile` CLI, read by the Hyprland config on every load.";
+          };
+        };
       };
     };
 
