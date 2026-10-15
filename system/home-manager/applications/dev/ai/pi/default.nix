@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   pkgs-unstable,
   config,
@@ -142,7 +143,13 @@ in
     #     in the shell before invoking `pi`.
     #
     # Skills live under ~/.agents/skills (mounted by ./skills when ai.enable).
-    home.packages = [ pkgs-unstable.pi-coding-agent ];
+    #
+    # qmd backs pi-memory's memory_search; without it on PATH the tool only
+    # returns install instructions.
+    home.packages = [
+      pkgs-unstable.pi-coding-agent
+      inputs.qmd.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ];
 
     home.file = {
       ".pi/agent/AGENTS.md".text = commonRules;
