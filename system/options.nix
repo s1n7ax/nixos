@@ -222,6 +222,55 @@ with lib;
       firmware = {
         enable = mkEnableOption "Hardware firmware support";
       };
+
+      power-profile = {
+        enable = mkEnableOption "runtime CPU/GPU power profiles (the `power-profile` CLI; amd-pstate-epp CPU, NVIDIA power limit)";
+        profiles = mkOption {
+          type = types.listOf types.str;
+          internal = true;
+          readOnly = true;
+          default = [
+            "strict"
+            "short-boosts"
+            "full-speed-heavy"
+            "disabled"
+            "full-power"
+          ];
+          description = "Profile names the `power-profile` CLI accepts. The scripts under system/nixos/hardware/power-profile/ list them too; keep them in sync.";
+        };
+        defaultProfile = mkOption {
+          type = types.enum config.features.hardware.power-profile.profiles;
+          default = "disabled";
+          description = "Profile used until one is picked with `power-profile set`. `disabled` leaves the stock settings untouched.";
+        };
+        pcieAspmPolicy = mkOption {
+          type = types.nullOr (
+            types.enum [
+              "default"
+              "performance"
+              "powersave"
+              "powersupersave"
+            ]
+          );
+          default = "powersave";
+          description = "PCIe ASPM policy set with the `pcie_aspm.policy` kernel parameter, in every profile (like a BIOS toggle). null keeps the kernel default.";
+        };
+        shortBoostsMaxFreq = mkOption {
+          type = types.ints.positive;
+          default = 4000000;
+          description = "CPU frequency cap of the Short boosts profile, in kHz. Clamped at runtime to the CPU's range.";
+        };
+        strictMaxFreq = mkOption {
+          type = types.ints.positive;
+          default = 2000000;
+          description = "CPU frequency cap of the Strict profile (boost off), in kHz. Clamped at runtime to [amd_pstate_lowest_nonlinear_freq, cpuinfo_max_freq].";
+        };
+        shortBoostsGpuPowerLimit = mkOption {
+          type = types.ints.positive;
+          default = 102;
+          description = "GPU power limit of the Short boosts profile, in watts: about 85 % of the baseline CS2 p95 draw (120 W). Clamped at runtime to the card's [power.min_limit, power.default_limit].";
+        };
+      };
     };
 
     virtualization = {

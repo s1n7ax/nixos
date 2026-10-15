@@ -35,6 +35,7 @@
       audio.enable = true;
       coral.enable = false;
       firmware.enable = true;
+      power-profile.enable = true;
     };
 
     virtualization = {
