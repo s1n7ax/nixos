@@ -629,6 +629,13 @@ with lib;
               description = "Official Atlassian remote MCP (Jira, Confluence, etc. via https://mcp.atlassian.com/v2/mcp; OAuth in the client)";
             };
           };
+          slack = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Official Slack remote MCP (https://mcp.slack.com/mcp; OAuth in the client)";
+            };
+          };
           home-assistant = {
             enable = mkOption {
               type = types.bool;
