@@ -19,10 +19,10 @@ Identify the code to review:
 - Include uncommitted changes when present.
 - If no changes are available, ask for a target or identify a reasonable scope from the current context.
 
-Locate the relevant goal documentation under `.goal/<goal_name>/`:
+Locate the relevant goal documentation under `.agent/goals/<goal>/`:
 
-- Requirement: `.goal/<goal_name>/requirement/requirement.md`
-- Implementation plan: `.goal/<goal_name>/plan/plan.md`
+- Requirement: `.agent/goals/<goal>/requirement/requirement.md`
+- Implementation plan: `.agent/goals/<goal>/plan/plan.md`
 
 Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing — following the `questions` skill.
 

@@ -160,7 +160,7 @@ picks one approach: merge its PRs, close the rest.
 
 ## Verification
 
-- <observable check that proves one requirement item — one per item>
+- <observable check that proves one acceptance criterion — at least one per criterion>
 
 ## Non-goals
 
@@ -177,6 +177,8 @@ Group changes per project. When a step in one project depends on a step in anoth
 
 ## Handing off to the next step
 
+When `/ship` is driving this skill, skip this section — `/ship` moves on by itself.
+
 Once the plan is saved, the workflow's next step is `/implement <goal>`, where `<goal>` is the goal's directory name (or the kebab-case name used for a ticket).
 
 1. **Tell the user** the next step: run `/implement <goal>`.
@@ -185,7 +187,7 @@ Once the plan is saved, the workflow's next step is `/implement <goal>`, where `
 
 ## Never
 
-- Never run unless the user explicitly invoked this skill.
+- Never run unless the user explicitly invoked this skill or `/ship`.
 - Never ask a planning question before analyzing the code.
 - Never ask a planning question outside the three allowed types.
 - Never ask a question that scores 3 or more on the `questions` skill's dumbness score.

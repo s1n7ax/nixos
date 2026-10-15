@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Execute an implementation plan written by /plan, fulfilling the requirement documented by /requirement. After implementing, runs /code-review in a subagent, tracks findings in the goal's code-review directory, fixes them in the same session, then runs /simplify on the changes. Only use when the user explicitly runs the /implement command; never trigger on your own.
+description: Execute an implementation plan written by /plan, fulfilling the requirement documented by /requirement. After implementing, runs /code-review in a subagent, tracks findings in the goal's code-review directory, fixes them in the same session, then runs /simplify in a subagent. Only use when the user explicitly runs the /implement command; never trigger on your own.
 disable-model-invocation: true
 ---
 
@@ -84,7 +84,11 @@ After all fixes, rerun the Validation step. A fix that breaks a check is not a f
 
 ### 7. Simplify
 
-Run `/simplify` on the changes. It reviews the diff against the same requirement and plan documents, so it needs no extra briefing. Rerun Validation afterward. Simplify is quality-only; its changes need no entries in the review file.
+Run `/simplify` as a **subagent**, for the same reason as the review: a fresh context does not defend the code it wrote. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool), otherwise a general-purpose agent (Claude Code's Agent tool) — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and plan. If the environment has no subagent capability, run it in this session and say so.
+
+Review the subagent's changes, then rerun Validation. Simplify is quality-only; its changes need no entries in the review file.
+
+When `/ship` is driving this skill, stop here: `/ship` runs its own checks and opens the PRs.
 
 ### 8. Finish
 
@@ -98,7 +102,7 @@ Run `/simplify` on the changes. It reviews the diff against the same requirement
 
 ## Never
 
-- Never run unless the user explicitly invoked this skill.
+- Never run unless the user explicitly invoked this skill or `/ship`.
 - Never ask a question outside the `questions` skill.
 - Never start without both the requirement and the plan.
 - Never deviate from the plan silently — a plan that cannot be executed goes back to `/plan`.
