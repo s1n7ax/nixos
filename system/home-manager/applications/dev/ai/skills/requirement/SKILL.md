@@ -47,7 +47,7 @@ The dumbness score, the shape of one question, and the agent's ask-question tool
 
 ## Documenting the requirement
 
-When the requirement is clear, first **summarize it back in full** — every section of the document below, as it will be written. Get a "yes, that's it" before writing anything down.
+When the requirement is clear, first **summarize it back in full** — every section of the document below, as it will be written. Print the summary as regular output, never inside the ask-question tool; the tool's question is only a short "Is this summary correct?". Get a "yes, that's it" before writing anything down.
 
 Then ask where the requirement should live. Check first which project management tools are available — `gh` for a GitHub repo, or a Jira / Linear MCP or CLI if the project is set up for one. The suggestions:
 
@@ -103,4 +103,5 @@ Once the requirement document is saved, the workflow's next step is `/plan <goal
 - Never bundle multiple decisions into one question's options — each option must answer the question as asked, not add extra scope rulings on top.
 - Never break a `questions` skill rule — the option cap, the escape hatch, or the ask-question tool.
 - Never document before the user has confirmed the full summary.
+- Never put the summary inside the ask-question tool.
 - Never leave an open question in the document that could have been asked and answered during the session.

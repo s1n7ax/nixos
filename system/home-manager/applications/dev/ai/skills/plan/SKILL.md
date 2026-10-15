@@ -115,7 +115,7 @@ When the user keeps more than one option at a fork, the plan carries each kept o
 
 ## Writing the plan
 
-First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Get a "yes, that's it" before writing anything down. Any change after the user confirmed the summary needs a fresh summary and confirmation.
+First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Print the summary as regular output, never inside the ask-question tool; the tool's question is only a short "Is this summary correct?". Get a "yes, that's it" before writing anything down. Any change after the user confirmed the summary needs a fresh summary and confirmation.
 
 The plan lives next to the requirement it implements: a local requirement doc gets its plan at `.agent/goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket.
 
@@ -197,3 +197,4 @@ Once the plan is saved, the workflow's next step is `/implement <goal>`, where `
 - Never plan more than 3 approaches.
 - Never put code snippets in the plan.
 - Never write the plan before the user has confirmed the full summary.
+- Never put the summary inside the ask-question tool.
