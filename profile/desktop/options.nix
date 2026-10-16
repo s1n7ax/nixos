@@ -35,7 +35,12 @@
       audio.enable = true;
       coral.enable = false;
       firmware.enable = true;
-      power-profile.enable = true;
+      power-profile = {
+        enable = true;
+        # GPP0, the CPU's PCIe port 00:01.1, wakes this Gigabyte B550 board
+        # ~6 s after every suspend (one PME event per suspend).
+        idle.noWakeupDevices = [ "0000:00:01.1" ];
+      };
     };
 
     virtualization = {

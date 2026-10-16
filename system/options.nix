@@ -324,6 +324,12 @@ with lib;
             default = 120;
             description = "Seconds without keyboard/mouse input before the screen turns off. A running game (idle inhibitor) holds it off.";
           };
+          noWakeupDevices = mkOption {
+            type = types.listOf (types.strMatching "[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\\.[0-7]");
+            default = [ ];
+            example = [ "0000:00:01.1" ];
+            description = "PCI devices (sysfs names) that must not wake the PC from suspend, e.g. a PCIe root port that wakes it seconds after every suspend. Keyboard and mouse wake through their USB controller and stay on.";
+          };
         };
       };
     };
