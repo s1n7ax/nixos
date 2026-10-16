@@ -51,6 +51,7 @@
       frigate.enable = true;
       mqtt.enable = true;
       home-assistant.enable = true;
+      wyoming-piper.enable = true;
       z2m.enable = true;
       dongle-m-serial-log.enable = true;
       adguard.enable = true;

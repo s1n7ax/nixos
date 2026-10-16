@@ -96,6 +96,8 @@
       enable = true;
     };
 
+    readAloud.enable = true;
+
     tools = {
       downloading.enable = true;
     };
