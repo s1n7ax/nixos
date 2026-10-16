@@ -253,5 +253,9 @@ in
     };
 
     security.pam.services.swaylock = lib.mkIf cfg.idle.enable { };
+
+    services.udev.extraRules = lib.concatMapStrings (device: ''
+      ACTION=="add", SUBSYSTEM=="pci", KERNEL=="${device}", ATTR{power/wakeup}="disabled"
+    '') cfg.idle.noWakeupDevices;
   };
 }
