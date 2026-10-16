@@ -21,26 +21,8 @@ let
       ]
     else
       [
-        [
-          "${piper.package}/bin/piper"
-          "-m"
-          piper.model
-          "--output-raw"
-          "--length-scale"
-          (toString (1.0 / cfg.rate))
-        ]
-        [
-          "${pkgs.pipewire}/bin/pw-cat"
-          "--playback"
-          "--raw"
-          "--format"
-          "s16"
-          "--rate"
-          (toString piper.sampleRate)
-          "--channels"
-          "1"
-          "-"
-        ]
+        (piper.synth cfg.rate)
+        piper.play
       ];
 
   speak = pkgs.writers.writePython3Bin "speak" { flakeIgnore = [ "E501" ]; } (

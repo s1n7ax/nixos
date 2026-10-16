@@ -7,9 +7,8 @@
 let
   cfg = config.features.readAloud;
   piper = import ../../shared/piper.nix { inherit pkgs; };
-  piperBin = "${piper.package}/bin/piper";
-  synth = "${piperBin} -m ${piper.model} --output-raw --length-scale ${toString (1.0 / cfg.rate)}";
-  play = "${pkgs.pipewire}/bin/pw-cat --playback --raw --format s16 --rate ${toString piper.sampleRate} --channels 1 -";
+  synth = lib.concatStringsSep " " (piper.synth cfg.rate);
+  play = lib.concatStringsSep " " piper.play;
 in
 {
   config = lib.mkIf cfg.enable {
@@ -33,7 +32,7 @@ in
       '';
       modules.piper = ''
         GenericExecuteSynth "printf %s \'$DATA\' | ${synth} | ${play}"
-        GenericCmdDependency "${piperBin}"
+        GenericCmdDependency "${piper.bin}"
         AddVoice "en" "MALE1" "lessac"
         DefaultVoice "lessac"
       '';

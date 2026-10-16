@@ -13,15 +13,42 @@ let
       hash = "sha256-7+GcQXvtBV8taZCCSMa6ZQ+hNbyGiw5quz2hgdq2kKA=";
     };
   };
-in
-{
+
   package = pkgs.piper-tts.override {
     withTrain = false;
     withHTTP = false;
     withAlignment = false;
   };
+in
+rec {
+  bin = "${package}/bin/piper";
 
-  model = "${voice}/${voiceName}.onnx";
+  /**
+    Argv that turns text on stdin into raw audio on stdout, `rate` times
+    faster than the voice's natural speed.
+  */
+  synth = rate: [
+    bin
+    "-m"
+    "${voice}/${voiceName}.onnx"
+    "--output-raw"
+    "--length-scale"
+    (toString (1.0 / rate))
+  ];
 
-  sampleRate = 22050;
+  /**
+    Argv that plays the raw audio `synth` writes.
+  */
+  play = [
+    "${pkgs.pipewire}/bin/pw-cat"
+    "--playback"
+    "--raw"
+    "--format"
+    "s16"
+    "--rate"
+    "22050"
+    "--channels"
+    "1"
+    "-"
+  ];
 }

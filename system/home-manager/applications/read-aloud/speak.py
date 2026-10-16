@@ -140,14 +140,16 @@ def write_record(path, data):
 
 
 def remove_record(path, pgid):
-    """Delete `path` if it still names the read in group `pgid`."""
+    """Delete `path` if it still names the read in group `pgid`.
+
+    Returns whether it did, i.e. whether that read was still the current one.
+    """
     current = read_record(path)
     if current is None or current["pgid"] != pgid:
-        return
-    try:
+        return False
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path)
-    except FileNotFoundError:
-        pass
+    return True
 
 
 def alive(data):
@@ -183,10 +185,8 @@ def stop_locked():
     data = read_record(path)
     if data is not None:
         kill(data)
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path)
-    except FileNotFoundError:
-        pass
 
 
 def stop():
@@ -256,10 +256,9 @@ def speak(text):
     codes = [proc.wait() for proc in procs]
 
     with locked():
-        current = read_record(path)
-        if current is None or current["pgid"] != mine["pgid"]:
-            return 0
-        remove_record(path, mine["pgid"])
+        current = remove_record(path, mine["pgid"])
+    if not current:
+        return 0
     return 0 if all(code == 0 for code in codes) else 1
 
 
