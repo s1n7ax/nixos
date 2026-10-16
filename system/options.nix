@@ -311,6 +311,20 @@ with lib;
             description = "Steam AppIds whose launches never count as a game (e.g. 228980, Steamworks Common Redistributables, if it lingers after a first Proton launch).";
           };
         };
+
+        # Screen-off and lock (the power-idle and power-lock user units).
+        idle = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Turn the screen off when idle and lock the session before suspend (hypridle + swaylock). Works in every profile, Disabled (stock) included.";
+          };
+          screenOffTimeout = mkOption {
+            type = types.ints.positive;
+            default = 120;
+            description = "Seconds without keyboard/mouse input before the screen turns off. A running game (idle inhibitor) holds it off.";
+          };
+        };
       };
     };
 

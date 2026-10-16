@@ -26,6 +26,13 @@
 # Every change of the effective profile (and every `set`/`auto`) shows a
 # desktop notification.
 #
+# Idle hooks (hypridle, the power-idle user unit): `idle screen-off` applies
+# a pending display mode, lets the modeset settle, then turns the screen off
+# (DPMS); `idle screen-on` turns it on. hypridle runs both without waiting,
+# so a flag file under a lock makes a screen-off that was overtaken by input
+# leave the screen on. `idle after-sleep` restarts hypridle's timers after a
+# wake.
+#
 # Environment (set by the NixOS module; tests point it at a fake tree):
 #   POWER_PROFILE_STATE_FILE         persisted state
 #   POWER_PROFILE_RUN_DIR            the root side's applied record
@@ -37,6 +44,8 @@
 #   POWER_PROFILE_DISPLAY_ECO_MODE   monitor mode of `eco` (notification text)
 #   POWER_PROFILE_DISPLAY_FULL_MODE  monitor mode of `full` (notification text)
 #   POWER_PROFILE_HYPRCTL            hyprctl path; empty = no display switching
+#   POWER_PROFILE_MODESET_SETTLE     seconds a display switch gets before
+#                                    the screen turns off (default 3)
 
 state_file=${POWER_PROFILE_STATE_FILE:-/var/lib/power-profile/state}
 state_dir=${state_file%/*}
@@ -50,6 +59,9 @@ display_file=${POWER_PROFILE_DISPLAY_FILE:-$state_dir/display}
 eco_mode=${POWER_PROFILE_DISPLAY_ECO_MODE:-}
 full_mode=${POWER_PROFILE_DISPLAY_FULL_MODE:-}
 hyprctl=${POWER_PROFILE_HYPRCTL:-}
+modeset_settle=${POWER_PROFILE_MODESET_SETTLE:-3}
+idle_dir=$runtime_dir/power-profile
+screen_off_flag=$idle_dir/screen-off
 
 # Keep in sync with features.hardware.power-profile.profiles and
 # power-profile-ctl.sh.
@@ -80,7 +92,10 @@ Commands:
                   end leaves it to \`display apply\`
   menu            pick a profile or toggle auto in a rofi menu
   display [apply] print the display mode, or apply the one the effective
-                  profile wants now (idle screen-off hook)
+                  profile wants now
+  idle <hook>     hypridle hooks: screen-off (apply a pending display mode,
+                  then DPMS off), screen-on, after-sleep (restart the idle
+                  timers)
   help            show this help
 
 Profiles: ${profiles[*]}
@@ -425,6 +440,74 @@ cmd_display() {
   [ -z "$display_error" ] || exit 1
 }
 
+# --- Idle (hypridle hooks) --------------------------------------------------
+
+# Serialises screen-off and screen-on: hypridle starts them without waiting.
+idle_lock() {
+  mkdir -p "$idle_dir"
+  exec 8>"$idle_dir/idle.lock"
+  flock -w 30 8 || die "timed out waiting for the idle lock"
+}
+
+# dpms on|off for every output; failures are logged, never fatal.
+dpms() {
+  local out
+  [ -n "$hyprctl" ] && hypr_session || return 0
+  out=$(hypr dispatch "hl.dsp.dpms({ action = \"$1\" })" 2>&1) || true
+  [ "$out" = ok ] || warn "dpms $1 failed: ${out:-no answer from hyprctl}"
+}
+
+idle_screen_off() {
+  local before after
+  idle_lock
+  : >"$screen_off_flag"
+  flock -u 8
+
+  # A display switch left pending after a game happens now, while nobody
+  # watches. Hyprland modesets on the next frame; one landing after DPMS
+  # off would blank the screen right after the wake, so let it settle.
+  lock
+  before=$(display_shown)
+  display_set "$(display_for "$(effective)")"
+  after=$(display_shown)
+  flock -u 9
+  if [ "$before" != "$after" ]; then
+    sleep "$modeset_settle"
+  fi
+
+  # Input during the switch already ran screen-on and removed the flag.
+  idle_lock
+  if [ -e "$screen_off_flag" ]; then
+    dpms off
+  fi
+}
+
+idle_screen_on() {
+  idle_lock
+  rm -f "$screen_off_flag"
+  dpms on
+}
+
+# hypridle fires each timeout once per idle period, so a wake without input
+# would never turn the screen off again. force_idle(0) counts as input: the
+# screen comes on and the timers start from 0.
+idle_after_sleep() {
+  local out
+  [ -n "$hyprctl" ] && hypr_session || return 0
+  out=$(hypr dispatch 'hl.dsp.force_idle(0)' 2>&1) || true
+  [ "$out" = ok ] || warn "restarting the idle timers failed: ${out:-no answer from hyprctl}"
+}
+
+cmd_idle() {
+  [ $# -eq 1 ] || die "usage: power-profile idle screen-off|screen-on|after-sleep"
+  case $1 in
+    screen-off) idle_screen_off ;;
+    screen-on) idle_screen_on ;;
+    after-sleep) idle_after_sleep ;;
+    *) die "usage: power-profile idle screen-off|screen-on|after-sleep" ;;
+  esac
+}
+
 # Rows: the profiles in menu order (the picked one marked with ●), then the
 # "Auto (follow games)" toggle.
 cmd_menu() {
@@ -481,6 +564,7 @@ case $command in
   sync) cmd_sync "$@" ;;
   menu) cmd_menu "$@" ;;
   display) cmd_display "$@" ;;
+  idle) cmd_idle "$@" ;;
   help | -h | --help) usage ;;
   *)
     usage >&2
