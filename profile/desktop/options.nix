@@ -47,6 +47,8 @@
         # Logitech Unifying receiver (MX Master 3): the kernel lets only
         # keyboards wake the PC.
         idle.wakeupUsbDevices = [ "046d:c52b" ];
+        # Agent sessions in the dev VM keep the desktop awake.
+        idle.busy.statusVm = "dev-vm";
       };
     };
 
