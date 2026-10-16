@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drive the whole workflow — /requirement, /plan, /implement, independent verification, and the PR — in one session, stopping for the user only where their decision is needed. Pass --critical to add requirement-vs-plan and requirement-vs-implementation checks. Only use when the user explicitly runs the /ship command; never trigger on your own.
+description: Drive the whole workflow — /requirement, /plan, /implement, independent verification, and the PR — in one session, stopping for the user only where their decision is needed. Always runs requirement-vs-plan and requirement-vs-implementation checks. Only use when the user explicitly runs the /ship command; never trigger on your own.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 This skill is the conductor. It runs `/requirement`, `/plan` and `/implement` back to back, adds independent checks between them, and opens the PR only after a final validation passes. `/implement` runs in subagents, so its code, diffs and command output stay out of this session's context. The user is pulled in only for decisions that are theirs: requirement questions, planning questions, and failures that retries could not fix.
 
-Usage: `/ship [--critical] [<fuzzy requirement> | <goal>]`
+Usage: `/ship [<fuzzy requirement> | <goal>]`
 
 Four rules hold the whole skill up. Everything below is detail.
 
@@ -22,11 +22,11 @@ Four rules hold the whole skill up. Everything below is detail.
 ```
 1. requirement      main session, with the user
 2. plan             main session, with the user when a planning question is needed
-3. plan check       [--critical] subagent
+3. plan check       subagent
 4. implement        subagents: build, review, fix, simplify
    ↳ gate           main session, after every code-changing subagent
-5. impl check       [--critical] subagent
-6. final validation always, subagent
+5. impl check       subagent
+6. final validation subagent
 7. PR               main session
 ```
 
@@ -44,7 +44,7 @@ Overrides while `/ship` drives:
 When the argument names an existing goal (a directory under `.agent/goals/`, or a ticket), start at the first stage that is not finished:
 
 - No requirement → stage 1. No plan → stage 2.
-- No commits on the goal's branch yet → stage 3 (stage 4 without `--critical`).
+- No commits on the goal's branch yet → stage 3.
 - Commits but no simplify pass yet → stage 4, dispatching the subagent for `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
 - Otherwise → the first check without a PASS report in `verification/` that is newer than the latest commit.
 
@@ -91,7 +91,7 @@ Every check writes its report to `.agent/goals/<goal>/verification/<n>-<check>.m
 
 The verdict is FAIL when any row fails or any problem is listed.
 
-### 3. Plan check — `--critical` only
+### 3. Plan check
 
 Brief: read the requirement and the plan. For every item under Requirements, Acceptance criteria and Constraints, find the plan step that delivers it and the Verification entry that proves it. Flag items with no step, steps that contradict an item, steps that serve no item or touch anything under Out of scope, and acceptance criteria with no Verification entry. Do not judge how good the design is; only whether it fits.
 
@@ -117,13 +117,13 @@ A worker's "validation passed" is a claim, not proof. After every build, fix and
 
 On a failure, dispatch a fix `worker` with the failing commands and the log path, then run the gate again. Gate rounds count against the Retries limit of the stage that triggered them. No check (stages 5–6) is dispatched while the gate is red: formatting, lint and unit failures are fixed here, not discovered by the final validation.
 
-### 5. Implementation check — `--critical` only
+### 5. Implementation check
 
 Brief: read the requirement, the plan, and the full diff from the base branch. For every item under Requirements, Acceptance criteria and Constraints, point to the code that delivers it. Flag items that are missing or only partly done, behavior that contradicts an item, and changes that are out of scope or not in the plan. Read the code; running it is the final validation's job.
 
 On FAIL: dispatch a fix `worker` with the report to fix the problems and rerun `/implement`'s Validate step, then run the check again.
 
-### 6. Final validation — always
+### 6. Final validation
 
 Brief: prove the change works by running it, not by reading it. On the goal's branch, run every Verification entry in the plan and every acceptance criterion in the requirement as an observable check, plus the project's formatter, linters, type checks, tests and builds. Record each command and the part of its output that proves the result. Anything that cannot be run here (needs hardware, a reboot, a deploy, a credential) is reported as NOT RUN with the reason; it is never assumed to pass.
 
@@ -142,7 +142,7 @@ Report to the user: what was built, the verdict of every check and how many roun
 ## Never
 
 - Never run unless the user explicitly invoked this skill.
-- Never skip the final validation, with or without `--critical`.
+- Never skip a check.
 - Never dispatch a check while the gate is red, or trust a worker's validation claim in place of the gate.
 - Never let a checker fix what it checks, or see the conversation that produced the work.
 - Never open a PR while a check is failing.
