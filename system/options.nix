@@ -201,6 +201,7 @@ with lib;
     hardware = {
       bluetooth = {
         enable = mkEnableOption "Bluetooth support";
+        reconnectAudio = mkEnableOption "connecting paired Bluetooth audio devices (headsets, speakers) after boot and after every resume";
       };
 
       nvidia = {
