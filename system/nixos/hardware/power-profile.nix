@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  pkgs-unstable,
   ...
 }:
 # Runtime CPU + GPU power profiles for the desktop (Ryzen on amd-pstate-epp,
@@ -15,6 +16,9 @@
 # The CLI also switches Hyprland between display.ecoMode without effects and
 # display.fullMode (Hyprland's power-display.lua) and shows a notification on
 # every change. `power-profile menu` (SUPER+ALT+E) is the rofi front end.
+#
+# Idle (idle.enable): hypridle (power-idle) turns the screen off after
+# idle.screenOffTimeout and starts swaylock (power-lock) before sleep.
 #
 # Journal: `journalctl -b -u 'power-profile-*'`.
 let
@@ -100,6 +104,37 @@ let
     ''
     + builtins.readFile ./power-profile/power-watch.sh;
   };
+
+  # Idle: hypridle turns the screen off (`power-profile idle screen-off`,
+  # which first applies a pending eco display mode) and locks before sleep.
+  # The lock waits for Hyprland to report "locked" (inhibit_sleep = 3).
+  # Journal: `journalctl --user -u power-idle -u power-lock`.
+  startLock = "${config.systemd.package}/bin/systemctl --user start power-lock.service";
+  idleConfig = pkgs.writeText "power-idle.conf" ''
+    general {
+      lock_cmd = ${startLock}
+      before_sleep_cmd = ${startLock}
+      after_sleep_cmd = ${lib.getExe cli} idle after-sleep
+      inhibit_sleep = 3
+    }
+
+    listener {
+      timeout = ${toString cfg.idle.screenOffTimeout}
+      on-timeout = ${lib.getExe cli} idle screen-off
+      on-resume = ${lib.getExe cli} idle screen-on
+    }
+  '';
+
+  # swaylock draws with the CPU: hyprlock's lock UI stalls after most resumes
+  # on NVIDIA 580 (hyprlock#1030).
+  lockCommand = lib.escapeShellArgs [
+    (lib.getExe pkgs.swaylock)
+    "--color"
+    "000000"
+    "--indicator-idle-visible"
+    "--ignore-empty-password"
+    "--show-failed-attempts"
+  ];
 in
 {
   config = lib.mkIf cfg.enable {
@@ -150,6 +185,13 @@ in
           ExecStart = "${lib.getExe ctl} resume";
         };
       };
+
+      # systemd >= 256 freezes user sessions before sleep; a Hyprland frozen
+      # inside the NVIDIA driver fails the suspend or wakes to a black
+      # screen. Suspend only: hibernate is unusable here (no swap).
+      systemd-suspend = lib.mkIf cfg.idle.enable {
+        environment.SYSTEMD_SLEEP_FREEZE_USER_SESSIONS = "false";
+      };
     };
 
     # No `subject.active` check, so a user service (the game watcher) can
@@ -183,5 +225,33 @@ in
         RestartSec = 5;
       };
     };
+
+    systemd.user.services.power-idle = lib.mkIf cfg.idle.enable {
+      description = "Screen off when idle, lock before sleep";
+      wantedBy = [ "graphical-session.target" ];
+      partOf = [ "graphical-session.target" ];
+      after = [ "graphical-session.target" ];
+      unitConfig.ConditionUser = username;
+      serviceConfig = {
+        ExecStart = "${lib.getExe pkgs-unstable.hypridle} --config ${idleConfig}";
+        Restart = "always";
+        RestartSec = 5;
+      };
+    };
+
+    # Its own unit, not a hypridle child: a hypridle restart must not kill
+    # the locker. A crashed locker restarts and takes the lock over
+    # (Hyprland misc.allow_session_lock_restore); unlocking exits 0.
+    systemd.user.services.power-lock = lib.mkIf cfg.idle.enable {
+      description = "Lock screen";
+      unitConfig.ConditionUser = username;
+      serviceConfig = {
+        ExecStart = lockCommand;
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+    };
+
+    security.pam.services.swaylock = lib.mkIf cfg.idle.enable { };
   };
 }
