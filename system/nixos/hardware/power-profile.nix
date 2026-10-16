@@ -109,13 +109,7 @@ let
   # which first applies a pending eco display mode) and locks before sleep.
   # The lock waits for Hyprland to report "locked" (inhibit_sleep = 3).
   # Journal: `journalctl --user -u power-idle -u power-lock`.
-  systemctl = "${config.systemd.package}/bin/systemctl";
-  startLock = "${systemctl} --user start power-lock.service";
-
-  # With fcitx5 running, the first key typed into the lock screen is lost
-  # (fcitx5 still holds the keyboard grab of the window focused before the
-  # lock). The lock stops it and starts it again after unlock.
-  lockStopsUnits = lib.optional config.features.desktop.sinhala.enable "fcitx5-daemon.service";
+  startLock = "${config.systemd.package}/bin/systemctl --user start power-lock.service";
   idleConfig = pkgs.writeText "power-idle.conf" ''
     general {
       lock_cmd = ${startLock}
@@ -252,9 +246,7 @@ in
       description = "Lock screen";
       unitConfig.ConditionUser = username;
       serviceConfig = {
-        ExecStartPre = map (unit: "-${systemctl} --user stop ${unit}") lockStopsUnits;
         ExecStart = lockCommand;
-        ExecStopPost = map (unit: "-${systemctl} --user --no-block start ${unit}") lockStopsUnits;
         Restart = "on-failure";
         RestartSec = 1;
       };
@@ -262,8 +254,18 @@ in
 
     security.pam.services.swaylock = lib.mkIf cfg.idle.enable { };
 
-    services.udev.extraRules = lib.concatMapStrings (device: ''
-      ACTION=="add", SUBSYSTEM=="pci", KERNEL=="${device}", ATTR{power/wakeup}="disabled"
-    '') cfg.idle.noWakeupDevices;
+    services.udev.extraRules =
+      lib.concatMapStrings (device: ''
+        ACTION=="add", SUBSYSTEM=="pci", KERNEL=="${device}", ATTR{power/wakeup}="disabled"
+      '') cfg.idle.noWakeupDevices
+      + lib.concatMapStrings (
+        id:
+        let
+          ids = lib.splitString ":" id;
+        in
+        ''
+          ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="${lib.elemAt ids 0}", ATTR{idProduct}=="${lib.elemAt ids 1}", ATTR{power/wakeup}="enabled"
+        ''
+      ) cfg.idle.wakeupUsbDevices;
   };
 }
