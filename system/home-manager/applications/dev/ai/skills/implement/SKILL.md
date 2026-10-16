@@ -88,7 +88,7 @@ Run `/simplify` as a **subagent**, for the same reason as the review: a fresh co
 
 Review the subagent's changes, then rerun Validation. Simplify is quality-only; its changes need no entries in the review file.
 
-When `/ship` is driving this skill, stop here: `/ship` runs its own checks and opens the PRs.
+When `/ship` is driving this skill, it runs these steps in separate subagents and stops here: `/ship` runs its own checks and opens the PRs.
 
 ### 8. Finish
 
