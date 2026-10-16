@@ -24,6 +24,7 @@ Four rules hold the whole skill up. Everything below is detail.
 2. plan             main session, with the user when a planning question is needed
 3. plan check       [--critical] subagent
 4. implement        subagents: build, review, fix, simplify
+   ↳ gate           main session, after every code-changing subagent
 5. impl check       [--critical] subagent
 6. final validation always, subagent
 7. PR               main session
@@ -100,12 +101,21 @@ On FAIL: revise the plan following the `/plan` skill (a requirement gap goes bac
 
 Run `/implement` as the chain below, one subagent at a time, each dispatched from this session. Every brief names the goal, where the requirement and plan live, the branch, the path to `/implement`'s skill file (`~/.agents/skills/implement/SKILL.md`), and the steps of it to follow — and tells the subagent not to dispatch subagents of its own. This session reads each subagent's report, not the diff.
 
-1. **Build** (`worker`): `/implement` steps 1–4 — load the goal, set up the workspace, implement, validate. Reports the branch, the commits and the validation results. If a plan step cannot be executed, it stops and reports the contradiction; take that to the user and back through `/plan` here, then dispatch a new build for the remaining steps.
+1. **Build** (`worker`): `/implement` steps 1–4 — load the goal, set up the workspace, implement, validate. Reports the branch, the commits, the validation results, and the project's mechanical check commands (formatter in check mode, linters, type checks, unit tests, build) for the gate. If a plan step cannot be executed, it stops and reports the contradiction; take that to the user and back through `/plan` here, then dispatch a new build for the remaining steps.
 2. **Review** (`code-reviewer`): `/implement` step 5 on the goal's diff. This session writes the findings to the review file, as step 5 describes.
 3. **Fix** (`worker`): `/implement` step 6 on that review file — fix each finding, update its entry, rerun Validate. Skip when the review found nothing.
 4. **Simplify** (`worker`): `/simplify` on the goal's changes, as in `/implement` step 7, then rerun Validate.
 
 A subagent that reports failing validation gets a fix `worker` with its report, under the Retries rules below.
+
+#### Gate — after every code-changing subagent
+
+A worker's "validation passed" is a claim, not proof. After every build, fix and simplify subagent — in stage 4 and in every fix round of stages 5 and 6 — run the gate in this session before dispatching anything else:
+
+- `git status --porcelain` is empty on the goal's branch.
+- Every mechanical check command from the build report passes. Run each with its output appended to `.agent/goals/<goal>/verification/gate.log` and read only exit codes here, so the output stays out of this session's context.
+
+On a failure, dispatch a fix `worker` with the failing commands and the log path, then run the gate again. Gate rounds count against the Retries limit of the stage that triggered them. No check (stages 5–6) is dispatched while the gate is red: formatting, lint and unit failures are fixed here, not discovered by the final validation.
 
 ### 5. Implementation check — `--critical` only
 
@@ -133,6 +143,7 @@ Report to the user: what was built, the verdict of every check and how many roun
 
 - Never run unless the user explicitly invoked this skill.
 - Never skip the final validation, with or without `--critical`.
+- Never dispatch a check while the gate is red, or trust a worker's validation claim in place of the gate.
 - Never let a checker fix what it checks, or see the conversation that produced the work.
 - Never open a PR while a check is failing.
 - Never claim a check passed that did not run.
