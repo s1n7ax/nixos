@@ -16,6 +16,7 @@
     ./bluetui.nix
     ./zellij.nix
     ./tmux.nix
+    ./read-aloud
 
     # dev modules that still carry non-package config (sessionVariables, programs.*, …)
     ./dev/javascript.nix
