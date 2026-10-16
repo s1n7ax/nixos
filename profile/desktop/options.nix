@@ -29,7 +29,10 @@
     };
 
     hardware = {
-      bluetooth.enable = true;
+      bluetooth = {
+        enable = true;
+        reconnectAudio = true;
+      };
       nvidia.enable = true;
       openrgb.enable = false;
       audio.enable = true;
