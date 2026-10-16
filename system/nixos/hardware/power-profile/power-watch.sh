@@ -22,7 +22,7 @@
 #   POWER_WATCH_INTERVAL          seconds between polls (default 2)
 #   POWER_WATCH_RETRY_SECS        wait before retrying a failed sync or
 #                                 inhibitor (default 30)
-#   POWER_WATCH_PROC              procfs root for the named apps (default /proc)
+#   POWER_WATCH_PROC              procfs root (default /proc)
 #   POWER_WATCH_STEAM_ROOTS       Steam roots, one per line (default
 #                                 ~/.local/share/Steam and ~/.steam/steam)
 #   POWER_PROFILE_GAMES_FILE      games file; default
@@ -47,18 +47,28 @@ else
   steam_roots=("${XDG_DATA_HOME:-$HOME/.local/share}/Steam" "$HOME/.steam/steam")
 fi
 
-# reaper's argv0 is its full path (…/ubuntu12_32/reaper).
-reaper_re='(^|/)reaper SteamLaunch AppId=[0-9]+( |$)'
-
 warn() {
   echo "power-watch: $*" >&2
 }
 
 # --- detection ---------------------------------------------------------------
-# Runs every poll, so it forks only pgrep (each exec costs ms of CPU).
+# Runs every poll, so it forks nothing: a pgrep per poll cost ~47 ms of CPU
+# with ~500 processes. Only processes started in the last new_polls polls are
+# read (a pid is new while it is above ns_last_pid of new_polls polls ago), so
+# a process that becomes a game later than that (a slow launcher's exec) is
+# missed. A pid found to be a game stays one while it lives.
+
+# Polls a process counts as new: 30 s at the default interval.
+new_polls=15
+
+shopt -s nullglob
 
 # Running games as sorted, unique keys: steam:<appid> / app:<name>.
 found=()
+# pid -> key of every game process seen and still running.
+declare -A game_pids=()
+# ns_last_pid at each of the last new_polls polls, oldest first.
+pid_marks=()
 
 add_found() {
   local key=$1 i n=${#found[@]}
@@ -72,42 +82,67 @@ add_found() {
   found=("${found[@]:0:i}" "$key" "${found[@]:i}")
 }
 
-# Every running Steam launch.
-scan_steam() {
-  local line
-  while IFS= read -r line; do
-    if [[ $line =~ AppId=([0-9]+) ]] &&
-      [[ $ignored_appids != *" ${BASH_REMATCH[1]} "* ]]; then
-      add_found "steam:${BASH_REMATCH[1]}"
-    fi
-  done < <(pgrep -u "$uid" -af "$reaper_re")
-}
-
-# Every running process from the named list. Reads /proc/<pid>/{comm,cmdline}
-# of this user's processes; comm is cut to 15 characters, so long names match
-# through argv0 only.
-scan_apps() {
-  local pid comm argv0 base name
-  while read -r pid; do
-    comm=
-    argv0=
-    read -r comm 2>/dev/null <"$proc/$pid/comm" || continue
-    IFS= read -r -d '' argv0 2>/dev/null <"$proc/$pid/cmdline" || true
-    base=${argv0##*/}
-    base=${base##*\\}
-    for name in "${apps[@]}"; do
-      case $comm in "$name" | ".$name-wrapped") add_found "app:$name" ;; esac
-      case $base in "$name" | ".$name-wrapped") add_found "app:$name" ;; esac
-    done
-  done < <(pgrep -u "$uid")
+# Sets key and succeeds when <pid> is one of this user's games: a Steam launch
+# (`reaper SteamLaunch AppId=<id>`) or a process from the named list (process
+# name, `.<name>-wrapped`, or argv0 basename; comm is cut to 15 characters, so
+# long names match through argv0 only). One key per process, Steam first.
+classify() {
+  local pid=$1 argv=() comm base name
+  key=
+  [ -O "$proc/$pid" ] || return 1
+  mapfile -d '' -t argv 2>/dev/null <"$proc/$pid/cmdline" || return 1
+  base=${argv[0]-}
+  base=${base##*/}
+  if [ "$base" = reaper ] && [ "${argv[1]-}" = SteamLaunch ] &&
+    [[ ${argv[2]-} =~ ^AppId=([0-9]+)$ ]]; then
+    [[ $ignored_appids != *" ${BASH_REMATCH[1]} "* ]] || return 1
+    key=steam:${BASH_REMATCH[1]}
+    return 0
+  fi
+  [ ${#apps[@]} -gt 0 ] || return 1
+  read -r comm 2>/dev/null <"$proc/$pid/comm" || return 1
+  base=${base##*\\}
+  for name in "${apps[@]}"; do
+    case $comm in "$name" | ".$name-wrapped") key=app:$name ;; esac
+    case $base in "$name" | ".$name-wrapped") key=app:$name ;; esac
+    [ -z "$key" ] || return 0
+  done
+  return 1
 }
 
 scan() {
-  found=()
-  scan_steam
-  if [ ${#apps[@]} -gt 0 ]; then
-    scan_apps
+  local floor=${pid_marks[0]:-0} last p pid
+  local -A now=()
+  if read -r last 2>/dev/null <"$proc/sys/kernel/ns_last_pid"; then
+    # The pid counter wrapped: every pid counts as new until the marks refill.
+    if [ "$last" -lt "$floor" ]; then
+      pid_marks=()
+      floor=0
+    fi
+    pid_marks+=("$last")
+    if [ ${#pid_marks[@]} -gt "$new_polls" ]; then
+      pid_marks=("${pid_marks[@]:1}")
+    fi
   fi
+  for pid in "${!game_pids[@]}"; do
+    if [ -e "$proc/$pid" ]; then
+      now[$pid]=${game_pids[$pid]}
+    fi
+  done
+  # This loop is most of a poll's CPU, so it only compares numbers.
+  for p in "$proc"/[0-9]*; do
+    pid=${p##*/}
+    ((pid > floor)) || continue
+    if [ -z "${now[$pid]+x}" ] && classify "$pid"; then
+      now[$pid]=$key
+    fi
+  done
+  found=()
+  game_pids=()
+  for pid in "${!now[@]}"; do
+    game_pids[$pid]=${now[$pid]}
+    add_found "${now[$pid]}"
+  done
 }
 
 # --- names -------------------------------------------------------------------
@@ -129,8 +164,11 @@ steam_libraries() {
 # Prints the name of Steam app <appid> from its appmanifest; "Steam app
 # <appid>" when there is none (non-Steam shortcuts, missing library).
 steam_name() {
-  local id=$1 dir name=
-  while IFS= read -r dir; do
+  local id=$1 dir dirs name=
+  # Read in full first: leaving a `< <(…)` loop early makes the writer's
+  # echo fail with "Broken pipe".
+  mapfile -t dirs < <(steam_libraries)
+  for dir in "${dirs[@]}"; do
     if [ -r "$dir/appmanifest_$id.acf" ]; then
       name=$(sed -n 's/^[[:space:]]*"name"[[:space:]]*"\(.*\)"[[:space:]]*$/\1/;T;p;q' \
         "$dir/appmanifest_$id.acf")
@@ -141,7 +179,7 @@ steam_name() {
         break
       fi
     fi
-  done < <(steam_libraries)
+  done
   printf '%s\n' "${name:-Steam app $id}"
 }
 
