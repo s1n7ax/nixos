@@ -43,9 +43,10 @@ When a step cannot be executed as written — the code contradicts it, a spike f
 Before review, prove the implementation works:
 
 - Run every check in the plan's Verification section — at least one per acceptance criterion.
-- Run the project's formatter, linters, type checks, tests and builds.
+- Run the project's formatter, linters, type checks, tests and builds — the same commands CI and the pre-commit hooks run. Find them in the CI config, pre-commit config, task runner (`Makefile`, `justfile`, `package.json` scripts, flake `checks`/`formatter`) and contributing docs; never guess a subset.
+- Run the formatter in its check mode (`--check`, `--fail-on-change`) after applying it, and commit what it changed. The working tree must be clean when Validate ends.
 
-Fix failures and rerun until green. Never move to review with failing checks, and never claim a check passed that was not run.
+Fix failures and rerun until green. Never move to review with failing checks, and never claim a check passed that was not run. Report each command with its exit code.
 
 ### 5. Review
 
@@ -88,7 +89,7 @@ Run `/simplify` as a **subagent**, for the same reason as the review: a fresh co
 
 Review the subagent's changes, then rerun Validation. Simplify is quality-only; its changes need no entries in the review file.
 
-When `/ship` is driving this skill, stop here: `/ship` runs its own checks and opens the PRs.
+When `/ship` is driving this skill, it runs these steps in separate subagents and stops here: `/ship` runs its own checks and opens the PRs.
 
 ### 8. Finish
 

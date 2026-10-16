@@ -139,6 +139,11 @@ in
           master = {
             new_status = "slave";
           };
+        }
+        # A crashed lock screen (power-lock) restarts and takes the lock
+        # over instead of leaving the "lockscreen died" screen.
+        // lib.optionalAttrs (powerProfile.enable && powerProfile.idle.enable) {
+          misc.allow_session_lock_restore = true;
         };
 
         env = [

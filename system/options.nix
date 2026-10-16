@@ -28,6 +28,11 @@ with lib;
         default = pkgs.hyprland;
         description = "Package for the window manager.";
       };
+      portalPackage = mkOption {
+        type = types.package;
+        default = pkgs.xdg-desktop-portal-hyprland;
+        description = "xdg-desktop-portal backend for the window manager; take it from the same nixpkgs as `package`.";
+      };
     };
 
     cursor = {
@@ -201,6 +206,7 @@ with lib;
     hardware = {
       bluetooth = {
         enable = mkEnableOption "Bluetooth support";
+        reconnectAudio = mkEnableOption "connecting paired Bluetooth audio devices (headsets, speakers) after boot and after every resume";
       };
 
       nvidia = {
@@ -309,6 +315,32 @@ with lib;
             default = [ ];
             example = [ 228980 ];
             description = "Steam AppIds whose launches never count as a game (e.g. 228980, Steamworks Common Redistributables, if it lingers after a first Proton launch).";
+          };
+        };
+
+        # Screen-off and lock (the power-idle and power-lock user units).
+        idle = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Turn the screen off when idle and lock the session before suspend (hypridle + swaylock). Works in every profile, Disabled (stock) included.";
+          };
+          screenOffTimeout = mkOption {
+            type = types.ints.positive;
+            default = 120;
+            description = "Seconds without keyboard/mouse input before the screen turns off. A running game (idle inhibitor) holds it off.";
+          };
+          noWakeupDevices = mkOption {
+            type = types.listOf (types.strMatching "[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\\.[0-7]");
+            default = [ ];
+            example = [ "0000:00:01.1" ];
+            description = "PCI devices (sysfs names) that must not wake the PC from suspend, e.g. a PCIe root port that wakes it seconds after every suspend. Keyboard and mouse wake through their USB controller and stay on.";
+          };
+          wakeupUsbDevices = mkOption {
+            type = types.listOf (types.strMatching "[0-9a-f]{4}:[0-9a-f]{4}");
+            default = [ ];
+            example = [ "046d:c52b" ];
+            description = "USB devices (vendor:product) that may wake the PC from suspend, e.g. a wireless mouse receiver. The kernel allows only keyboards by default.";
           };
         };
       };

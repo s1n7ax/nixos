@@ -139,6 +139,10 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    # qmd (github.com/tobi/qmd) isn't in nixpkgs; pi-memory's memory_search
+    # needs it on PATH. No nixpkgs follows: its bun node_modules FOD hash is
+    # pinned against its own lock.
+    qmd.url = "github:tobi/qmd";
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";

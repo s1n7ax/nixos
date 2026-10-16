@@ -3,6 +3,7 @@
   settings = {
     network.backend = "networkmanager";
     wm.package = lib.mkForce pkgs-unstable.hyprland;
+    wm.portalPackage = pkgs-unstable.xdg-desktop-portal-hyprland;
   };
 
   features = {
@@ -29,13 +30,24 @@
     };
 
     hardware = {
-      bluetooth.enable = true;
+      bluetooth = {
+        enable = true;
+        reconnectAudio = true;
+      };
       nvidia.enable = true;
       openrgb.enable = false;
       audio.enable = true;
       coral.enable = false;
       firmware.enable = true;
-      power-profile.enable = true;
+      power-profile = {
+        enable = true;
+        # GPP0, the CPU's PCIe port 00:01.1, wakes this Gigabyte B550 board
+        # ~6 s after every suspend (one PME event per suspend).
+        idle.noWakeupDevices = [ "0000:00:01.1" ];
+        # Logitech Unifying receiver (MX Master 3): the kernel lets only
+        # keyboards wake the PC.
+        idle.wakeupUsbDevices = [ "046d:c52b" ];
+      };
     };
 
     virtualization = {
