@@ -21,12 +21,12 @@ Three rules hold the whole skill up. Everything below is detail.
 Resolve the `<goal>`:
 
 - The user gave a goal name or path → use it.
-- The current branch name starts with a goal directory name under `.agent/goals/` → use that goal.
-- Exactly one goal under `.agent/goals/` has a plan → use it.
+- The current branch name starts with a goal directory name under `.goals/` → use that goal.
+- Exactly one goal under `.goals/` has a plan → use it.
 - Several candidates → ask which one, following the `questions` skill, and wait.
 - None → tell the user to run `/requirement` and `/plan` first, and stop.
 
-Read the requirement and the plan: `.agent/goals/<goal>/requirement/requirement.md` and `.agent/goals/<goal>/plan/plan.md`, or — when `/requirement` and `/plan` wrote them to a project ticket — the ticket. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
+Read the requirement and the plan: `.goals/<goal>/requirement/requirement.md` and `.goals/<goal>/plan/plan.md`, or — when `/requirement` and `/plan` wrote them to a project ticket — the ticket. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
 
 ### 2. Set up the workspace
 
@@ -34,7 +34,7 @@ Follow the plan's branch instructions. With multiple approaches, the plan names 
 
 ### 3. Implement
 
-Execute the plan's Changes in order, across every project listed, respecting the dependencies the steps declare. One step = one change; commit per logical change. With several approaches: implement the shared Changes first, then each approach in full on its branch.
+Execute the plan's Changes in order, across every project listed, respecting the dependencies the steps declare. One step = one change; commit per logical change. Stage files by path; never commit anything under `.goals/` — it is local working state, not part of the change. If `git status` lists `.goals/`, create `.goals/.gitignore` containing `*` instead of committing it. With several approaches: implement the shared Changes first, then each approach in full on its branch.
 
 When a step cannot be executed as written — the code contradicts it, a spike finding no longer holds, a dependency is missing — stop that line of work. A wrong plan is not permission to redesign: name the contradiction, tell the user the plan needs another `/plan` pass, and wait. Steps already completed stay committed; do not roll them back unless the user asks.
 
@@ -44,7 +44,7 @@ Before review, prove the implementation works:
 
 - Run every check in the plan's Verification section — at least one per acceptance criterion.
 - Run the project's formatter, linters, type checks, tests and builds — the same commands CI and the pre-commit hooks run. Find them in the CI config, pre-commit config, task runner (`Makefile`, `justfile`, `package.json` scripts, flake `checks`/`formatter`) and contributing docs; never guess a subset.
-- Run the formatter in its check mode (`--check`, `--fail-on-change`) after applying it, and commit what it changed. The working tree must be clean when Validate ends.
+- Run the formatter in its check mode (`--check`, `--fail-on-change`) after applying it, and commit what it changed. The working tree must be clean when Validate ends (`.goals/` is ignored, never committed).
 
 Fix failures and rerun until green. Never move to review with failing checks, and never claim a check passed that was not run. Report each command with its exit code.
 
@@ -52,7 +52,7 @@ Fix failures and rerun until green. Never move to review with failing checks, an
 
 Run the review as a **subagent** — a fresh context reviewing the diff. Where the environment provides named subagents (pi's `subagent` tool, Claude Code's Agent tool), dispatch the `code-reviewer` agent with the changes as the target, defaulting to `medium` effort unless the user asked for another level. The subagent reviews; it never fixes. If the environment has no subagent capability, run the review in this session and say so, per the code-review skill's own fallback rule.
 
-Write the findings to `.agent/goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds.
+Write the findings to `.goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # Review <n> — <goal>
