@@ -91,7 +91,6 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.gnused
-      pkgs.procps
       config.systemd.package
       cli
     ];
