@@ -120,6 +120,18 @@ mac-rebuild   # darwin-rebuild switch --flake ~/nixos#macbook
 mac-clean     # garbage-collect and optimise the store
 ```
 
+### Home Assistant: local text-to-speech
+
+The server runs a Wyoming Piper container (`features.homelab.wyoming-piper`) on
+`home-assistant-network`, with no port published on the host. Home Assistant's
+config is not declarative here, so connect it once by hand:
+
+1. Settings → Devices & services → Add integration → **Wyoming Protocol**.
+2. Host `wyoming-piper`, port `10200`.
+
+Automations can then speak with `tts.speak`, using the `piper` TTS entity as
+the target.
+
 ### Additional Commands
 
 ```shell
