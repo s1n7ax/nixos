@@ -41,7 +41,7 @@ Overrides while `/ship` drives:
 
 ### Resuming
 
-When the argument names an existing goal (a directory under `.agent/goals/`, or a ticket), start at the first stage that is not finished:
+When the argument names an existing goal (a directory under `.goals/`, or a ticket), start at the first stage that is not finished:
 
 - No requirement → stage 1. No plan → stage 2.
 - No commits on the goal's branch yet → stage 3 (stage 4 without `--critical`).
@@ -66,7 +66,7 @@ Stage 4's subagents (build, fix, simplify) are dispatched the same way with the 
 | impl check       | `verifier`      | report only   |
 | final validation | `verifier`      | report only   |
 
-Every check writes its report to `.agent/goals/<goal>/verification/<n>-<check>.md` (`<check>` is `plan-check`, `impl-check` or `final-validation`), where `<n>` is one higher than the highest number already in that directory. Each run gets its own file; earlier files are never edited.
+Every check writes its report to `.goals/<goal>/verification/<n>-<check>.md` (`<check>` is `plan-check`, `impl-check` or `final-validation`), where `<n>` is one higher than the highest number already in that directory. Each run gets its own file; earlier files are never edited. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # <Check> <n> — <goal>
@@ -113,7 +113,7 @@ A subagent that reports failing validation gets a fix `worker` with its report, 
 A worker's "validation passed" is a claim, not proof. After every build, fix and simplify subagent — in stage 4 and in every fix round of stages 5 and 6 — run the gate in this session before dispatching anything else:
 
 - `git status --porcelain` is empty on the goal's branch.
-- Every mechanical check command from the build report passes. Run each with its output appended to `.agent/goals/<goal>/verification/gate.log` and read only exit codes here, so the output stays out of this session's context.
+- Every mechanical check command from the build report passes. Run each with its output appended to `.goals/<goal>/verification/gate.log` and read only exit codes here, so the output stays out of this session's context.
 
 On a failure, dispatch a fix `worker` with the failing commands and the log path, then run the gate again. Gate rounds count against the Retries limit of the stage that triggered them. No check (stages 5–6) is dispatched while the gate is red: formatting, lint and unit failures are fixed here, not discovered by the final validation.
 

@@ -96,7 +96,7 @@ Scoring and shaping a question is the `questions` skill's job — read it before
 
 ## Running the session
 
-1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.agent/goals/*/requirement/requirement.md`, where `/requirement` writes it. One found → use it. Several → picking which one is the first question. None → ask for a path or ticket, or tell the user to run `/requirement` first, and stop until there is one. Its `<goal>` — used in branch names and the plan's path — is its directory name under `.agent/goals/`, or for a ticket a short kebab-case description of what the requirement achieves (e.g. `validate-requests`).
+1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.goals/*/requirement/requirement.md`, where `/requirement` writes it. One found → use it. Several → picking which one is the first question. None → ask for a path or ticket, or tell the user to run `/requirement` first, and stop until there is one. Its `<goal>` — used in branch names and the plan's path — is its directory name under `.goals/`, or for a ticket a short kebab-case description of what the requirement achieves (e.g. `validate-requests`).
 2. **Analyze the code before asking anything.** Explore every project the requirement touches, and spike any claim that decides whether an approach is viable; claims that matter only inside one approach wait until it is chosen or kept. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
 3. **Ask breadth-first.** Settle the big forks and stretches in dependency order before any detail; detail on an approach that later gets rejected is wasted.
 4. **Track decisions visibly.** After each answer, briefly note what is now decided and what has been ruled out.
@@ -117,7 +117,7 @@ When the user keeps more than one option at a fork, the plan carries each kept o
 
 First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Print the summary as regular output, never inside the ask-question tool; the tool's question is only a short "Is this summary correct?". Get a "yes, that's it" before writing anything down. Any change after the user confirmed the summary needs a fresh summary and confirmation.
 
-The plan lives next to the requirement it implements: a local requirement doc gets its plan at `.agent/goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket.
+The plan lives next to the requirement it implements: a local requirement doc gets its plan at `.goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # Plan: <title>
