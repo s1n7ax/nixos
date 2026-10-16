@@ -109,7 +109,13 @@ let
   # which first applies a pending eco display mode) and locks before sleep.
   # The lock waits for Hyprland to report "locked" (inhibit_sleep = 3).
   # Journal: `journalctl --user -u power-idle -u power-lock`.
-  startLock = "${config.systemd.package}/bin/systemctl --user start power-lock.service";
+  systemctl = "${config.systemd.package}/bin/systemctl";
+  startLock = "${systemctl} --user start power-lock.service";
+
+  # With fcitx5 running, the first key typed into the lock screen is lost
+  # (fcitx5 still holds the keyboard grab of the window focused before the
+  # lock). The lock stops it and starts it again after unlock.
+  lockStopsUnits = lib.optional config.features.desktop.sinhala.enable "fcitx5-daemon.service";
   idleConfig = pkgs.writeText "power-idle.conf" ''
     general {
       lock_cmd = ${startLock}
@@ -246,7 +252,9 @@ in
       description = "Lock screen";
       unitConfig.ConditionUser = username;
       serviceConfig = {
+        ExecStartPre = map (unit: "-${systemctl} --user stop ${unit}") lockStopsUnits;
         ExecStart = lockCommand;
+        ExecStopPost = map (unit: "-${systemctl} --user --no-block start ${unit}") lockStopsUnits;
         Restart = "on-failure";
         RestartSec = 1;
       };
