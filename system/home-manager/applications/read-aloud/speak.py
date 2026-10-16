@@ -6,6 +6,8 @@ a time: a new read stops the one in progress, and `speak --stop` stops it.
 """
 
 import argparse
+import contextlib
+import fcntl
 import json
 import os
 import re
@@ -70,29 +72,127 @@ def to_prose(text):
     return "\n".join(out)
 
 
-def read_pgid(path):
-    """Return the process group recorded in `path`, or None."""
+SIGNALS = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
+
+
+@contextlib.contextmanager
+def locked():
+    """Hold the read lock with quit signals deferred until it is released.
+
+    Every change to the pid file happens under this lock, so starting,
+    stopping and finishing reads never interleave.
+    """
+    path = pid_file() + ".lock"
+    previous = signal.pthread_sigmask(signal.SIG_BLOCK, SIGNALS)
+    try:
+        with open(path, "a") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            yield
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, previous)
+
+
+def start_time(pid):
+    """Return when process `pid` started, or None when it is gone.
+
+    Uses /proc on Linux and `ps` elsewhere (macOS). Together with the pid it
+    names one process, so a reused pid is not mistaken for it.
+    """
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            return f.read().rsplit(")", 1)[1].split()[19]
+    except FileNotFoundError:
+        if os.path.isdir("/proc/self"):
+            return None
+    except (OSError, IndexError):
+        return None
+    try:
+        out = subprocess.run(
+            ["ps", "-o", "lstart=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+    except OSError:
+        return None
+    return out or None
+
+
+def record(pgid, pids):
+    """Return the pid file contents for a read in group `pgid`."""
+    return {"pgid": pgid, "procs": [[pid, start_time(pid)] for pid in pids]}
+
+
+def read_record(path):
+    """Return the read recorded in `path`, or None."""
     try:
         with open(path) as f:
-            return int(f.read().strip())
-    except (OSError, ValueError):
+            data = json.load(f)
+        return {"pgid": int(data["pgid"]), "procs": data["procs"]}
+    except (OSError, ValueError, TypeError, KeyError):
         return None
 
 
-def stop():
-    """Stop the running read, if there is one."""
-    path = pid_file()
-    pgid = read_pgid(path)
-    if pgid is None:
+def write_record(path, data):
+    """Record the running read in `path`."""
+    with open(path, "w") as f:
+        json.dump(data, f)
+
+
+def remove_record(path, pgid):
+    """Delete `path` if it still names the read in group `pgid`."""
+    current = read_record(path)
+    if current is None or current["pgid"] != pgid:
         return
-    try:
-        os.killpg(pgid, signal.SIGTERM)
-    except (ProcessLookupError, PermissionError):
-        pass
     try:
         os.remove(path)
     except FileNotFoundError:
         pass
+
+
+def alive(data):
+    """Return whether a process of the recorded read still runs in its group.
+
+    A process counts only when its pid, start time and group all match the
+    record, so a group id reused by an unrelated program is never matched.
+    """
+    for pid, started in data["procs"]:
+        if started is None or start_time(pid) != started:
+            continue
+        try:
+            if os.getpgid(pid) == data["pgid"]:
+                return True
+        except ProcessLookupError:
+            continue
+    return False
+
+
+def kill(data):
+    """Send SIGTERM to the recorded read's group if it is still that read."""
+    if not alive(data):
+        return
+    try:
+        os.killpg(data["pgid"], signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def stop_locked():
+    """Stop the running read, if there is one; the caller holds the lock."""
+    path = pid_file()
+    data = read_record(path)
+    if data is not None:
+        kill(data)
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+
+
+def stop():
+    """Stop the running read, if there is one."""
+    with locked():
+        stop_locked()
 
 
 def pipeline():
@@ -101,14 +201,14 @@ def pipeline():
     return json.loads(override) if override else PIPELINE
 
 
-def speak(text):
-    """Speak `text`, blocking until it ends or another read stops it.
+def unblock_signals():
+    """Let a spawned process receive the quit signals `locked` defers."""
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, SIGNALS)
 
-    Returns the exit status: 0 when the read finished or was stopped.
-    """
-    path = pid_file()
+
+def spawn(commands):
+    """Start `commands` as one piped process group and return the processes."""
     procs = []
-    commands = pipeline()
     for index, argv in enumerate(commands):
         last = index == len(commands) - 1
         procs.append(
@@ -117,25 +217,36 @@ def speak(text):
                 stdin=procs[-1].stdout if procs else subprocess.PIPE,
                 stdout=None if last else subprocess.PIPE,
                 process_group=procs[0].pid if procs else 0,
+                preexec_fn=unblock_signals,
             )
         )
-        if index == 0:
-            pgid = procs[0].pid
-            with open(path, "w") as f:
-                f.write(f"{pgid}\n")
-        else:
+        if index > 0:
             procs[-2].stdout.close()
+    return procs
 
-    def on_signal(signum, _frame):
-        """Stop this read's processes when speak itself is told to quit."""
-        try:
-            os.killpg(pgid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        sys.exit(128 + signum)
 
-    for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
-        signal.signal(signum, on_signal)
+def speak(text):
+    """Speak `text`, blocking until it ends or another read stops it.
+
+    Stops the read in progress first. Returns the exit status: 0 when the
+    read finished or was stopped.
+    """
+    path = pid_file()
+    with locked():
+        stop_locked()
+        procs = spawn(pipeline())
+        mine = record(procs[0].pid, [proc.pid for proc in procs])
+        write_record(path, mine)
+
+        def on_signal(signum, _frame):
+            """Stop this read's processes when speak itself is told to quit."""
+            with locked():
+                kill(mine)
+                remove_record(path, mine["pgid"])
+            sys.exit(128 + signum)
+
+        for signum in SIGNALS:
+            signal.signal(signum, on_signal)
 
     try:
         procs[0].stdin.write(text.encode())
@@ -144,9 +255,11 @@ def speak(text):
         pass
     codes = [proc.wait() for proc in procs]
 
-    if read_pgid(path) != pgid:
-        return 0
-    os.remove(path)
+    with locked():
+        current = read_record(path)
+        if current is None or current["pgid"] != mine["pgid"]:
+            return 0
+        remove_record(path, mine["pgid"])
     return 0 if all(code == 0 for code in codes) else 1
 
 
@@ -176,8 +289,8 @@ def main():
         sys.stdout.write(prose)
         return 0
 
-    stop()
     if not prose.strip():
+        stop()
         return 0
     return speak(prose)
 
