@@ -11,8 +11,8 @@ with lib;
   # flatpak needs xdg.portal.enable = true
   xdg.portal = mkIf config.features.desktop.xdg.enable {
     enable = true;
+    # programs.hyprland adds xdg-desktop-portal-hyprland, built for its Hyprland.
     extraPortals = with pkgs; [
-      xdg-desktop-portal-hyprland
       xdg-desktop-portal-gtk
       kdePackages.xdg-desktop-portal-kde
     ];

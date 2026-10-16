@@ -28,6 +28,11 @@ with lib;
         default = pkgs.hyprland;
         description = "Package for the window manager.";
       };
+      portalPackage = mkOption {
+        type = types.package;
+        default = pkgs.xdg-desktop-portal-hyprland;
+        description = "xdg-desktop-portal backend for the window manager; take it from the same nixpkgs as `package`.";
+      };
     };
 
     cursor = {
@@ -330,6 +335,12 @@ with lib;
             default = [ ];
             example = [ "0000:00:01.1" ];
             description = "PCI devices (sysfs names) that must not wake the PC from suspend, e.g. a PCIe root port that wakes it seconds after every suspend. Keyboard and mouse wake through their USB controller and stay on.";
+          };
+          wakeupUsbDevices = mkOption {
+            type = types.listOf (types.strMatching "[0-9a-f]{4}:[0-9a-f]{4}");
+            default = [ ];
+            example = [ "046d:c52b" ];
+            description = "USB devices (vendor:product) that may wake the PC from suspend, e.g. a wireless mouse receiver. The kernel allows only keyboards by default.";
           };
         };
       };
