@@ -6,7 +6,10 @@
 }:
 let
   cfg = config.features.readAloud;
-  piper = import ../../shared/piper.nix { inherit pkgs; };
+  piper = import ../../shared/piper.nix {
+    inherit pkgs;
+    inherit (cfg) voice speaker;
+  };
   synth = lib.concatStringsSep " " (piper.synth cfg.rate);
   play = lib.concatStringsSep " " piper.play;
 in
@@ -33,8 +36,8 @@ in
       modules.piper = ''
         GenericExecuteSynth "printf %s \'$DATA\' | ${synth} | ${play}"
         GenericCmdDependency "${piper.bin}"
-        AddVoice "en" "MALE1" "lessac"
-        DefaultVoice "lessac"
+        AddVoice "en" "MALE1" "${piper.name}"
+        DefaultVoice "${piper.name}"
       '';
     };
   };

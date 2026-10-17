@@ -6,7 +6,10 @@
 }:
 let
   cfg = config.features.readAloud;
-  piper = import ../../../shared/piper.nix { inherit pkgs; };
+  piper = import ../../../shared/piper.nix {
+    inherit pkgs;
+    inherit (cfg) voice speaker;
+  };
 
   pipeline =
     if pkgs.stdenv.isDarwin then

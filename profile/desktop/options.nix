@@ -96,7 +96,11 @@
       enable = true;
     };
 
-    readAloud.enable = true;
+    readAloud = {
+      enable = true;
+      voice = "en_GB-semaine-medium";
+      speaker = 0;
+    };
 
     tools = {
       downloading.enable = true;
