@@ -96,6 +96,11 @@
       enable = true;
     };
 
+    readAloud = {
+      enable = true;
+      voice = "en_US-amy-medium";
+    };
+
     tools = {
       downloading.enable = true;
     };

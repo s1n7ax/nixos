@@ -1,4 +1,6 @@
 {
+  config,
+  lib,
   pkgs,
   inputs,
   pkgs-unstable,
@@ -68,6 +70,16 @@ in
 
   # Auto-hide the Dock.
   system.defaults.dock.autohide = true;
+
+  system.defaults.CustomSystemPreferences."/Library/Preferences/org.mozilla.firefox" =
+    lib.mkIf config.home-manager.users.${username}.features.readAloud.enable
+      {
+        EnterprisePoliciesEnabled = true;
+        ExtensionSettings."{ddc62400-f22d-4dd3-8b4a-05837de53c2e}" = {
+          install_url = "https://addons.mozilla.org/firefox/downloads/latest/read-aloud/latest.xpi";
+          installation_mode = "force_installed";
+        };
+      };
 
   # Window manager + hotkeys: programs.aerospace via home-manager.
   services.skhd.enable = false;

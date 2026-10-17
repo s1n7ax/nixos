@@ -399,6 +399,25 @@ with lib;
       };
     };
 
+    readAloud = {
+      enable = mkEnableOption "local read-aloud text-to-speech";
+      rate = mkOption {
+        type = types.float;
+        default = 1.0;
+        description = "Read-aloud speech speed; higher is faster. Piper gets a length scale of 1 / rate, macOS `say` gets round(175 * rate) words per minute.";
+      };
+      voice = mkOption {
+        type = types.str;
+        default = "en_US-lessac-medium";
+        description = "Piper voice, as `<locale>-<name>-<quality>`; must be listed in system/shared/piper.nix.";
+      };
+      speaker = mkOption {
+        type = types.nullOr types.ints.unsigned;
+        default = null;
+        description = "Speaker id for multi-speaker Piper voices; null uses the voice's default.";
+      };
+    };
+
     homelab = {
       wireguard = {
         enable = mkEnableOption "Wireguard VPN";
@@ -410,6 +429,10 @@ with lib;
 
       home-assistant = {
         enable = mkEnableOption "Home Assistant";
+      };
+
+      wyoming-piper = {
+        enable = mkEnableOption "the Wyoming Piper local text-to-speech server for Home Assistant";
       };
 
       mqtt = {
