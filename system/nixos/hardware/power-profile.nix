@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   pkgs,
   pkgs-unstable,
@@ -18,7 +19,12 @@
 # every change. `power-profile menu` (SUPER+ALT+E) is the rofi front end.
 #
 # Idle (idle.enable): hypridle (power-idle) turns the screen off after
-# idle.screenOffTimeout and starts swaylock (power-lock) before sleep.
+# idle.screenOffTimeout, suspends after idle.suspendTimeout unless something
+# is busy (`power-profile can-sleep`), and starts swaylock (power-lock)
+# before sleep. Busy signals: Stay awake, a game, CPU/network load (sampled
+# by power-watch), SSH sessions, agent sessions on the host and in
+# idle.busy.statusVm (virtiofs status share), a third-party logind sleep
+# block, playing audio. The rofi menu adds Suspend now and Stay awake.
 #
 # Journal: `journalctl -b -u 'power-profile-*'`.
 let
@@ -52,6 +58,23 @@ let
     POWER_PROFILE_DISPLAY_ECO_MODE = cfg.display.ecoMode;
     POWER_PROFILE_DISPLAY_FULL_MODE = cfg.display.fullMode;
     POWER_PROFILE_HYPRCTL = lib.optionalString config.programs.hyprland.enable "${config.programs.hyprland.package}/bin/hyprctl";
+  }
+  // lib.optionalAttrs cfg.idle.enable {
+    POWER_PROFILE_IDLE = "1";
+    POWER_PROFILE_SCREEN_OFF_TIMEOUT = toString cfg.idle.screenOffTimeout;
+    POWER_PROFILE_SUSPEND_TIMEOUT = lib.optionalString (cfg.idle.suspendTimeout != null) (
+      toString cfg.idle.suspendTimeout
+    );
+    POWER_PROFILE_BUSY_CPU_CENTI = toString (builtins.floor (busy.cpuCores * 100 + 0.5));
+    POWER_PROFILE_BUSY_NET_KIBPS = toString busy.networkKiBps;
+    POWER_PROFILE_BUSY_AGENTS = agentRegex;
+    POWER_PROFILE_SSH_PORTS = toString sshPorts;
+    POWER_PROFILE_AUDIO_IGNORE = lib.concatStringsSep "\n" busy.audioIgnore;
+  }
+  // lib.optionalAttrs vmStatus {
+    POWER_PROFILE_VM_NAME = busy.statusVm;
+    POWER_PROFILE_VM_UNIT = "microvm@${busy.statusVm}.service";
+    POWER_PROFILE_VM_STATUS_FILE = "${vmStatusDir}/status";
   };
 
   exportCliEnv = lib.concatStrings (
@@ -75,6 +98,11 @@ let
       config.systemd.package
       # notify-send; rofi (menu) comes from the user's PATH.
       pkgs.libnotify
+      # Busy check: pgrep, ss, pw-dump, jq.
+      pkgs.procps
+      pkgs.iproute2
+      pipewire
+      pkgs.jq
     ];
     text = exportEnv + exportCliEnv + builtins.readFile ./power-profile/power-profile.sh;
   };
@@ -87,6 +115,81 @@ let
   ];
 
   unitRegex = "^power-profile-apply@(${lib.concatStringsSep "|" cfg.profiles})\\.service$";
+
+  # --- Busy check (`power-profile can-sleep`) --------------------------------
+
+  busy = cfg.idle.busy;
+  pipewire =
+    if config.services.pipewire.enable then config.services.pipewire.package else pkgs.pipewire;
+
+  # Agent process names (comm) as an extended regex; pgrep -x anchors it.
+  agentRegex = lib.concatMapStringsSep "|" lib.escapeRegex busy.agentProcesses;
+
+  # The dev VM imports this module too, without microvm.nix's host options.
+  hasMicrovmHost = options ? microvm && options.microvm ? vms;
+  microvmHost = hasMicrovmHost && config.features.virtualization.microvm.enable;
+
+  # SSH into the desktop (sshd) or into a VM (a host port forwarded to the
+  # guest's port 22).
+  vmSshPorts = lib.optionals microvmHost (
+    lib.concatMap (
+      vm:
+      lib.optionals (vm.config != null) (
+        map (p: p.host.port) (
+          lib.filter (p: p.from == "host" && p.guest.port == 22) vm.config.config.microvm.forwardPorts
+        )
+      )
+    ) (lib.attrValues config.microvm.vms)
+  );
+  sshPorts = lib.unique (
+    lib.optionals config.services.openssh.enable config.services.openssh.ports ++ vmSshPorts
+  );
+
+  # The VM reports its agent sessions through a virtiofs share: guest
+  # /run/host-status, host vmStatusDir, a small tmpfs so the VM cannot fill
+  # the host's /run.
+  vmStatus = cfg.idle.enable && busy.statusVm != null && microvmHost;
+  vmStatusDir = "/run/${busy.statusVm}-status";
+  vmVirtiofsd = "microvm-virtiofsd@${busy.statusVm}.service";
+
+  guestStatusModule =
+    { pkgs, ... }:
+    let
+      writer = pkgs.writeShellApplication {
+        name = "host-status";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.procps
+        ];
+        text = ''
+          export HOST_STATUS_AGENTS=${lib.escapeShellArg agentRegex}
+        ''
+        + builtins.readFile ./power-profile/host-status.sh;
+      };
+    in
+    {
+      microvm.shares = [
+        {
+          proto = "virtiofs";
+          tag = "host-status";
+          source = vmStatusDir;
+          mountPoint = "/run/host-status";
+          posixAcl = false;
+        }
+      ];
+      # A share that fails to mount must not stop the VM from booting.
+      fileSystems."/run/host-status".options = [ "nofail" ];
+      systemd.services.host-status = {
+        description = "Report agent sessions to the host";
+        wantedBy = [ "multi-user.target" ];
+        unitConfig.RequiresMountsFor = "/run/host-status";
+        serviceConfig = {
+          ExecStart = lib.getExe writer;
+          Restart = "always";
+          RestartSec = 5;
+        };
+      };
+    };
 
   # Game watcher: feeds the games file + `power-profile sync` and holds an
   # idle inhibitor while a game runs. Journal: `journalctl --user -u power-watch`.
@@ -101,6 +204,7 @@ let
     text = ''
       export POWER_WATCH_APPS=${lib.escapeShellArg (lib.concatStringsSep "\n" cfg.games.apps)}
       export POWER_WATCH_IGNORED_APPIDS=${lib.escapeShellArg (toString cfg.games.ignoredSteamAppIds)}
+      export POWER_WATCH_LOAD_WINDOW=${toString busy.window}
     ''
     + builtins.readFile ./power-profile/power-watch.sh;
   };
@@ -110,20 +214,34 @@ let
   # The lock waits for Hyprland to report "locked" (inhibit_sleep = 3).
   # Journal: `journalctl --user -u power-idle -u power-lock`.
   startLock = "${config.systemd.package}/bin/systemctl --user start power-lock.service";
-  idleConfig = pkgs.writeText "power-idle.conf" ''
-    general {
-      lock_cmd = ${startLock}
-      before_sleep_cmd = ${startLock}
-      after_sleep_cmd = ${lib.getExe cli} idle after-sleep
-      inhibit_sleep = 3
-    }
+  idleConfig = pkgs.writeText "power-idle.conf" (
+    ''
+      general {
+        lock_cmd = ${startLock}
+        before_sleep_cmd = ${startLock}
+        after_sleep_cmd = ${lib.getExe cli} idle after-sleep
+        inhibit_sleep = 3
+      }
 
-    listener {
-      timeout = ${toString cfg.idle.screenOffTimeout}
-      on-timeout = ${lib.getExe cli} idle screen-off
-      on-resume = ${lib.getExe cli} idle screen-on
-    }
-  '';
+      listener {
+        timeout = ${toString cfg.idle.screenOffTimeout}
+        on-timeout = ${lib.getExe cli} idle screen-off
+        on-resume = ${lib.getExe cli} idle screen-on
+      }
+    ''
+    # Suspends only when nothing is busy, else checks again every busy.retry
+    # seconds until input arrives. hypridle runs condition_cmd inside its
+    # event loop, so can-sleep only reads pre-sampled load.
+    + lib.optionalString (cfg.idle.suspendTimeout != null) ''
+
+      listener {
+        timeout = ${toString cfg.idle.suspendTimeout}
+        condition_cmd = ${lib.getExe cli} can-sleep
+        condition_retry = ${toString busy.retry}
+        on-timeout = ${lib.getExe cli} suspend --idle
+      }
+    ''
+  );
 
   # swaylock draws with the CPU: hyprlock's lock UI stalls after most resumes
   # on NVIDIA 580 (hyprlock#1030).
@@ -137,135 +255,166 @@ let
   ];
 in
 {
-  config = lib.mkIf cfg.enable {
-    # On in every profile, "disabled" included, like a BIOS toggle.
-    boot.kernelParams = lib.optional (
-      cfg.pcieAspmPolicy != null
-    ) "pcie_aspm.policy=${cfg.pcieAspmPolicy}";
+  config = lib.mkIf cfg.enable (
+    {
+      # On in every profile, "disabled" included, like a BIOS toggle.
+      boot.kernelParams = lib.optional (
+        cfg.pcieAspmPolicy != null
+      ) "pcie_aspm.policy=${cfg.pcieAspmPolicy}";
 
-    environment.systemPackages = [ cli ];
+      environment.systemPackages = [ cli ];
 
-    # The CLI writes the state as the main user; the root side only reads it
-    # and accepts known profile names.
-    systemd.tmpfiles.rules = [
-      "d ${stateDir} 0775 root ${config.users.users.${username}.group} -"
-      "d ${runDir} 0755 root root -"
-    ];
+      # The CLI writes the state as the main user; the root side only reads it
+      # and accepts known profile names.
+      systemd.tmpfiles.rules = [
+        "d ${stateDir} 0775 root ${config.users.users.${username}.group} -"
+        "d ${runDir} 0755 root root -"
+      ];
 
-    systemd.services = {
-      # %i, not %I: unescaping would turn "short-boosts" into "short/boosts".
-      "power-profile-apply@" = {
-        description = "Apply power profile %i";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${lib.getExe ctl} apply %i";
+      systemd.services = {
+        # %i, not %I: unescaping would turn "short-boosts" into "short/boosts".
+        "power-profile-apply@" = {
+          description = "Apply power profile %i";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${lib.getExe ctl} apply %i";
+          };
+        };
+
+        power-profile-boot = {
+          description = "Save stock power settings and apply the picked power profile";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "systemd-modules-load.service" ];
+          # Runs once per boot; a switch must not re-apply over a game's
+          # full power.
+          restartIfChanged = false;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${lib.getExe ctl} boot";
+          };
+        };
+
+        power-profile-resume = {
+          description = "Re-apply the power profile after resume";
+          wantedBy = sleepTargets;
+          after = sleepTargets ++ [ "nvidia-resume.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${lib.getExe ctl} resume";
+          };
+        };
+
+        # systemd >= 256 freezes user sessions before sleep; a Hyprland frozen
+        # inside the NVIDIA driver fails the suspend or wakes to a black
+        # screen. Suspend only: hibernate is unusable here (no swap).
+        systemd-suspend = lib.mkIf cfg.idle.enable {
+          environment.SYSTEMD_SLEEP_FREEZE_USER_SESSIONS = "false";
         };
       };
 
-      power-profile-boot = {
-        description = "Save stock power settings and apply the picked power profile";
-        wantedBy = [ "multi-user.target" ];
-        after = [ "systemd-modules-load.service" ];
-        # Runs once per boot; a switch must not re-apply over a game's
-        # full power.
-        restartIfChanged = false;
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          ExecStart = "${lib.getExe ctl} boot";
-        };
-      };
-
-      power-profile-resume = {
-        description = "Re-apply the power profile after resume";
-        wantedBy = sleepTargets;
-        after = sleepTargets ++ [ "nvidia-resume.service" ];
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${lib.getExe ctl} resume";
-        };
-      };
-
-      # systemd >= 256 freezes user sessions before sleep; a Hyprland frozen
-      # inside the NVIDIA driver fails the suspend or wakes to a black
-      # screen. Suspend only: hibernate is unusable here (no swap).
-      systemd-suspend = lib.mkIf cfg.idle.enable {
-        environment.SYSTEMD_SLEEP_FREEZE_USER_SESSIONS = "false";
-      };
-    };
-
-    # No `subject.active` check, so a user service (the game watcher) can
-    # switch profiles too.
-    security.polkit.extraConfig = ''
-      polkit.addRule(function(action, subject) {
-        if (action.id == "org.freedesktop.systemd1.manage-units" &&
-            subject.user == "${username}") {
-          var verb = action.lookup("verb");
-          if ((verb == "start" || verb == "restart") &&
-              /${unitRegex}/.test(action.lookup("unit"))) {
+      # No `subject.active` check, so a user service (the game watcher) can
+      # switch profiles too.
+      security.polkit.extraConfig = ''
+        polkit.addRule(function(action, subject) {
+          if (action.id == "org.freedesktop.systemd1.manage-units" &&
+              subject.user == "${username}") {
+            var verb = action.lookup("verb");
+            if ((verb == "start" || verb == "restart") &&
+                /${unitRegex}/.test(action.lookup("unit"))) {
+              return polkit.Result.YES;
+            }
+          }
+        });
+      ''
+      # "Suspend now" (`systemctl suspend -i`) also suspends past a
+      # third-party sleep block, which needs this action (auth_admin_keep by
+      # default, and there is no polkit agent).
+      + lib.optionalString cfg.idle.enable ''
+        polkit.addRule(function(action, subject) {
+          if (action.id == "org.freedesktop.login1.suspend-ignore-inhibit" &&
+              subject.user == "${username}" && subject.local && subject.active) {
             return polkit.Result.YES;
           }
-        }
-      });
-    '';
+        });
+      '';
 
-    # Game watcher, for the main user's graphical session. ExecStopPost
-    # drops the games so a stopped watcher returns to the picked profile; a
-    # restart picks running games up again.
-    systemd.user.services.power-watch = {
-      description = "Full power and no idle while a game runs";
-      wantedBy = [ "graphical-session.target" ];
-      partOf = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      unitConfig.ConditionUser = username;
-      serviceConfig = {
-        ExecStart = "${lib.getExe watch} run";
-        ExecStopPost = "${lib.getExe watch} stop";
-        Restart = "always";
-        RestartSec = 5;
+      # Game watcher, for the main user's graphical session. ExecStopPost
+      # drops the games so a stopped watcher returns to the picked profile; a
+      # restart picks running games up again.
+      systemd.user.services.power-watch = {
+        description = "Full power and no idle while a game runs";
+        wantedBy = [ "graphical-session.target" ];
+        partOf = [ "graphical-session.target" ];
+        after = [ "graphical-session.target" ];
+        unitConfig.ConditionUser = username;
+        serviceConfig = {
+          ExecStart = "${lib.getExe watch} run";
+          ExecStopPost = "${lib.getExe watch} stop";
+          Restart = "always";
+          RestartSec = 5;
+        };
       };
-    };
 
-    systemd.user.services.power-idle = lib.mkIf cfg.idle.enable {
-      description = "Screen off when idle, lock before sleep";
-      wantedBy = [ "graphical-session.target" ];
-      partOf = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      unitConfig.ConditionUser = username;
-      serviceConfig = {
-        ExecStart = "${lib.getExe pkgs-unstable.hypridle} --config ${idleConfig}";
-        Restart = "always";
-        RestartSec = 5;
+      systemd.user.services.power-idle = lib.mkIf cfg.idle.enable {
+        description = "Screen off when idle, lock before sleep";
+        wantedBy = [ "graphical-session.target" ];
+        partOf = [ "graphical-session.target" ];
+        after = [ "graphical-session.target" ];
+        unitConfig.ConditionUser = username;
+        serviceConfig = {
+          ExecStart = "${lib.getExe pkgs-unstable.hypridle} --config ${idleConfig}";
+          Restart = "always";
+          RestartSec = 5;
+        };
       };
-    };
 
-    # Its own unit, not a hypridle child: a hypridle restart must not kill
-    # the locker. A crashed locker restarts and takes the lock over
-    # (Hyprland misc.allow_session_lock_restore); unlocking exits 0.
-    systemd.user.services.power-lock = lib.mkIf cfg.idle.enable {
-      description = "Lock screen";
-      unitConfig.ConditionUser = username;
-      serviceConfig = {
-        ExecStart = lockCommand;
-        Restart = "on-failure";
-        RestartSec = 1;
+      # Its own unit, not a hypridle child: a hypridle restart must not kill
+      # the locker. A crashed locker restarts and takes the lock over
+      # (Hyprland misc.allow_session_lock_restore); unlocking exits 0.
+      systemd.user.services.power-lock = lib.mkIf cfg.idle.enable {
+        description = "Lock screen";
+        unitConfig.ConditionUser = username;
+        serviceConfig = {
+          ExecStart = lockCommand;
+          Restart = "on-failure";
+          RestartSec = 1;
+        };
       };
-    };
 
-    security.pam.services.swaylock = lib.mkIf cfg.idle.enable { };
+      security.pam.services.swaylock = lib.mkIf cfg.idle.enable { };
 
-    services.udev.extraRules =
-      lib.concatMapStrings (device: ''
-        ACTION=="add", SUBSYSTEM=="pci", KERNEL=="${device}", ATTR{power/wakeup}="disabled"
-      '') cfg.idle.noWakeupDevices
-      + lib.concatMapStrings (
-        id:
-        let
-          ids = lib.splitString ":" id;
-        in
-        ''
-          ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="${lib.elemAt ids 0}", ATTR{idProduct}=="${lib.elemAt ids 1}", ATTR{power/wakeup}="enabled"
-        ''
-      ) cfg.idle.wakeupUsbDevices;
-  };
+      services.udev.extraRules =
+        lib.concatMapStrings (device: ''
+          ACTION=="add", SUBSYSTEM=="pci", KERNEL=="${device}", ATTR{power/wakeup}="disabled"
+        '') cfg.idle.noWakeupDevices
+        + lib.concatMapStrings (
+          id:
+          let
+            ids = lib.splitString ":" id;
+          in
+          ''
+            ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="${lib.elemAt ids 0}", ATTR{idProduct}=="${lib.elemAt ids 1}", ATTR{power/wakeup}="enabled"
+          ''
+        ) cfg.idle.wakeupUsbDevices;
+
+      # The VM's status share (guestStatusModule) is this small tmpfs, mounted
+      # before the VM's virtiofsd starts.
+      systemd.mounts = lib.optional vmStatus {
+        description = "Status share of the ${busy.statusVm} VM";
+        what = "tmpfs";
+        where = vmStatusDir;
+        type = "tmpfs";
+        options = "mode=0755,size=64k,nr_inodes=64,nosuid,nodev,noexec";
+        wantedBy = [ vmVirtiofsd ];
+        before = [ vmVirtiofsd ];
+      };
+    }
+    # Adding the share changes the VM, so a deploy restarts it.
+    // lib.optionalAttrs hasMicrovmHost {
+      microvm.vms = lib.optionalAttrs vmStatus {
+        ${busy.statusVm}.config = guestStatusModule;
+      };
+    }
+  );
 }
