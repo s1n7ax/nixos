@@ -1058,8 +1058,10 @@ cmd_menu() {
     i=$((i + 1))
   done
 
+  # The rofi theme shows 7 rows; show them all so the sleep rows are seen.
   choice=$(printf '%s\n' "${rows[@]}" |
-    rofi -dmenu -i -no-custom -format i -p Power -selected-row "$i") || return 0
+    rofi -dmenu -i -no-custom -format i -p Power -selected-row "$i" \
+      -theme-str "listview { lines: ${#rows[@]}; }") || return 0
   case $choice in
     '' | *[!0-9]*) return 0 ;;
   esac
