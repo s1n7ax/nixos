@@ -12,9 +12,9 @@ let
       onnx = "sha256-Xv4J5pkCGHgnr2RuGm6dJp3udp+Yd9F7FrG0buqvAZ8=";
       json = "sha256-7+GcQXvtBV8taZCCSMa6ZQ+hNbyGiw5quz2hgdq2kKA=";
     };
-    "en_GB-semaine-medium" = {
-      onnx = "sha256-1tq287kttD6j94x/INyOrbR6HxXYocnUUc88zSAaL2Y=";
-      json = "sha256-ZCXcuHhoQEO3fXcrFzrgBthqWDsRAwPt2ki4Q47O5e4=";
+    "en_US-amy-medium" = {
+      onnx = "sha256-s6bke1e4x/vmoM4lGBYaUPWanN2KUINcAssCvdYgbBg=";
+      json = "sha256-laI+tNQpCdON9zu5rH9F9Zfb/N4tG/lSb96vVGaXfXc=";
     };
   };
 
