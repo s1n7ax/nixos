@@ -27,6 +27,9 @@ with lib;
       volumes = [
         "${data_path}:/config"
         "/run/dbus:/run/dbus:ro"
+        # The security_alerts integration, read-only from this repo. A new store
+        # path changes the unit, so a deploy that changes it restarts HA.
+        "${./home-assistant/security_alerts}:/config/custom_components/security_alerts:ro"
       ];
       extraPodmanArgs = [ "--tz=local" ];
       ports = [ "8124:8123" ];
