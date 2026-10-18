@@ -1,0 +1,19 @@
+{
+  "domain": "security_alerts",
+  "name": "Security alerts",
+  "after_dependencies": ["frigate"],
+  "codeowners": [],
+  "config_flow": false,
+  "dependencies": [
+    "frontend",
+    "http",
+    "mobile_app",
+    "mqtt",
+    "panel_custom",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/s1n7ax/nixos/tree/main/system/home-manager/self-hosted-services/home-assistant",
+  "iot_class": "local_push",
+  "requirements": [],
+  "version": "1.0.0"
+}

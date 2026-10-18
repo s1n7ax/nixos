@@ -1,0 +1,121 @@
+snooze:
+  fields:
+    types:
+      required: true
+      example: ["person", "car"]
+      selector:
+        object:
+    cameras:
+      example: ["backyard_cam"]
+      selector:
+        object:
+    hours:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 0.01
+          max: 720
+          step: 0.01
+          unit_of_measurement: h
+pause:
+  fields:
+    types:
+      required: true
+      example: ["person"]
+      selector:
+        object:
+    cameras:
+      example: ["backyard_cam"]
+      selector:
+        object:
+    hours:
+      required: true
+      example: 2
+      selector:
+        number:
+          min: 0.01
+          max: 720
+          step: 0.01
+          unit_of_measurement: h
+dnd:
+  fields:
+    types:
+      required: true
+      example: ["person"]
+      selector:
+        object:
+    cameras:
+      example: ["backyard_cam"]
+      selector:
+        object:
+    hours:
+      required: true
+      example: 5
+      selector:
+        number:
+          min: 0.01
+          max: 720
+          step: 0.01
+          unit_of_measurement: h
+end:
+  fields:
+    entry_id:
+      required: true
+      example: 0f8c2e5d6b7a4c3e9d1f2a3b4c5d6e7f
+      selector:
+        text:
+end_all:
+trigger_siren:
+simulate:
+  fields:
+    kind:
+      required: true
+      example: detection
+      selector:
+        select:
+          options: [detection, sound, door, motion]
+    type:
+      example: person
+      selector:
+        text:
+    camera:
+      example: backyard_cam
+      selector:
+        text:
+    entity_id:
+      example: binary_sensor.example_door_contact
+      selector:
+        entity:
+          domain: binary_sensor
+    action:
+      example: opened
+      selector:
+        select:
+          options: [opened, closed]
+    seconds:
+      example: 6
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: s
+    box:
+      example: [100, 50, 200, 300]
+      selector:
+        object:
+    mode:
+      example: Home
+      selector:
+        text:
+    asleep:
+      selector:
+        boolean:
+    time:
+      example: "01:00"
+      selector:
+        time:
+    notify:
+      default: false
+      selector:
+        boolean:
