@@ -18,7 +18,7 @@ Five rules hold the whole skill up. Everything below is detail.
 
 ## Code first
 
-Jump straight into the code. Read every project the requirement touches and work out the plan from what is there. Do not ask the user anything the code can tell you.
+Jump straight into the code. Read every project the requirement touches and work out the plan from what is there.
 
 ### When the code is out of reach
 
@@ -43,7 +43,18 @@ The plan hinges on a technical claim the code and docs cannot prove ("the librar
 
 ### Type 1 — Fork in the road
 
-Two or more clearly viable approaches exist, and every one of them satisfies the requirement. Ask which one the user prefers.
+Two or more clearly viable approaches exist, and every one of them satisfies the requirement. Ask which one the user prefers. If the user keeps more than one, record each as an approach (see Multiple approaches) and move on.
+
+#### Example
+
+> **Where should request validation live?**
+>
+> All three spots satisfy the requirement; they differ in how much code moves and who owns the rule.
+>
+> 1. **In the existing shared schema package — recommended.** One definition, both projects import it. Simplest change, and the rule cannot drift between projects. Cost: a version bump of the shared package.
+> 2. **In each project separately.** No cross-project dependency, but the rule now exists twice and will drift.
+> 3. **In a new validation service.** Cleanest separation and scales to future projects, but a new deployable to run and monitor — the most moving parts by far.
+> 4. **None of these — let me explain.**
 
 ### Type 2 — Significant stretch
 
@@ -54,6 +65,14 @@ The change costs something big or risky. **Always ask**, even when only one way 
 - The change crosses an ownership boundary: it touches a project owned by someone else or shared with other efforts.
 
 The user may opt out. When they do, update the requirement document: move the unachievable part into **Out of scope** with the reason (e.g. "full-text search — rejected, new dependency was too big a stretch"), then re-plan around what remains.
+
+#### Example
+
+> **The search requirement needs a real index, and the current in-memory store cannot provide one. The only viable path adds a new dependency (a search engine) and a new service in docker-compose. Is that stretch acceptable?**
+>
+> 1. **Yes, add it — recommended.** The requirement explicitly demands typo-tolerant search; no in-process trick delivers that.
+> 2. **No — cut search back to exact filtering on existing fields.** The requirement document gets "typo-tolerant search" moved to out of scope, with the reason: new dependency rejected.
+> 3. **None of these — let me explain.**
 
 ### Type 3 — Requirement gap
 
@@ -68,31 +87,6 @@ The gate test for any decision:
 > Could a strong engineer, given this requirement and this codebase, decide this without the user's taste or risk appetite?
 
 Yes → decide it yourself, without asking. No → it must fit one of the three types to be asked. If it fits none, decide it yourself and record it in the plan's Decisions section.
-
-Never ask for facts you could fetch or prove. If the code or docs hold the answer, go read them; if only running code can tell, spike it.
-
-## The shape of one question
-
-Scoring and shaping a question is the `questions` skill's job — read it before the first one. Plan adds only the three allowed types above. When several options are kept at a Type 1 fork, record each as an approach (see Multiple approaches) and move on. The examples below show the shape on plan-shaped decisions.
-
-### Example — Type 1
-
-> **Where should request validation live?**
->
-> All three spots satisfy the requirement; they differ in how much code moves and who owns the rule.
->
-> 1. **In the existing shared schema package — recommended.** One definition, both projects import it. Simplest change, and the rule cannot drift between projects. Cost: a version bump of the shared package.
-> 2. **In each project separately.** No cross-project dependency, but the rule now exists twice and will drift.
-> 3. **In a new validation service.** Cleanest separation and scales to future projects, but a new deployable to run and monitor — the most moving parts by far.
-> 4. **None of these — let me explain.**
-
-### Example — Type 2
-
-> **The search requirement needs a real index, and the current in-memory store cannot provide one. The only viable path adds a new dependency (a search engine) and a new service in docker-compose. Is that stretch acceptable?**
->
-> 1. **Yes, add it — recommended.** The requirement explicitly demands typo-tolerant search; no in-process trick delivers that.
-> 2. **No — cut search back to exact filtering on existing fields.** The requirement document gets "typo-tolerant search" moved to out of scope, with the reason: new dependency rejected.
-> 3. **None of these — let me explain.**
 
 ## Running the session
 
