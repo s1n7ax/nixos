@@ -11,14 +11,14 @@ import logging
 import math
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import time as dt_time
 from datetime import timedelta
 from typing import Any
 
 from homeassistant.const import STATE_ON
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, State, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
@@ -178,7 +178,7 @@ class SecurityAlerts:
         self.notifier = Notifier(hass, config[CONF_NOTIFY_SERVICE])
         self.burst = BurstWindow(config[CONF_BURST_MINUTES] * 60)
         # Set by Sources once it starts; finds the MQTT box for a snapshot frame.
-        self.find_snapshot: Callable[[str, float, float], Any] | None = None
+        self.find_snapshot: Callable[[str, float, float], Awaitable[Box | None]] | None = None
         self._quiet: list[QuietEntry] = []
         # The last send started per type; each send waits for the one before it.
         self._sends: dict[str, asyncio.Future[None]] = {}
@@ -235,14 +235,12 @@ class SecurityAlerts:
     async def _async_fill_missing_clip_ends(self, *_: Any) -> None:
         """Give a 60 s clip to alerts whose end or OFF never arrived."""
         try:
-            rows = await self.hass.async_add_executor_job(
-                self.log.missing_clip_ends, time.time() - CLIP_MISSING_END_SECONDS
+            await self.hass.async_add_executor_job(
+                self.log.fill_missing_clip_ends,
+                time.time() - CLIP_MISSING_END_SECONDS,
+                # The clip starts CLIP_PRE_SECONDS before the event.
+                CLIP_PRE_SECONDS + CLIP_FALLBACK_LENGTH_SECONDS,
             )
-            for row in rows:
-                start = (row.clip_start or row.time) + CLIP_PRE_SECONDS
-                await self.hass.async_add_executor_job(
-                    self.log.update_clip_end, row.id, start + CLIP_FALLBACK_LENGTH_SECONDS
-                )
         except AlertLogError:
             return  # Already logged; tried again in 5 minutes.
 
@@ -288,15 +286,19 @@ class SecurityAlerts:
         area = ar.async_get(self.hass).async_get_area(area_id)
         return area is not None and area.floor_id in self.top_floors
 
-    def camera_entity(self, camera: str) -> str | None:
+    def _camera_state(self, camera: str) -> State | None:
+        """The Frigate camera entity whose `camera_name` is `camera`."""
         for state in self.hass.states.async_all("camera"):
             if state.attributes.get("camera_name") == camera:
-                return state.entity_id
+                return state
         return None
 
+    def camera_entity(self, camera: str) -> str | None:
+        state = self._camera_state(camera)
+        return state.entity_id if state else None
+
     def camera_name(self, camera: str) -> str:
-        entity_id = self.camera_entity(camera)
-        state = self.hass.states.get(entity_id) if entity_id else None
+        state = self._camera_state(camera)
         if state and state.attributes.get("friendly_name"):
             return str(state.attributes["friendly_name"])
         return camera.replace("_", " ").title()

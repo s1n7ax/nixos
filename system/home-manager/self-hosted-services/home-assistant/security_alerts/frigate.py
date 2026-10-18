@@ -21,6 +21,12 @@ class FrigateError(Exception):
     """Frigate could not be reached or answered with an error."""
 
 
+def _listen(camera: dict[str, Any]) -> list[str]:
+    """The sound labels a camera listens for; none while its audio is off."""
+    audio = camera.get("audio", {})
+    return (audio.get("listen") or []) if audio.get("enabled") else []
+
+
 class FrigateClient:
     def __init__(self, hass: HomeAssistant) -> None:
         self._hass = hass
@@ -59,8 +65,11 @@ class FrigateClient:
     def _cameras(self) -> dict[str, Any]:
         return (self.config or {}).get("cameras", {})
 
+    def _enabled_cameras(self) -> dict[str, Any]:
+        return {name: cam for name, cam in self._cameras().items() if cam.get("enabled", True)}
+
     def camera_names(self) -> list[str]:
-        return [name for name, cam in self._cameras().items() if cam.get("enabled", True)]
+        return list(self._enabled_cameras())
 
     def detect_size(self, camera: str) -> tuple[int, int] | None:
         detect = self._cameras().get(camera, {}).get("detect", {})
@@ -70,31 +79,28 @@ class FrigateClient:
         return int(width), int(height)
 
     def listens_for(self, camera: str, label: str) -> bool:
-        audio = self._cameras().get(camera, {}).get("audio", {})
-        return bool(audio.get("enabled")) and label in (audio.get("listen") or [])
+        return label in _listen(self._cameras().get(camera, {}))
 
     def object_labels(self) -> list[str]:
-        labels: dict[str, None] = {}
-        for name in self.camera_names():
-            for label in self._cameras()[name].get("objects", {}).get("track") or []:
-                labels[label] = None
-        return list(labels)
+        cameras = self._enabled_cameras().values()
+        tracked = (cam.get("objects", {}).get("track") or [] for cam in cameras)
+        return list(dict.fromkeys(label for labels in tracked for label in labels))
 
     def sound_labels(self) -> list[str]:
-        labels: dict[str, None] = {}
-        for name in self.camera_names():
-            audio = self._cameras()[name].get("audio", {})
-            if audio.get("enabled"):
-                for label in audio.get("listen") or []:
-                    labels[label] = None
-        return list(labels)
+        cameras = self._enabled_cameras().values()
+        return list(dict.fromkeys(label for cam in cameras for label in _listen(cam)))
+
+    async def _event_snapshot(
+        self, event_id: str, *, bbox: int, crop: int
+    ) -> tuple[bytes, Mapping[str, str]]:
+        return await self._get(
+            f"api/events/{event_id}/snapshot.jpg",
+            {"bbox": bbox, "crop": crop, "timestamp": 0, "quality": 100},
+        )
 
     async def event_snapshot(self, event_id: str) -> tuple[bytes, float | None]:
         """The clean, full-frame event snapshot and the frame time it was taken at."""
-        body, headers = await self._get(
-            f"api/events/{event_id}/snapshot.jpg",
-            {"bbox": 0, "crop": 0, "timestamp": 0, "quality": 100},
-        )
+        body, headers = await self._event_snapshot(event_id, bbox=0, crop=0)
         try:
             frame_time = float(headers.get("X-Frame-Time", ""))
         except ValueError:
@@ -103,18 +109,12 @@ class FrigateClient:
 
     async def event_snapshot_cropped(self, event_id: str) -> bytes:
         """Frigate's own crop with its box: the thumbnail fallback."""
-        body, _ = await self._get(
-            f"api/events/{event_id}/snapshot.jpg",
-            {"bbox": 1, "crop": 1, "timestamp": 0, "quality": 100},
-        )
+        body, _ = await self._event_snapshot(event_id, bbox=1, crop=1)
         return body
 
     async def event_snapshot_boxed(self, event_id: str) -> bytes:
         """The full event snapshot with Frigate's box: the review image fallback."""
-        body, _ = await self._get(
-            f"api/events/{event_id}/snapshot.jpg",
-            {"bbox": 1, "crop": 0, "timestamp": 0, "quality": 100},
-        )
+        body, _ = await self._event_snapshot(event_id, bbox=1, crop=0)
         return body
 
     async def latest(self, camera: str) -> bytes:

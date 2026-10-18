@@ -18,6 +18,8 @@ THUMB_SIZE: Size = (1024, 512)
 THUMB_QUALITY = 90
 FULL_QUALITY = 92
 BOX_COLOR = (255, 40, 40)
+# What Pillow raises for bytes it cannot read as an image.
+_READ_ERRORS = (OSError, ValueError, Image.DecompressionBombError)
 
 
 class ImageRenderError(ValueError):
@@ -33,17 +35,21 @@ def _open(jpeg: bytes) -> Image.Image:
     try:
         with Image.open(BytesIO(jpeg)) as source:
             return source.convert("RGB")
-    except (OSError, ValueError, Image.DecompressionBombError) as err:
+    except _READ_ERRORS as err:
         raise ImageRenderError(f"Cannot read the frame: {err}") from err
 
 
 def image_size(jpeg: bytes) -> Size:
-    """Return a frame's (width, height).
+    """Return a frame's (width, height), read from its header without decoding it.
 
     Raises:
         ImageRenderError: the bytes are not an image Pillow can read.
     """
-    return _open(jpeg).size
+    try:
+        with Image.open(BytesIO(jpeg)) as source:
+            return source.size
+    except _READ_ERRORS as err:
+        raise ImageRenderError(f"Cannot read the frame: {err}") from err
 
 
 def _line_width(size: Size) -> int:

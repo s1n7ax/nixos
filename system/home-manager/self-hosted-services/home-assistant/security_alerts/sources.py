@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
 from functools import partial
 from typing import Any
@@ -46,6 +46,7 @@ EVENTS_TOPIC = "frigate/events"
 AUDIO_TOPIC = "frigate/+/audio/+"
 DOOR_CLASSES = {"door"}
 MOTION_CLASSES = {"motion", "occupancy"}
+SENSOR_CLASSES = DOOR_CLASSES | MOTION_CLASSES
 EXCLUDED_PLATFORMS = {"frigate", "group"}
 # Forget a finished Frigate event's boxes a little after its end, in case its
 # alert is still waiting for one.
@@ -252,7 +253,7 @@ class Sources:
     def _is_binary_sensor(self, data: EventStateChangedData) -> bool:
         return data["entity_id"].startswith("binary_sensor.")
 
-    def _is_excluded(self, entity_id: str, attributes: dict[str, Any]) -> bool:
+    def _is_excluded(self, entity_id: str, attributes: Mapping[str, Any]) -> bool:
         if ATTR_ENTITY_ID in attributes:  # a group of other sensors
             return True
         entry = er.async_get(self.hass).async_get(entity_id)
@@ -269,9 +270,9 @@ class Sources:
             self._cancel_motion(entity_id)
             return
         device_class = new.attributes.get(ATTR_DEVICE_CLASS)
-        if device_class not in DOOR_CLASSES | MOTION_CLASSES:
+        if device_class not in SENSOR_CLASSES:
             return
-        if self._is_excluded(entity_id, dict(new.attributes)):
+        if self._is_excluded(entity_id, new.attributes):
             return
         if device_class in DOOR_CLASSES:
             action = "opened" if new.state == STATE_ON else "closed"

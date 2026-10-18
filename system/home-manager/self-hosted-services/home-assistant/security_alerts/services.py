@@ -23,17 +23,15 @@ from .pipeline import Overrides, SecurityAlerts
 
 NOTIFICATION_ACTION_EVENT = "mobile_app_notification_action"
 
-QUIET_SCHEMA = probatio.Schema(
-    {
-        probatio.Required("types"): probatio.All(
-            cv.ensure_list, [cv.string], probatio.Length(min=1)
-        ),
-        probatio.Optional("cameras", default=[]): probatio.All(cv.ensure_list, [cv.string]),
-        probatio.Required("hours"): probatio.All(
-            probatio.Coerce(float), probatio.Range(min=0.01, max=24 * 30)
-        ),
-    }
-)
+# How long a Pause, Do-not-disturb or Snooze may run.
+HOURS = probatio.All(probatio.Coerce(float), probatio.Range(min=0.01, max=24 * 30))
+# The fields of a new quiet entry, shared with the websocket command.
+QUIET_FIELDS = {
+    probatio.Required("types"): probatio.All(cv.ensure_list, [cv.string], probatio.Length(min=1)),
+    probatio.Optional("cameras", default=[]): probatio.All(cv.ensure_list, [cv.string]),
+    probatio.Required("hours"): HOURS,
+}
+QUIET_SCHEMA = probatio.Schema(QUIET_FIELDS)
 END_SCHEMA = probatio.Schema({probatio.Required("entry_id"): cv.string})
 SIMULATE_SCHEMA = probatio.Schema(
     {

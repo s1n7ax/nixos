@@ -28,6 +28,7 @@ from .core.policy import DETECTION, DOOR, MOTION, SOUND
 from .core.quiet import QUIET_KINDS
 from .notify import local_clock, type_name
 from .pipeline import SecurityAlerts
+from .services import QUIET_FIELDS
 from .store import AlertRow
 
 SIGNED_FOR = timedelta(hours=SIGNED_URL_HOURS)
@@ -176,13 +177,7 @@ def ws_quiet_list(
     {
         probatio.Required("type"): "security_alerts/quiet/add",
         probatio.Required("kind"): probatio.In(QUIET_KINDS),
-        probatio.Required("types"): probatio.All(
-            cv.ensure_list, [cv.string], probatio.Length(min=1)
-        ),
-        probatio.Optional("cameras", default=[]): probatio.All(cv.ensure_list, [cv.string]),
-        probatio.Required("hours"): probatio.All(
-            probatio.Coerce(float), probatio.Range(min=0.01, max=24 * 30)
-        ),
+        **QUIET_FIELDS,
     }
 )
 @callback

@@ -32,14 +32,7 @@ def _iso(timestamp: float) -> str:
 
 
 def _attributes(entry: QuietEntry) -> dict[str, Any]:
-    return {
-        "id": entry.id,
-        "kind": entry.kind,
-        "types": list(entry.types),
-        "cameras": list(entry.cameras),
-        "created": _iso(entry.created),
-        "ends_at": _iso(entry.ends_at),
-    }
+    return {**entry.as_dict(), "created": _iso(entry.created), "ends_at": _iso(entry.ends_at)}
 
 
 class QuietSensor(SensorEntity):

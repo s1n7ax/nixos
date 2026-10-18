@@ -95,6 +95,8 @@ _COLUMNS = [
     "clip_start",
     "clip_end",
 ]
+_SELECT = f"SELECT {', '.join(_COLUMNS)} FROM alerts"
+_INSERT = f"INSERT INTO alerts ({', '.join(_COLUMNS)}) VALUES ({', '.join('?' * len(_COLUMNS))})"
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS alerts (
@@ -184,11 +186,7 @@ class AlertLog:
             data = asdict(row)
             if data["snapshot_box"] is not None:
                 data["snapshot_box"] = json.dumps(list(data["snapshot_box"]))
-            placeholders = ", ".join("?" for _ in _COLUMNS)
-            db.execute(
-                f"INSERT INTO alerts ({', '.join(_COLUMNS)}) VALUES ({placeholders})",
-                tuple(data[c] for c in _COLUMNS),
-            )
+            db.execute(_INSERT, tuple(data[c] for c in _COLUMNS))
         return row.time
 
     def update_snapshot(
@@ -203,14 +201,12 @@ class AlertLog:
         self._execute("UPDATE alerts SET clip_end = ? WHERE id = ?", (clip_end, alert_id))
 
     def get(self, alert_id: str) -> AlertRow | None:
-        rows = self._execute(f"SELECT {', '.join(_COLUMNS)} FROM alerts WHERE id = ?", (alert_id,))
+        rows = self._execute(f"{_SELECT} WHERE id = ?", (alert_id,))
         return _to_row(rows[0]) if rows else None
 
     def by_event_id(self, event_id: str) -> AlertRow | None:
         rows = self._execute(
-            f"SELECT {', '.join(_COLUMNS)} FROM alerts WHERE event_id = ? "
-            "ORDER BY time DESC LIMIT 1",
-            (event_id,),
+            f"{_SELECT} WHERE event_id = ? ORDER BY time DESC LIMIT 1", (event_id,)
         )
         return _to_row(rows[0]) if rows else None
 
@@ -222,7 +218,7 @@ class AlertLog:
         `after` is the (time, id) of the last row of the previous page. Returns
         the page and whether more rows follow it.
         """
-        sql = f"SELECT {', '.join(_COLUMNS)} FROM alerts WHERE time > ? AND time <= ?"
+        sql = f"{_SELECT} WHERE time > ? AND time <= ?"
         params: tuple[Any, ...] = (start, end)
         if after is not None:
             sql += " AND (time < ? OR (time = ? AND id < ?))"
@@ -230,14 +226,14 @@ class AlertLog:
         rows = self._execute(f"{sql} ORDER BY time DESC, id DESC LIMIT ?", (*params, limit + 1))
         return [_to_row(r) for r in rows[:limit]], len(rows) > limit
 
-    def missing_clip_ends(self, before: float) -> list[AlertRow]:
-        """Alerts with a clip that never got an end and started before `before`."""
-        rows = self._execute(
-            f"SELECT {', '.join(_COLUMNS)} FROM alerts "
+    def fill_missing_clip_ends(self, before: float, length: float) -> None:
+        """End every clip still open on an alert older than `before`, `length`
+        seconds after the clip's start."""
+        self._execute(
+            "UPDATE alerts SET clip_end = clip_start + ? "
             "WHERE clip_start IS NOT NULL AND clip_end IS NULL AND time < ?",
-            (before,),
+            (length, before),
         )
-        return [_to_row(r) for r in rows]
 
     def media_path(self, alert_id: str, variant: str) -> Path:
         return self.media / f"{alert_id}-{variant}.jpg"

@@ -95,8 +95,6 @@ HOME_SCHEMA = probatio.Schema(
     }
 )
 
-HOURS = probatio.All(probatio.Coerce(float), probatio.Range(min=0.01, max=24 * 30))
-
 CONFIG_SCHEMA = probatio.Schema(
     {
         DOMAIN: probatio.Schema(
@@ -130,7 +128,7 @@ CONFIG_SCHEMA = probatio.Schema(
                 ): probatio.All(probatio.Coerce(float), probatio.Range(min=0)),
                 probatio.Optional(
                     CONF_DURATIONS_HOURS, default=DEFAULT_DURATIONS_HOURS
-                ): probatio.All(cv.ensure_list, [HOURS], probatio.Length(min=1)),
+                ): probatio.All(cv.ensure_list, [services.HOURS], probatio.Length(min=1)),
                 probatio.Optional(CONF_QUIET_AFTER_RESTART_ENTITY): cv.entity_id,
                 probatio.Optional(CONF_SIREN_ENTITY): cv.entity_id,
             }
