@@ -11,6 +11,8 @@ import logging
 import sqlite3
 import threading
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -23,7 +25,9 @@ from .const import DATA_DIR, DB_FILE, MEDIA_DIR, STORAGE_KEY, STORAGE_VERSION
 _LOGGER = logging.getLogger(__name__)
 
 SAVE_DELAY_SECONDS = 1
-WINDOW_LIMIT = 2000
+# An image with no row is only deleted once it is this old: its row may be
+# being written right now.
+ORPHAN_MEDIA_SECONDS = 3600
 
 
 class StateStore:
@@ -114,6 +118,10 @@ CREATE INDEX IF NOT EXISTS alerts_event_id ON alerts (event_id);
 """
 
 
+class AlertLogError(Exception):
+    """The alert log or its image directory could not be read or written."""
+
+
 def _to_row(values: sqlite3.Row) -> AlertRow:
     data = dict(values)
     if data["snapshot_box"]:
@@ -125,6 +133,7 @@ class AlertLog:
     """The SQLite alert log and the image directory.
 
     Every method blocks; call them through `hass.async_add_executor_job`.
+    Every method raises AlertLogError when the database or a file fails.
     """
 
     def __init__(self, config_dir: str) -> None:
@@ -147,23 +156,40 @@ class AlertLog:
                 self._db.close()
                 self._db = None
 
-    def _execute(self, sql: str, params: tuple[Any, ...] = ()) -> list[sqlite3.Row]:
-        if self._db is None:
-            raise RuntimeError("The alert log is not open")
+    @contextmanager
+    def _transaction(self) -> Iterator[sqlite3.Connection]:
         with self._lock:
-            rows = self._db.execute(sql, params).fetchall()
-            self._db.commit()
-            return rows
+            if self._db is None:
+                raise AlertLogError("The alert log is not open")
+            try:
+                yield self._db
+                self._db.commit()
+            except sqlite3.Error as err:
+                _LOGGER.error("Alert log failed: %s", err)
+                raise AlertLogError(str(err)) from err
 
-    def insert(self, row: AlertRow) -> None:
-        data = asdict(row)
-        if data["snapshot_box"] is not None:
-            data["snapshot_box"] = json.dumps(list(data["snapshot_box"]))
-        placeholders = ", ".join("?" for _ in _COLUMNS)
-        self._execute(
-            f"INSERT INTO alerts ({', '.join(_COLUMNS)}) VALUES ({placeholders})",
-            tuple(data[c] for c in _COLUMNS),
-        )
+    def _execute(self, sql: str, params: tuple[Any, ...] = ()) -> list[sqlite3.Row]:
+        with self._transaction() as db:
+            return db.execute(sql, params).fetchall()
+
+    def insert(self, row: AlertRow) -> float:
+        """Write a row, stamped with the time of the insert; return that time.
+
+        The stamp is taken under the log's lock, so a review window read at any
+        moment already holds every row stamped before its end: no row can show
+        up later with an older time and fall between two reviews.
+        """
+        with self._transaction() as db:
+            row.time = time.time()
+            data = asdict(row)
+            if data["snapshot_box"] is not None:
+                data["snapshot_box"] = json.dumps(list(data["snapshot_box"]))
+            placeholders = ", ".join("?" for _ in _COLUMNS)
+            db.execute(
+                f"INSERT INTO alerts ({', '.join(_COLUMNS)}) VALUES ({placeholders})",
+                tuple(data[c] for c in _COLUMNS),
+            )
+        return row.time
 
     def update_snapshot(
         self, alert_id: str, frame_time: float, box: tuple[float, float, float, float]
@@ -188,14 +214,21 @@ class AlertLog:
         )
         return _to_row(rows[0]) if rows else None
 
-    def window(self, start: float, end: float) -> list[AlertRow]:
-        """Alerts with start < time <= end, newest first."""
-        rows = self._execute(
-            f"SELECT {', '.join(_COLUMNS)} FROM alerts WHERE time > ? AND time <= ? "
-            "ORDER BY time DESC LIMIT ?",
-            (start, end, WINDOW_LIMIT),
-        )
-        return [_to_row(r) for r in rows]
+    def window(
+        self, start: float, end: float, limit: int, after: tuple[float, str] | None = None
+    ) -> tuple[list[AlertRow], bool]:
+        """One page of the alerts with start < time <= end, newest first.
+
+        `after` is the (time, id) of the last row of the previous page. Returns
+        the page and whether more rows follow it.
+        """
+        sql = f"SELECT {', '.join(_COLUMNS)} FROM alerts WHERE time > ? AND time <= ?"
+        params: tuple[Any, ...] = (start, end)
+        if after is not None:
+            sql += " AND (time < ? OR (time = ? AND id < ?))"
+            params += (after[0], after[0], after[1])
+        rows = self._execute(f"{sql} ORDER BY time DESC, id DESC LIMIT ?", (*params, limit + 1))
+        return [_to_row(r) for r in rows[:limit]], len(rows) > limit
 
     def missing_clip_ends(self, before: float) -> list[AlertRow]:
         """Alerts with a clip that never got an end and started before `before`."""
@@ -214,24 +247,43 @@ class AlertLog:
             return self.media_path(alert_id, variant).read_bytes()
         except FileNotFoundError:
             return None
+        except OSError as err:
+            _LOGGER.error("Could not read an alert image: %s", err)
+            raise AlertLogError(str(err)) from err
 
     def write_media(self, alert_id: str, variant: str, data: bytes) -> None:
         path = self.media_path(alert_id, variant)
         tmp = path.with_suffix(".tmp")
-        tmp.write_bytes(data)
-        tmp.replace(path)
+        try:
+            tmp.write_bytes(data)
+            tmp.replace(path)
+        except OSError as err:
+            _LOGGER.error("Could not save an alert image: %s", err)
+            raise AlertLogError(str(err)) from err
 
     def delete_media(self, alert_id: str, variant: str) -> None:
-        self.media_path(alert_id, variant).unlink(missing_ok=True)
+        try:
+            self.media_path(alert_id, variant).unlink(missing_ok=True)
+        except OSError as err:
+            _LOGGER.error("Could not delete an alert image: %s", err)
+            raise AlertLogError(str(err)) from err
 
     def prune(self, days: int) -> int:
-        """Drop log rows and images older than `days`; return the rows dropped."""
-        cutoff = time.time() - days * 86400
-        dropped = len(self._execute("DELETE FROM alerts WHERE time < ? RETURNING id", (cutoff,)))
-        for path in self.media.glob("*"):
+        """Drop log rows older than `days` and their images; return the rows dropped.
+
+        Images go with their rows: any image whose row is gone is dropped, once
+        it is old enough not to belong to an alert being written right now.
+        """
+        now = time.time()
+        cutoff = now - days * 86400
+        dropped = self._execute("DELETE FROM alerts WHERE time < ? RETURNING id", (cutoff,))
+        kept = {r["id"] for r in self._execute("SELECT id FROM alerts")}
+        for path in self.media.glob("*.jpg"):
+            if path.name.split("-", 1)[0] in kept:
+                continue
             try:
-                if path.stat().st_mtime < cutoff:
+                if path.stat().st_mtime < now - ORPHAN_MEDIA_SECONDS:
                     path.unlink(missing_ok=True)
             except OSError as err:
                 _LOGGER.warning("Could not prune %s: %s", path, err)
-        return dropped
+        return len(dropped)

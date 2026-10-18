@@ -8,7 +8,14 @@ import pytest
 from PIL import Image
 
 from core.geometry import scale_box, thumbnail_crop
-from imaging import BOX_COLOR, THUMB_SIZE, image_size, render_crop, render_full
+from imaging import (
+    BOX_COLOR,
+    THUMB_SIZE,
+    ImageRenderError,
+    image_size,
+    render_crop,
+    render_full,
+)
 
 FRAME = (640, 360)
 GREY = (90, 90, 90)
@@ -79,5 +86,15 @@ def test_render_full_without_box_returns_the_frame():
 
 
 def test_empty_crop_raises():
-    with pytest.raises(ValueError):
+    with pytest.raises(ImageRenderError):
         render_crop(frame_with_object((10, 10, 20, 20)), (5, 5, 5, 5), (10, 10, 20, 20))
+
+
+@pytest.mark.parametrize("data", [b"", b"not a jpeg", b"\xff\xd8\xff\xe0" + b"\x00" * 20])
+def test_unreadable_frames_raise_image_render_error(data):
+    with pytest.raises(ImageRenderError):
+        image_size(data)
+    with pytest.raises(ImageRenderError):
+        render_full(data, (1, 1, 2, 2))
+    with pytest.raises(ImageRenderError):
+        render_crop(data, (0, 0, 10, 5), (1, 1, 2, 2))

@@ -11,7 +11,6 @@ import logging
 import math
 import time
 import uuid
-from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import time as dt_time
@@ -95,11 +94,12 @@ from .notify import (
     snoozed_payload,
     type_name,
 )
-from .store import AlertLog, AlertRow, StateStore
+from .store import AlertLog, AlertLogError, AlertRow, StateStore
 
 _LOGGER = logging.getLogger(__name__)
 
 PRUNE_INTERVAL = timedelta(days=1)
+REVIEW_PAGE_SIZE = 100
 CLIP_END_CHECK_INTERVAL = timedelta(minutes=5)
 # A review image rendered from Frigate's snapshot instead of the recording is
 # cached only once the recording should exist, so an early look does not stick.
@@ -180,7 +180,8 @@ class SecurityAlerts:
         # Set by Sources once it starts; finds the MQTT box for a snapshot frame.
         self.find_snapshot: Callable[[str, float, float], Any] | None = None
         self._quiet: list[QuietEntry] = []
-        self._type_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        # The last send started per type; each send waits for the one before it.
+        self._sends: dict[str, asyncio.Future[None]] = {}
         self._pending_ends: dict[str, _PendingEnd] = {}
         self._active_sounds: dict[tuple[str, str], str | None] = {}
         self._pending_offs: dict[tuple[str, str], float] = {}
@@ -222,20 +223,28 @@ class SecurityAlerts:
         await self.hass.async_add_executor_job(self.log.close)
 
     async def _async_prune(self, *_: Any) -> None:
-        dropped = await self.hass.async_add_executor_job(self.log.prune, self.config[CONF_LOG_DAYS])
+        try:
+            dropped = await self.hass.async_add_executor_job(
+                self.log.prune, self.config[CONF_LOG_DAYS]
+            )
+        except AlertLogError:
+            return  # Already logged; tried again tomorrow.
         if dropped:
             _LOGGER.info("Pruned %d old security alerts", dropped)
 
     async def _async_fill_missing_clip_ends(self, *_: Any) -> None:
         """Give a 60 s clip to alerts whose end or OFF never arrived."""
-        rows = await self.hass.async_add_executor_job(
-            self.log.missing_clip_ends, time.time() - CLIP_MISSING_END_SECONDS
-        )
-        for row in rows:
-            start = (row.clip_start or row.time) + CLIP_PRE_SECONDS
-            await self.hass.async_add_executor_job(
-                self.log.update_clip_end, row.id, start + CLIP_FALLBACK_LENGTH_SECONDS
+        try:
+            rows = await self.hass.async_add_executor_job(
+                self.log.missing_clip_ends, time.time() - CLIP_MISSING_END_SECONDS
             )
+            for row in rows:
+                start = (row.clip_start or row.time) + CLIP_PRE_SECONDS
+                await self.hass.async_add_executor_job(
+                    self.log.update_clip_end, row.id, start + CLIP_FALLBACK_LENGTH_SECONDS
+                )
+        except AlertLogError:
+            return  # Already logged; tried again in 5 minutes.
 
     # Facts
 
@@ -367,7 +376,11 @@ class SecurityAlerts:
 
     def _decide(
         self, event: AlertEvent, overrides: Overrides | None, record: bool
-    ) -> tuple[Decision, str]:
+    ) -> tuple[Decision, str, float]:
+        """Decide one event; with `record`, a ring restarts the burst window at once.
+
+        Synchronous, so two events of one type are always decided in order.
+        """
         overrides = overrides or Overrides()
         mode = self.mode(overrides.mode)
         asleep = self.asleep() if overrides.asleep is None else overrides.asleep
@@ -393,9 +406,13 @@ class SecurityAlerts:
         )
         if record and decision.rings:
             self.burst.record(event.type, now)
-            self.state.last_rings = self.burst.as_dict()
-            self.state.save()
-        return decision, mode_name
+            self._save_rings()
+        return decision, mode_name, now
+
+    @callback
+    def _save_rings(self) -> None:
+        self.state.last_rings = self.burst.as_dict()
+        self.state.save()
 
     async def async_handle(
         self, event: AlertEvent, *, notify: bool = True, overrides: Overrides | None = None
@@ -404,56 +421,105 @@ class SecurityAlerts:
 
         `notify` False only decides: nothing is logged, sent or recorded.
         """
-        async with self._type_locks[event.type]:
-            decision, mode_name = self._decide(event, overrides, record=notify)
-            _LOGGER.info(
-                "%s %s from %s: %s (%s)%s",
-                event.kind,
-                event.type,
-                event.source,
-                decision.delivery,
-                decision.reason,
-                "" if notify else " [simulated, not sent]",
-            )
-            if not notify or not decision.is_alert:
-                return decision, None
-            alert_id = _new_id()
-            thumb = await self._async_thumbnail(event) if decision.is_sent else None
-            row = AlertRow(
-                id=alert_id,
-                time=event.time,
-                kind=event.kind,
-                type=event.type,
-                source=event.source,
-                name=event.name,
-                delivery=decision.delivery,
-                mode=mode_name,
-                action=event.action,
-                event_id=event.event_id,
-                snapshot_time=event.snapshot_time,
-                snapshot_box=event.snapshot_box,
-                clip_start=event.clip_start,
-                clip_end=event.clip_end,
-            )
-            await self.hass.async_add_executor_job(self.log.insert, row)
+        decision, mode_name, decided_at = self._decide(event, overrides, record=notify)
+        _LOGGER.info(
+            "%s %s from %s: %s (%s)%s",
+            event.kind,
+            event.type,
+            event.source,
+            decision.delivery,
+            decision.reason,
+            "" if notify else " [simulated, not sent]",
+        )
+        if not notify or not decision.is_alert:
+            return decision, None
+
+        # Images are fetched in parallel, but the sends of one type keep the
+        # order of the decisions: a popup repeat never lands before its ring.
+        previous_send = self._sends.get(event.type)
+        this_send: asyncio.Future[None] = self.hass.loop.create_future()
+        self._sends[event.type] = this_send
+        alert_id = _new_id()
+        sent = False
+        try:
+            await self._async_log(event, decision, mode_name, alert_id)
+            thumb = await self._async_store_thumbnail(event, decision, alert_id)
+            if decision.is_sent:
+                if previous_send is not None:
+                    await previous_send
+                sent = await self._async_send(event, decision, alert_id, thumb is not None)
+        finally:
+            if decision.rings and not sent:
+                # The ring never went out, so the next critical alert should ring.
+                self.burst.forget(event.type, decided_at)
+                self._save_rings()
+            this_send.set_result(None)
+            if self._sends.get(event.type) is this_send:
+                del self._sends[event.type]
+        return decision, alert_id
+
+    async def _async_log(
+        self, event: AlertEvent, decision: Decision, mode_name: str, alert_id: str
+    ) -> None:
+        """Write the log row first, so a review started now already includes it."""
+        row = AlertRow(
+            id=alert_id,
+            time=event.time,
+            kind=event.kind,
+            type=event.type,
+            source=event.source,
+            name=event.name,
+            delivery=decision.delivery,
+            mode=mode_name,
+            action=event.action,
+            event_id=event.event_id,
+            snapshot_time=event.snapshot_time,
+            snapshot_box=event.snapshot_box,
+            clip_start=event.clip_start,
+            clip_end=event.clip_end,
+        )
+        try:
+            event.time = await self.hass.async_add_executor_job(self.log.insert, row)
+        except AlertLogError:
+            pass  # Already logged; the phone still gets the alert.
+
+    async def _async_store_thumbnail(
+        self, event: AlertEvent, decision: Decision, alert_id: str
+    ) -> bytes | None:
+        """Fetch and save the alert's image. Sounds keep their frame even when paused,
+        because the review view shows it."""
+        if not decision.is_sent and event.kind != SOUND:
+            return None
+        snapshot_before = event.snapshot_time
+        thumb = await self._async_thumbnail(event)
+        try:
             if thumb is not None:
                 await self.hass.async_add_executor_job(self.log.write_media, alert_id, THUMB, thumb)
-            if decision.is_sent:
-                title, message = alert_text(
-                    event.kind, event.type, event.name, event.action, event.time
+            if event.snapshot_box is not None and event.snapshot_time != snapshot_before:
+                await self.hass.async_add_executor_job(
+                    self.log.update_snapshot, alert_id, event.snapshot_time, event.snapshot_box
                 )
-                payload = alert_payload(
-                    alert_id=alert_id,
-                    kind=event.kind,
-                    event_type=event.type,
-                    title=title,
-                    message=message,
-                    delivery=decision.delivery,
-                    has_image=thumb is not None,
-                )
-                if await self.notifier.async_send(payload):
-                    self._remember_tag(payload["data"]["tag"])
-            return decision, alert_id
+        except AlertLogError:
+            pass  # Already logged; the notification can still carry the image.
+        return thumb
+
+    async def _async_send(
+        self, event: AlertEvent, decision: Decision, alert_id: str, has_image: bool
+    ) -> bool:
+        title, message = alert_text(event.kind, event.type, event.name, event.action, event.time)
+        payload = alert_payload(
+            alert_id=alert_id,
+            kind=event.kind,
+            event_type=event.type,
+            title=title,
+            message=message,
+            delivery=decision.delivery,
+            has_image=has_image,
+        )
+        if not await self.notifier.async_send(payload):
+            return False
+        self._remember_tag(payload["data"]["tag"])
+        return True
 
     @callback
     def _remember_tag(self, tag: str) -> None:
@@ -464,12 +530,13 @@ class SecurityAlerts:
     # Images
 
     async def _async_thumbnail(self, event: AlertEvent) -> bytes | None:
+        """The notification image, or None: an alert without one still goes out."""
         try:
             if event.kind == SOUND and event.camera:
                 return await self.frigate.latest(event.camera)
             if event.kind == DETECTION and event.camera:
                 return await self._async_detection_thumbnail(event)
-        except FrigateError as err:
+        except (FrigateError, imaging.ImageRenderError) as err:
             _LOGGER.warning("No image for %s %s: %s", event.type, event.source, err)
         return None
 
@@ -503,13 +570,17 @@ class SecurityAlerts:
         return await self.hass.async_add_executor_job(render)
 
     async def async_full_image(self, alert_id: str) -> bytes | None:
-        """The review image: rendered once from the recording, then cached."""
-        cached = await self.hass.async_add_executor_job(self.log.read_media, alert_id, FULL)
-        if cached is not None:
-            return cached
+        """The review image: rendered once from the recording, then cached.
+
+        Raises:
+            AlertLogError: the log or the image directory failed.
+        """
         row = await self.hass.async_add_executor_job(self.log.get, alert_id)
         if row is None:
             return None
+        cached = await self.hass.async_add_executor_job(self.log.read_media, alert_id, FULL)
+        if cached is not None:
+            return cached
         if row.kind == SOUND:
             return await self.hass.async_add_executor_job(self.log.read_media, alert_id, THUMB)
         if row.kind != DETECTION:
@@ -538,7 +609,11 @@ class SecurityAlerts:
             size = imaging.image_size(frame)
             return imaging.render_full(frame, scale_box(detect_box, detect_size or size, size))
 
-        return await self.hass.async_add_executor_job(render)
+        try:
+            return await self.hass.async_add_executor_job(render)
+        except imaging.ImageRenderError as err:
+            _LOGGER.warning("Could not render the review image of %s: %s", row.id, err)
+            return None
 
     async def _async_full_fallback(self, row: AlertRow) -> bytes | None:
         if row.event_id:
@@ -591,18 +666,23 @@ class SecurityAlerts:
     async def _async_apply_end(
         self, event_id: str, end_time: float | None, snapshot: tuple[float, Box] | None
     ) -> None:
-        row = await self.hass.async_add_executor_job(self.log.by_event_id, event_id)
-        if row is None:
-            return
-        if end_time is not None:
-            await self.hass.async_add_executor_job(
-                self.log.update_clip_end, row.id, end_time + CLIP_POST_SECONDS
-            )
-        if snapshot is not None and snapshot[0] != row.snapshot_time:
-            await self.hass.async_add_executor_job(
-                self.log.update_snapshot, row.id, snapshot[0], snapshot[1]
-            )
-            await self.hass.async_add_executor_job(self.log.delete_media, row.id, FULL)
+        """Fill a detection's clip end and final snapshot (a newer box drops the cached
+        review image)."""
+        try:
+            row = await self.hass.async_add_executor_job(self.log.by_event_id, event_id)
+            if row is None:
+                return
+            if end_time is not None:
+                await self.hass.async_add_executor_job(
+                    self.log.update_clip_end, row.id, end_time + CLIP_POST_SECONDS
+                )
+            if snapshot is not None and snapshot[0] != row.snapshot_time:
+                await self.hass.async_add_executor_job(
+                    self.log.update_snapshot, row.id, snapshot[0], snapshot[1]
+                )
+                await self.hass.async_add_executor_job(self.log.delete_media, row.id, FULL)
+        except AlertLogError:
+            pass  # Already logged; the 30-minute fallback still gives a clip.
 
     async def async_sound(self, camera: str, label: str, when: float) -> None:
         key = (camera, label)
@@ -635,9 +715,12 @@ class SecurityAlerts:
             self._pending_offs[key] = when
             return
         del self._active_sounds[key]
-        await self.hass.async_add_executor_job(
-            self.log.update_clip_end, row_id, when + CLIP_POST_SECONDS
-        )
+        try:
+            await self.hass.async_add_executor_job(
+                self.log.update_clip_end, row_id, when + CLIP_POST_SECONDS
+            )
+        except AlertLogError:
+            pass  # Already logged; the 30-minute fallback still gives a clip.
 
     async def async_sensor(self, kind: str, entity_id: str, action: str | None) -> None:
         event = AlertEvent(
@@ -658,21 +741,26 @@ class SecurityAlerts:
             return self.state.last_review
         return now - self.config[CONF_FIRST_REVIEW_HOURS] * 3600
 
-    async def async_review_start(self) -> tuple[float, float, list[AlertRow]]:
+    async def async_review_start(self) -> tuple[float, float, list[AlertRow], bool]:
         """Record a review: return everything since the last one, and clear the panel."""
         now = time.time()
         start = self.review_start_default(now)
         self.state.last_review = now
         tags, self.state.shown_tags = self.state.shown_tags, []
         self.state.save()
-        rows = await self.async_window(start, now)
+        rows, more = await self.async_window(start, now)
         self.hass.async_create_background_task(
             self.notifier.async_clear(tags), "security_alerts clear notifications"
         )
-        return start, now, rows
+        return start, now, rows, more
 
-    async def async_window(self, start: float, end: float) -> list[AlertRow]:
-        return await self.hass.async_add_executor_job(self.log.window, start, end)
+    async def async_window(
+        self, start: float, end: float, after: tuple[float, str] | None = None
+    ) -> tuple[list[AlertRow], bool]:
+        """One page of a review window, newest first, and whether more follow."""
+        return await self.hass.async_add_executor_job(
+            self.log.window, start, end, REVIEW_PAGE_SIZE, after
+        )
 
     async def async_get(self, alert_id: str) -> AlertRow | None:
         return await self.hass.async_add_executor_job(self.log.get, alert_id)

@@ -20,5 +20,10 @@ class BurstWindow:
         """Restart the window for this type."""
         self._last_rings[event_type] = now
 
+    def forget(self, event_type: str, at: float) -> None:
+        """Undo the ring recorded at `at`, if it is still the last one (it never went out)."""
+        if self._last_rings.get(event_type) == at:
+            del self._last_rings[event_type]
+
     def as_dict(self) -> dict[str, float]:
         return dict(self._last_rings)

@@ -7,6 +7,9 @@
 // Loaded on every page by the security_alerts integration. This file holds no data.
 
 const DEFAULT_ENTITY = "sensor.security_alerts_quiet";
+// Types and cameras come from Frigate's config, which may not be loaded yet; ask again
+// this long after a failure or an answer with no cameras.
+const OPTIONS_RETRY_MS = 30000;
 const SENSOR_TYPES = new Set(["door", "motion"]);
 const KIND_NAMES = { pause: "Pause", dnd: "Do not disturb", snooze: "Snooze" };
 const SECTIONS = [
@@ -76,6 +79,7 @@ class SecurityAlertsCard extends HTMLElement {
       this._choices[section.kind] = { types: new Set(), cameras: new Set(), hours: null, busy: false };
     }
     this._options = null;
+    this._retryAt = 0;
     this._lastState = undefined;
   }
 
@@ -94,7 +98,8 @@ class SecurityAlertsCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     if (!this._root) this._build();
-    if (!this._options && !this._loading) this._loadOptions();
+    const complete = this._options && this._options.cameras.length;
+    if (!complete && !this._loading && Date.now() >= this._retryAt) this._loadOptions();
     const state = hass.states[this._config.entity];
     if (state !== this._lastState) {
       this._lastState = state;
@@ -121,17 +126,23 @@ class SecurityAlertsCard extends HTMLElement {
 
   async _loadOptions() {
     this._loading = true;
+    this._retryAt = Date.now() + OPTIONS_RETRY_MS;
     try {
       this._options = await this._hass.callWS({ type: "security_alerts/types" });
-      for (const section of SECTIONS) this._choices[section.kind].hours = this._options.durations[0];
-      for (const section of SECTIONS) this._renderSection(section);
+      for (const section of SECTIONS) {
+        const choice = this._choices[section.kind];
+        if (choice.hours === null) choice.hours = this._options.durations[0];
+        this._renderSection(section);
+      }
       this._renderRunning();
     } catch (err) {
-      for (const section of SECTIONS) {
-        this._sections[section.kind].replaceChildren(
-          h("h2", { text: section.title }),
-          h("div", { class: "error", text: `Unavailable: ${err.message || err}` }),
-        );
+      if (!this._options) {
+        for (const section of SECTIONS) {
+          this._sections[section.kind].replaceChildren(
+            h("h2", { text: section.title }),
+            h("div", { class: "error", text: `Unavailable: ${err.message || err}` }),
+          );
+        }
       }
     } finally {
       this._loading = false;

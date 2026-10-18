@@ -11,9 +11,12 @@ const POLL_CLIP_MS = 5000;
 // Images this far below the screen start loading before they scroll in.
 const PRELOAD_MARGIN = "600px 0px";
 const BADGES = { paused: "Paused" };
+// Types and cameras come from Frigate's config, which may not be loaded yet.
+const TYPES_RETRY_MS = 30000;
 
-// Read at module load too: the frontend may rewrite the URL before the panel starts.
-const INITIAL_SEARCH = typeof window !== "undefined" ? window.location.search : "";
+// Read at module load too: the frontend may rewrite the URL before the first panel starts.
+// Only that first panel may use it; later ones would replay a stale clip or window.
+let initialSearch = typeof window !== "undefined" ? window.location.search : "";
 
 function h(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
@@ -74,6 +77,8 @@ const STYLE = `
   .shot { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #111;
     cursor: pointer; border: 0; padding: 0; }
   .shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .no-image { display: flex; align-items: center; justify-content: center; height: 100%; color: #aaa; }
+  .more { padding: 16px; text-align: center; color: var(--secondary-text-color); }
   .row { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--card-background-color);
     border-radius: 12px; border: 1px solid var(--divider-color); }
   .row .type { font-size: 0.95em; }
@@ -96,6 +101,8 @@ class SecurityReviewPanel extends HTMLElement {
     this._snoozeTypes = new Set();
     this._snoozeHours = null;
     this._observer = null;
+    this._moreObserver = null;
+    this._typesRetry = null;
     this._poll = null;
     this._liveCard = null;
   }
@@ -120,11 +127,15 @@ class SecurityReviewPanel extends HTMLElement {
 
   disconnectedCallback() {
     if (this._observer) this._observer.disconnect();
+    if (this._moreObserver) this._moreObserver.disconnect();
+    clearTimeout(this._typesRetry);
     this._stopPoll();
   }
 
   _currentSearch() {
-    if (this._search === null && !window.location.search && INITIAL_SEARCH) return INITIAL_SEARCH;
+    const fallback = initialSearch;
+    initialSearch = "";
+    if (this._search === null && !window.location.search && fallback) return fallback;
     return window.location.search;
   }
 
@@ -209,15 +220,24 @@ class SecurityReviewPanel extends HTMLElement {
   }
 
   async _loadTypes() {
-    if (this._types) return;
+    if (this._typesLoading || (this._types && this._types.cameras.length)) return;
+    this._typesLoading = true;
+    clearTimeout(this._typesRetry);
     try {
       this._types = await this._hass.callWS({ type: "security_alerts/types" });
+      if (this._snoozeHours === null) this._snoozeHours = this._types.durations[0];
+      this._renderSnooze();
     } catch (err) {
-      this._snooze.replaceChildren(h("div", { class: "error", text: `Snooze is unavailable: ${err.message || err}` }));
-      return;
+      if (!this._types) {
+        this._snooze.replaceChildren(h("div", { class: "error", text: `Snooze is unavailable: ${err.message || err}` }));
+      }
+    } finally {
+      this._typesLoading = false;
     }
-    this._snoozeHours = this._types.durations[0];
-    this._renderSnooze();
+    // No cameras yet: Frigate's config has not arrived, so ask again later.
+    if (!this._types || !this._types.cameras.length) {
+      this._typesRetry = setTimeout(() => this._loadTypes(), TYPES_RETRY_MS);
+    }
   }
 
   _renderSnooze() {
@@ -276,14 +296,57 @@ class SecurityReviewPanel extends HTMLElement {
   // The list
 
   _renderWindow(result) {
-    const count = result.items.length;
-    this._windowText.textContent = `${result.from_clock} to ${result.to_clock} · ${count} alert${count === 1 ? "" : "s"}`;
-    if (!count) {
+    this._window = result;
+    this._count = 0;
+    if (this._observer) this._observer.disconnect();
+    if (this._moreObserver) this._moreObserver.disconnect();
+    if (!result.items.length) {
+      this._showCount(false);
       this._list.replaceChildren(h("div", { class: "empty", text: "Nothing happened in this time." }));
       return;
     }
-    this._list.replaceChildren(...result.items.map((item) => this._renderItem(item)));
-    this._loadImages();
+    this._list.replaceChildren();
+    this._appendPage(result);
+  }
+
+  _showCount(more) {
+    const w = this._window;
+    const n = `${this._count}${more ? "+" : ""}`;
+    this._windowText.textContent = `${w.from_clock} to ${w.to_clock} · ${n} alert${n === "1" ? "" : "s"}`;
+  }
+
+  // Appends one page; a sentinel at the end fetches the next page when it nears the screen.
+  _appendPage(page) {
+    const items = page.items.map((item) => this._renderItem(item));
+    this._list.append(...items);
+    this._count += page.items.length;
+    this._showCount(page.more);
+    this._loadImages(items);
+    if (!page.more) return;
+    const last = page.items[page.items.length - 1];
+    const sentinel = h("div", { class: "more", text: "Loading more…" });
+    this._list.append(sentinel);
+    this._moreObserver = new IntersectionObserver(
+      async (entries, observer) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        try {
+          const next = await this._hass.callWS({
+            type: "security_alerts/review/get",
+            from: this._window.from,
+            to: this._window.to,
+            after_time: last.time,
+            after_id: last.id,
+          });
+          sentinel.remove();
+          this._appendPage(next);
+        } catch (err) {
+          sentinel.textContent = `Could not load more: ${err.message || err}`;
+        }
+      },
+      { rootMargin: PRELOAD_MARGIN },
+    );
+    this._moreObserver.observe(sentinel);
   }
 
   _badge(item) {
@@ -300,6 +363,7 @@ class SecurityReviewPanel extends HTMLElement {
       ]);
     }
     const img = h("img", { "data-src": item.image, alt: `${item.type_name} at ${item.name}`, decoding: "async" });
+    img.addEventListener("error", () => img.replaceWith(h("div", { class: "no-image", text: "No image" })));
     return h("article", { class: "card" }, [
       h("header", {}, [
         h("span", { class: "type", text: item.type_name }),
@@ -310,26 +374,29 @@ class SecurityReviewPanel extends HTMLElement {
     ]);
   }
 
-  _loadImages() {
-    if (this._observer) this._observer.disconnect();
+  // Images on the first screen load at once with high priority; the rest when scrolled near.
+  _loadImages(elements) {
     const load = (img) => {
       img.src = img.dataset.src;
       img.removeAttribute("data-src");
     };
-    this._observer = new IntersectionObserver(
-      (entries, observer) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          observer.unobserve(entry.target);
-          load(entry.target);
-        }
-      },
-      { rootMargin: PRELOAD_MARGIN },
-    );
-    // Wait a frame so the list has its layout, then load the first screen first.
+    if (!this._observer) {
+      this._observer = new IntersectionObserver(
+        (entries, observer) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            observer.unobserve(entry.target);
+            load(entry.target);
+          }
+        },
+        { rootMargin: PRELOAD_MARGIN },
+      );
+    }
+    // Wait a frame so the list has its layout.
     requestAnimationFrame(() => {
       const screen = window.innerHeight;
-      for (const img of this._list.querySelectorAll("img[data-src]")) {
+      const images = elements.flatMap((el) => [...el.querySelectorAll("img[data-src]")]);
+      for (const img of images) {
         if (img.getBoundingClientRect().top < screen) {
           img.setAttribute("fetchpriority", "high");
           load(img);

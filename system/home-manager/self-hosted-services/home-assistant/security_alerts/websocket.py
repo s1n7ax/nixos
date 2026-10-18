@@ -70,7 +70,10 @@ def _item(hass: HomeAssistant, alerts: SecurityAlerts, row: AlertRow, now: float
     return item
 
 
-def _window(hass: HomeAssistant, start: float, end: float, rows: list[AlertRow]) -> dict[str, Any]:
+def _window(
+    hass: HomeAssistant, start: float, end: float, rows: list[AlertRow], more: bool
+) -> dict[str, Any]:
+    """One page of a review window; `more` says another page follows the last item."""
     alerts = _alerts(hass)
     now = time.time()
     return {
@@ -79,6 +82,7 @@ def _window(hass: HomeAssistant, start: float, end: float, rows: list[AlertRow])
         "from_clock": local_clock(start),
         "to_clock": local_clock(end),
         "items": [_item(hass, alerts, row, now) for row in rows],
+        "more": more,
     }
 
 
@@ -88,8 +92,8 @@ async def ws_review_start(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Record a review and return everything since the last one."""
-    start, end, rows = await _alerts(hass).async_review_start()
-    connection.send_result(msg["id"], _window(hass, start, end, rows))
+    start, end, rows, more = await _alerts(hass).async_review_start()
+    connection.send_result(msg["id"], _window(hass, start, end, rows, more))
 
 
 @websocket_api.websocket_command(
@@ -97,19 +101,23 @@ async def ws_review_start(
         probatio.Required("type"): "security_alerts/review/get",
         probatio.Optional("from"): probatio.Coerce(float),
         probatio.Optional("to"): probatio.Coerce(float),
+        # The last item of the previous page, to fetch the next one.
+        probatio.Inclusive("after_time", "after"): probatio.Coerce(float),
+        probatio.Inclusive("after_id", "after"): probatio.Match(r"^[0-9a-f]{32}$"),
     }
 )
 @websocket_api.async_response
 async def ws_review_get(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Return a window without recording a review (defaults: last review to now)."""
+    """Return a window page without recording a review (defaults: last review to now)."""
     alerts = _alerts(hass)
     now = time.time()
     end = msg.get("to", now)
     start = msg.get("from", alerts.review_start_default(now))
-    rows = await alerts.async_window(start, end)
-    connection.send_result(msg["id"], _window(hass, start, end, rows))
+    after = (msg["after_time"], msg["after_id"]) if "after_id" in msg else None
+    rows, more = await alerts.async_window(start, end, after)
+    connection.send_result(msg["id"], _window(hass, start, end, rows, more))
 
 
 @websocket_api.websocket_command(

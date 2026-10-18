@@ -20,9 +20,30 @@ FULL_QUALITY = 92
 BOX_COLOR = (255, 40, 40)
 
 
+class ImageRenderError(ValueError):
+    """A frame could not be decoded, or the requested crop is empty."""
+
+
+def _open(jpeg: bytes) -> Image.Image:
+    """Decode a frame.
+
+    Raises:
+        ImageRenderError: the bytes are not an image Pillow can read.
+    """
+    try:
+        with Image.open(BytesIO(jpeg)) as source:
+            return source.convert("RGB")
+    except (OSError, ValueError, Image.DecompressionBombError) as err:
+        raise ImageRenderError(f"Cannot read the frame: {err}") from err
+
+
 def image_size(jpeg: bytes) -> Size:
-    with Image.open(BytesIO(jpeg)) as image:
-        return image.size
+    """Return a frame's (width, height).
+
+    Raises:
+        ImageRenderError: the bytes are not an image Pillow can read.
+    """
+    return _open(jpeg).size
 
 
 def _line_width(size: Size) -> int:
@@ -48,15 +69,18 @@ def render_crop(
     out_size: Size = THUMB_SIZE,
     quality: int = THUMB_QUALITY,
 ) -> bytes:
-    """Crop `crop` (black where it leaves the frame), resize it and draw `box`."""
+    """Crop `crop` (black where it leaves the frame), resize it and draw `box`.
+
+    Raises:
+        ImageRenderError: the frame cannot be read, or the crop is empty.
+    """
     # Whole pixels, grown outwards, so the box maps exactly onto the crop taken.
     x1, y1 = math.floor(crop[0]), math.floor(crop[1])
     x2, y2 = math.ceil(crop[2]), math.ceil(crop[3])
     if x2 <= x1 or y2 <= y1:
-        raise ValueError(f"Empty crop: {crop}")
-    with Image.open(BytesIO(jpeg)) as source:
-        # Pillow fills the area outside the image with zeros: black for RGB.
-        cropped = source.convert("RGB").crop((x1, y1, x2, y2))
+        raise ImageRenderError(f"Empty crop: {crop}")
+    # Pillow fills the area outside the image with zeros: black for RGB.
+    cropped = _open(jpeg).crop((x1, y1, x2, y2))
     image = cropped.resize(out_size, Image.Resampling.LANCZOS)
     sx = out_size[0] / (x2 - x1)
     sy = out_size[1] / (y2 - y1)
@@ -67,10 +91,13 @@ def render_crop(
 
 
 def render_full(jpeg: bytes, box: Box | None, quality: int = FULL_QUALITY) -> bytes:
-    """Draw `box` on the whole frame; with no box the frame is returned as is."""
+    """Draw `box` on the whole frame; with no box the frame is returned as is.
+
+    Raises:
+        ImageRenderError: the frame cannot be read.
+    """
     if box is None:
         return jpeg
-    with Image.open(BytesIO(jpeg)) as source:
-        image = source.convert("RGB")
+    image = _open(jpeg)
     _draw_box(image, box)
     return _encode(image, quality)

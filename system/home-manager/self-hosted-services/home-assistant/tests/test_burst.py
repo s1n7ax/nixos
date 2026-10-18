@@ -33,3 +33,18 @@ def test_clock_going_back_is_not_recent():
 def test_round_trip():
     burst = BurstWindow(WINDOW, {"person": 5.0})
     assert BurstWindow(WINDOW, burst.as_dict()).rang_recently("person", 6.0)
+
+
+def test_forget_undoes_a_ring_that_never_went_out():
+    burst = BurstWindow(WINDOW)
+    burst.record("person", 100.0)
+    burst.forget("person", 100.0)
+    assert not burst.rang_recently("person", 101.0)
+
+
+def test_forget_keeps_a_newer_ring():
+    burst = BurstWindow(WINDOW)
+    burst.record("person", 100.0)
+    burst.record("person", 200.0)
+    burst.forget("person", 100.0)
+    assert burst.rang_recently("person", 201.0)

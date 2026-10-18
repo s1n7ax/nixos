@@ -52,6 +52,10 @@ EXCLUDED_PLATFORMS = {"frigate", "group"}
 FORGET_AFTER_SECONDS = 60
 # Matching Frigate's X-Frame-Time header to an MQTT snapshot frame time.
 FRAME_TIME_TOLERANCE = 1e-3
+# Events with no message for this long are forgotten even if their end never came
+# (Frigate restarted mid-event, or the end message was lost).
+STALE_EVENT_SECONDS = 3600
+STALE_SWEEP_INTERVAL = timedelta(minutes=10)
 
 
 class SnapshotMemory:
@@ -107,6 +111,8 @@ class Sources:
         self.alerts = alerts
         self.snapshots = SnapshotMemory()
         self._alerted: set[str] = set()
+        # Last message time per Frigate event, for the stale-event sweep.
+        self._seen: dict[str, float] = {}
         self._motion_timers: dict[str, CALLBACK_TYPE] = {}
         self._unsubs: list[Callable[[], None]] = []
         self._config_retry: CALLBACK_TYPE | None = None
@@ -124,6 +130,9 @@ class Sources:
                 self._async_refresh_config,
                 timedelta(seconds=FRIGATE_CONFIG_REFRESH_SECONDS),
             )
+        )
+        self._unsubs.append(
+            async_track_time_interval(self.hass, self._sweep_stale, STALE_SWEEP_INTERVAL)
         )
         await self._async_refresh_config()
         if not await mqtt.async_wait_for_mqtt_client(self.hass):
@@ -178,6 +187,7 @@ class Sources:
         label = after.get("label")
         if not isinstance(event_id, str) or not isinstance(camera, str):
             return
+        self._seen[event_id] = time.time()
         snapshot = _snapshot(after)
         if snapshot is not None:
             self.snapshots.add(event_id, *snapshot)
@@ -211,9 +221,16 @@ class Sources:
             async_call_later(self.hass, FORGET_AFTER_SECONDS, partial(self._forget, event_id))
 
     @callback
-    def _forget(self, event_id: str, _now: datetime) -> None:
+    def _forget(self, event_id: str, _now: datetime | None = None) -> None:
         self.snapshots.forget(event_id)
         self._alerted.discard(event_id)
+        self._seen.pop(event_id, None)
+
+    @callback
+    def _sweep_stale(self, _now: datetime) -> None:
+        cutoff = time.time() - STALE_EVENT_SECONDS
+        for event_id in [e for e, seen in self._seen.items() if seen < cutoff]:
+            self._forget(event_id)
 
     @callback
     def _on_audio(self, msg: mqtt.ReceiveMessage) -> None:

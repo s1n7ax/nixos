@@ -7,6 +7,7 @@ from homeassistant.components.http import HomeAssistantView
 
 from .const import FULL, THUMB
 from .pipeline import SecurityAlerts
+from .store import AlertLogError
 
 CACHE = {THUMB: "private, max-age=86400", FULL: "private, max-age=600"}
 
@@ -26,12 +27,15 @@ class ImageView(HomeAssistantView):
         self._alerts = alerts
 
     async def get(self, request: web.Request, alert_id: str, variant: str) -> web.Response:
-        if variant == THUMB:
-            image = await self._alerts.hass.async_add_executor_job(
-                self._alerts.log.read_media, alert_id, THUMB
-            )
-        else:
-            image = await self._alerts.async_full_image(alert_id)
+        try:
+            if variant == THUMB:
+                image = await self._alerts.hass.async_add_executor_job(
+                    self._alerts.log.read_media, alert_id, THUMB
+                )
+            else:
+                image = await self._alerts.async_full_image(alert_id)
+        except AlertLogError:
+            return web.Response(status=500)  # Already logged.
         if image is None:
             return web.Response(status=404)
         return web.Response(
