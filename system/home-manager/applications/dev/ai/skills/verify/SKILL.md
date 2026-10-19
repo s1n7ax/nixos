@@ -79,6 +79,8 @@ Ask only when the code, the docs, your notes and your tools cannot answer. That 
 
 Every question passes the `questions` skill first, one at a time. Save each answer that will still hold next time (see Remembering) before carrying on.
 
+When `/ship` runs this skill in a subagent, you cannot reach the user. Stop instead, and return the questions with what each one blocks; `/ship` asks them, saves the answers, and starts you again with them.
+
 Keep secrets out of the proof. Pass a token as an environment variable (`term.sh start <goal>-after <dir> TOKEN=...`) and type `$TOKEN`, so the screenshot shows the name, not the value. Never write a secret into the report, your notes, or a commit; refer to it by name ("the staging admin account").
 
 ### 6. Run each test, on both sides
@@ -169,7 +171,9 @@ Steps are plain user actions, one per line, with no implementation detail: "Clic
 
 Report in chat: the result line, the table of tests with verdicts, the path to the report, and one line per FAIL or NOT RUN saying what went wrong or what blocked it.
 
-`/verify` is the last step of the workflow. When everything passed, tell the user the change is verified and the workflow is complete. Otherwise, name what failed or was not run; fixing it is a new piece of work, not part of this skill.
+When `/ship` is driving this skill, stop after the chat report; `/ship` opens the PR.
+
+Otherwise `/verify` is the last step of the workflow. When everything passed, tell the user the change is verified and the workflow is complete. Otherwise, name what failed or was not run; fixing it is a new piece of work, not part of this skill.
 
 ## Remembering
 
@@ -182,7 +186,7 @@ Whenever the user tells you something you could not work out yourself (how to st
 
 ## Never
 
-- Never run unless the user explicitly invoked this skill.
+- Never run unless the user explicitly invoked this skill or `/ship`.
 - Never ask a question outside the `questions` skill.
 - Never decide a verdict from code, unit tests, or internal calls instead of the end user's interface.
 - Never mark PASS without a screenshot you looked at, or claim a test ran that did not.
