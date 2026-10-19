@@ -27,11 +27,13 @@ _LOGGER = logging.getLogger(__name__)
 
 SAVE_DELAY_SECONDS = 1
 # A media file with no row is only deleted once it is this old: its row may be
-# being written right now.
+# being written right now. A temporary file this old is no longer being written.
 ORPHAN_MEDIA_SECONDS = 3600
-# Images are JPEG; a sound's audio clip is AAC in an MP4 file.
+# Images are JPEG; a sound's audio clip is AAC in an MP4 file. Both are written
+# to a temporary file first, then moved into place.
 IMAGE_EXTENSION = ".jpg"
 AUDIO_EXTENSION = ".m4a"
+TMP_EXTENSION = ".tmp"
 
 
 class StateStore:
@@ -245,7 +247,7 @@ class AlertLog:
 
     def media_tmp_path(self, alert_id: str, variant: str) -> Path:
         """Where a media file is written before it is moved into place."""
-        return self.media_path(alert_id, variant).with_suffix(".tmp")
+        return self.media_path(alert_id, variant).with_suffix(TMP_EXTENSION)
 
     def has_media(self, alert_id: str, variant: str) -> bool:
         try:
@@ -308,17 +310,17 @@ class AlertLog:
 
         Images and audio clips go with their rows: any file whose row is gone is
         dropped, once it is old enough not to belong to an alert being written
-        right now.
+        right now. A temporary file that old goes even when its row is kept: a
+        write that never finished left it, such as ffmpeg killed by a restart.
         """
         now = time.time()
         cutoff = now - days * 86400
         dropped = self._execute("DELETE FROM alerts WHERE time < ? RETURNING id", (cutoff,))
         kept = {r["id"] for r in self._execute("SELECT id FROM alerts")}
-        files = (
-            p for ext in (IMAGE_EXTENSION, AUDIO_EXTENSION) for p in self.media.glob(f"*{ext}")
-        )
+        extensions = (IMAGE_EXTENSION, AUDIO_EXTENSION, TMP_EXTENSION)
+        files = (p for ext in extensions for p in self.media.glob(f"*{ext}"))
         for path in files:
-            if path.name.split("-", 1)[0] in kept:
+            if path.suffix != TMP_EXTENSION and path.name.split("-", 1)[0] in kept:
                 continue
             try:
                 if path.stat().st_mtime < now - ORPHAN_MEDIA_SECONDS:
