@@ -101,7 +101,13 @@ When `/ship` is driving this skill, stop here: `/ship` runs its own checks and o
 
 ## Handing off to the next step
 
-`/implement` is the last step of the workflow. After finishing, **tell the user the workflow is complete** — there is no next command to run or copy. If review or validation left unresolved work, name it explicitly instead of implying a next step.
+When `/ship` is driving this skill, skip this section.
+
+After finishing, the workflow's next step is `/verify <goal>`, which tests the change the way its end user would. If review or validation left unresolved work, name it explicitly instead, and do not hand off.
+
+1. **Tell the user** the next step: run `/verify <goal>`.
+2. **Copy the command to the clipboard** so the user can paste it: run `printf '%s' '/verify <goal>' | wl-copy` (Wayland; fall back to `xclip -selection clipboard` or `xsel --clipboard` when wl-copy is unavailable).
+3. **Confirm the copy worked** — say the command is on the clipboard.
 
 ## Never
 
