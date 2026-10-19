@@ -122,12 +122,13 @@ class SecurityAlertsCard extends HTMLElement {
       this._choices[form.kind] = { types: new Set(), cameras: new Set(), hours: null, busy: false };
     }
     // The picked switch segment; kept in memory only.
-    this._kind = FORMS[0].kind;
+    this._segment = FORMS[0];
     this._options = null;
     this._error = null;
     this._retryAt = 0;
     this._lastState = undefined;
-    this._modeName = undefined;
+    // The away mode the card shows, one of _options.modes, or null.
+    this._mode = null;
   }
 
   static getStubConfig() {
@@ -148,23 +149,12 @@ class SecurityAlertsCard extends HTMLElement {
     const complete = this._options && this._options.cameras.length;
     if (!complete && !this._loading && Date.now() >= this._retryAt) this._loadOptions();
     // The pickers and the no-effect marks follow the mode live, without a reload.
-    let modeChanged = false;
-    if (this._options) {
-      const mode = this._activeMode();
-      const name = mode ? mode.name : null;
-      if (name !== this._modeName) {
-        this._modeName = name;
-        this._dropUnoffered(mode);
-        this._renderForm();
-        modeChanged = true;
-      }
-    }
+    const mode = this._activeMode();
     const state = hass.states[this._config.entity];
-    if (state !== this._lastState || modeChanged) {
-      this._lastState = state;
-      this._renderHead();
-      this._renderRunning();
-    }
+    if (mode === this._mode && state === this._lastState) return;
+    if (mode !== this._mode) this._showMode(mode);
+    this._lastState = state;
+    this._renderRunning();
   }
 
   _build() {
@@ -198,11 +188,7 @@ class SecurityAlertsCard extends HTMLElement {
         const choice = this._choices[form.kind];
         if (choice.hours === null) choice.hours = this._options.durations[0];
       }
-      const mode = this._activeMode();
-      this._modeName = mode ? mode.name : null;
-      this._dropUnoffered(mode);
-      this._renderForm();
-      this._renderHead();
+      this._showMode(this._activeMode());
       this._renderRunning();
     } catch (err) {
       if (!this._options) {
@@ -225,32 +211,31 @@ class SecurityAlertsCard extends HTMLElement {
     );
   }
 
-  // The types a kind changes in this mode: what its picker offers.
-  _offered(kind, mode) {
-    const kinds = new Set((mode && mode.changes[kind]) || []);
+  // Shows `mode`: unpicks the types it no longer offers and re-renders the form.
+  _showMode(mode) {
+    this._mode = mode;
+    for (const form of FORMS) {
+      const offered = new Set(this._offered(form.kind).map((t) => t.id));
+      const picked = this._choices[form.kind].types;
+      for (const id of picked) if (!offered.has(id)) picked.delete(id);
+    }
+    this._renderForm();
+  }
+
+  // The types a kind changes in the shown mode: what its picker offers.
+  _offered(kind) {
+    const kinds = new Set((this._mode && this._mode.changes[kind]) || []);
     return this._options.types.filter((t) => kinds.has(t.kind));
   }
 
-  _dropUnoffered(mode) {
-    for (const form of FORMS) {
-      const offered = new Set(this._offered(form.kind, mode).map((t) => t.id));
-      const picked = this._choices[form.kind].types;
-      for (const id of [...picked]) if (!offered.has(id)) picked.delete(id);
-    }
-  }
-
-  // An entry has an effect when one of its types has a kind its kind changes in this mode.
-  // A type the card does not know counts as having one, so nothing is wrongly marked.
-  _hasEffect(entry, mode) {
-    const kinds = new Set(mode.changes[entry.kind] || []);
+  // An entry has an effect when one of its types has a kind its kind changes in the shown
+  // mode. A type the card does not know counts as having one, so nothing is wrongly marked.
+  _hasEffect(entry) {
+    const kinds = new Set(this._mode.changes[entry.kind] || []);
     return entry.types.some((id) => {
       const type = this._options.types.find((t) => t.id === id);
       return !type || kinds.has(type.kind);
     });
-  }
-
-  _entries() {
-    return (this._lastState && this._lastState.attributes.entries) || [];
   }
 
   _chip(text, icon, pressed, onclick) {
@@ -260,27 +245,18 @@ class SecurityAlertsCard extends HTMLElement {
     ]);
   }
 
-  _renderHead() {
-    if (!this._options) return;
-    const mode = this._activeMode();
-    const count = this._entries().length;
-    this._sub.textContent = mode
-      ? `${mode.name} · ${count ? `${count} running` : "nothing running"}`
-      : "No away mode is on";
-  }
-
   _renderForm() {
     const note = (text, error = false) => h("div", { class: error ? "note error" : "note", text });
     if (!this._options) {
       this._form.replaceChildren(this._error ? note(this._error, true) : note("Loading…"));
       return;
     }
-    const mode = this._activeMode();
+    const mode = this._mode;
     if (!mode) {
       this._form.replaceChildren(note("No away mode is on."));
       return;
     }
-    const form = FORMS.find((f) => f.kind === this._kind);
+    const form = this._segment;
     const choice = this._choices[form.kind];
     const rerender = () => this._renderForm();
     this._form.className = `form k-${form.kind}`;
@@ -291,7 +267,7 @@ class SecurityAlertsCard extends HTMLElement {
           class: `seg k-${f.kind}`,
           "aria-pressed": String(f.kind === form.kind),
           onclick: () => {
-            this._kind = f.kind;
+            this._segment = f;
             rerender();
           },
         },
@@ -299,7 +275,7 @@ class SecurityAlertsCard extends HTMLElement {
       ),
     );
     const switcher = h("div", { class: "switch", role: "group" }, segments);
-    const offered = this._offered(form.kind, mode);
+    const offered = this._offered(form.kind);
     if (!offered.length) {
       this._form.replaceChildren(switcher, note(form.none(mode.name)));
       return;
@@ -388,10 +364,15 @@ class SecurityAlertsCard extends HTMLElement {
     ]);
   }
 
+  // The header's second line, the running count and the running list.
   _renderRunning() {
-    if (!this._running) return;
     const state = this._lastState;
-    const entries = this._entries();
+    const entries = (state && state.attributes.entries) || [];
+    const mode = this._mode;
+    if (this._options) {
+      const running = entries.length ? `${entries.length} running` : "nothing running";
+      this._sub.textContent = mode ? `${mode.name} · ${running}` : "No away mode is on";
+    }
     this._count.textContent = String(entries.length);
     if (!state) {
       this._running.replaceChildren(h("div", { class: "note error", text: `${this._config.entity} is not available.` }));
@@ -403,12 +384,11 @@ class SecurityAlertsCard extends HTMLElement {
     }
     const opts = this._options || {};
     // With no away mode on (or before the types load), nothing is marked.
-    const mode = this._options ? this._activeMode() : null;
     this._running.replaceChildren(
       ...entries.map((entry) => {
         const types = entry.types.map((t) => this._name(opts.types, t)).join(", ");
         const cameras = entry.cameras.length ? entry.cameras.map((c) => this._name(opts.cameras, c)).join(", ") : "";
-        const noEffect = mode !== null && !this._hasEffect(entry, mode);
+        const noEffect = mode !== null && !this._hasEffect(entry);
         const detail = [cameras, untilText(entry.ends_at), noEffect && `No effect in ${mode.name}`];
         const end = h("button", { class: "end", text: "End", onclick: () => this._end(entry.id, end) });
         return this._row(
