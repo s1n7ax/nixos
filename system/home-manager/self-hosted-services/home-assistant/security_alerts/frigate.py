@@ -121,6 +121,14 @@ class FrigateClient:
         body, _ = await self._get(f"api/{camera}/latest.jpg", {"quality": 100})
         return body
 
+    def clip_url(self, camera: str, start: int, end: int) -> str:
+        """The URL of a camera's recording from `start` to `end`, as one MP4.
+
+        Raises:
+            FrigateError: no Frigate integration is set up.
+        """
+        return f"{self._base_url()}/api/{camera}/start/{start}/end/{end}/clip.mp4"
+
     async def recording_frame(self, camera: str, frame_time: float) -> bytes:
         """The full-resolution frame from the recording at `frame_time`."""
         body, _ = await self._get(f"api/{camera}/recordings/{frame_time}/snapshot.jpg")

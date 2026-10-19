@@ -1,7 +1,7 @@
 """Websocket commands for the review page and the dashboard card.
 
-Results carry image and clip URLs signed for the logged-in user, because
-plain <img> and <video> requests send no token.
+Results carry image, audio and clip URLs signed for the logged-in user, because
+plain <img>, <audio> and <video> requests send no token.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
-    CLIP_READY_DELAY_SECONDS,
+    AUDIO_URL,
     DOMAIN,
     FULL,
     IMAGE_URL,
@@ -55,19 +55,28 @@ def _item(hass: HomeAssistant, alerts: SecurityAlerts, row: AlertRow, now: float
     }
     if row.kind not in (DETECTION, SOUND):
         return item
-    item["image"] = async_sign_path(
-        hass, IMAGE_URL.format(alert_id=row.id, variant=FULL), SIGNED_FOR
-    )
     item["camera_entity"] = alerts.camera_entity(row.source)
     clip: dict[str, Any] = {"ready": False, "url": None}
     if (window := alerts.clip_window(row)) is not None:
         start, end = window
-        clip["ready"] = now >= end + CLIP_READY_DELAY_SECONDS
+        clip["ready"] = alerts.clip_ready(window, now)
         if clip["ready"]:
             clip["url"] = async_sign_path(
                 hass, CLIP_URL.format(camera=row.source, start=start, end=end), SIGNED_FOR
             )
     item["clip"] = clip
+    if row.kind == DETECTION:
+        item["image"] = async_sign_path(
+            hass, IMAGE_URL.format(alert_id=row.id, variant=FULL), SIGNED_FOR
+        )
+    else:
+        # A sound shows no picture: it plays its audio, cut from the same clip.
+        item["audio"] = {
+            "ready": clip["ready"],
+            "url": async_sign_path(hass, AUDIO_URL.format(alert_id=row.id), SIGNED_FOR)
+            if clip["ready"]
+            else None,
+        }
     return item
 
 

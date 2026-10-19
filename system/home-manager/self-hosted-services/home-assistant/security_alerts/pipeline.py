@@ -7,14 +7,16 @@ websocket commands, views and services all go through one object.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import math
 import time
 import uuid
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from collections.abc import AsyncIterator, Awaitable, Callable
+from dataclasses import dataclass, field
 from datetime import time as dt_time
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from homeassistant.const import STATE_ON
@@ -32,10 +34,12 @@ from homeassistant.util import dt as dt_util
 
 from . import imaging
 from .const import (
+    AUDIO,
     CLIP_FALLBACK_LENGTH_SECONDS,
     CLIP_MISSING_END_SECONDS,
     CLIP_POST_SECONDS,
     CLIP_PRE_SECONDS,
+    CLIP_READY_DELAY_SECONDS,
     CONF_BURST_MINUTES,
     CONF_DETECTION,
     CONF_DETECTION_ASLEEP_OR_NIGHT,
@@ -60,6 +64,7 @@ from .const import (
     CONF_SLEEP_THRESHOLD,
     CONF_SOUND,
     CONF_TOP_FLOORS,
+    FFMPEG_TIMEOUT_SECONDS,
     FULL,
     SIGNAL_QUIET_UPDATED,
     SNAPSHOT_MATCH_TIMEOUT_SECONDS,
@@ -142,8 +147,59 @@ class _PendingEnd:
     snapshot: tuple[float, Box] | None = None
 
 
+@dataclass
+class _AudioLock:
+    """One alert's audio cut, and how many requests hold or wait for it."""
+
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    users: int = 0
+
+
+class AudioClipError(Exception):
+    """ffmpeg could not cut a sound's audio clip."""
+
+
 def _new_id() -> str:
     return uuid.uuid4().hex
+
+
+async def _async_ffmpeg(*args: str) -> None:
+    """Run ffmpeg (from PATH) with `args`, killing it after FFMPEG_TIMEOUT_SECONDS.
+
+    Raises:
+        AudioClipError: ffmpeg could not start, failed or timed out.
+    """
+    try:
+        process = await asyncio.create_subprocess_exec(
+            "ffmpeg",
+            "-nostdin",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            *args,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except OSError as err:
+        raise AudioClipError(f"Could not run ffmpeg: {err}") from err
+    try:
+        async with asyncio.timeout(FFMPEG_TIMEOUT_SECONDS):
+            _, stderr = await process.communicate()
+    except TimeoutError as err:
+        raise AudioClipError(f"ffmpeg took more than {FFMPEG_TIMEOUT_SECONDS} s") from err
+    finally:
+        # Timed out or cancelled: never leave it running.
+        if process.returncode is None:
+            with contextlib.suppress(ProcessLookupError):
+                process.kill()
+            await process.wait()
+    if process.returncode != 0:
+        lines = stderr.decode(errors="replace").strip().splitlines()
+        raise AudioClipError(
+            f"ffmpeg exited with {process.returncode}: {lines[-1] if lines else 'no output'}"
+        )
 
 
 class SecurityAlerts:
@@ -185,6 +241,7 @@ class SecurityAlerts:
         self._pending_ends: dict[str, _PendingEnd] = {}
         self._active_sounds: dict[tuple[str, str], str | None] = {}
         self._pending_offs: dict[tuple[str, str], float] = {}
+        self._audio_locks: dict[str, _AudioLock] = {}
         self._expiry_unsub: CALLBACK_TYPE | None = None
         self._unsubs: list[CALLBACK_TYPE] = []
 
@@ -488,9 +545,12 @@ class SecurityAlerts:
     async def _async_store_thumbnail(
         self, event: AlertEvent, decision: Decision, alert_id: str
     ) -> bytes | None:
-        """Fetch and save the alert's image. Sounds keep their frame even when paused,
-        because the review view shows it."""
-        if not decision.is_sent and event.kind != SOUND:
+        """Fetch and save the notification image, only when the alert is sent.
+
+        The review view shows no picture for a sound, and renders a detection's
+        own review image from the recording.
+        """
+        if not decision.is_sent:
             return None
         snapshot_before = event.snapshot_time
         thumb = await self._async_thumbnail(event)
@@ -624,6 +684,66 @@ class SecurityAlerts:
             except FrigateError as err:
                 _LOGGER.debug("No Frigate snapshot for %s: %s", row.id, err)
         return await self.hass.async_add_executor_job(self.log.read_media, row.id, THUMB)
+
+    # Audio
+
+    async def async_audio(self, alert_id: str) -> Path | None:
+        """A sound's audio clip: cut from Frigate's clip on the first request, then cached.
+
+        Returns None when the alert is missing, is not a sound, or its clip is not ready.
+
+        Raises:
+            AlertLogError: the log or the media directory failed.
+            AudioClipError: ffmpeg failed, timed out or wrote an empty file.
+        """
+        row = await self.async_get(alert_id)
+        window = self.clip_window(row) if row is not None and row.kind == SOUND else None
+        if row is None or window is None or not self.clip_ready(window, time.time()):
+            return None
+        async with self._audio_lock(alert_id):
+            if not await self.hass.async_add_executor_job(self.log.has_media, alert_id, AUDIO):
+                await self._async_cut_audio(row.source, window, alert_id)
+        return self.log.media_path(alert_id, AUDIO)
+
+    @contextlib.asynccontextmanager
+    async def _audio_lock(self, alert_id: str) -> AsyncIterator[None]:
+        """At most one ffmpeg run per alert at a time."""
+        entry = self._audio_locks.setdefault(alert_id, _AudioLock())
+        entry.users += 1
+        try:
+            async with entry.lock:
+                yield
+        finally:
+            entry.users -= 1
+            if not entry.users:
+                del self._audio_locks[alert_id]
+
+    async def _async_cut_audio(self, camera: str, window: tuple[int, int], alert_id: str) -> None:
+        """Copy the audio of Frigate's clip, without re-encoding, into the media directory.
+
+        Raises:
+            AlertLogError: the media directory failed.
+            AudioClipError: ffmpeg failed, timed out or wrote an empty file.
+        """
+        try:
+            url = self.frigate.clip_url(camera, *window)
+        except FrigateError as err:
+            raise AudioClipError(str(err)) from err
+        tmp = self.log.media_tmp_path(alert_id, AUDIO)
+        kept = False
+        try:
+            # No video, the audio copied as is, and the index first so playback
+            # can start (and seek) before the whole file has loaded.
+            await _async_ffmpeg(
+                *("-i", url, "-vn", "-c:a", "copy", "-movflags", "+faststart"),
+                *("-f", "mp4", str(tmp)),
+            )
+            kept = await self.hass.async_add_executor_job(self.log.keep_media_tmp, alert_id, AUDIO)
+        finally:
+            if not kept:
+                await self.hass.async_add_executor_job(self.log.drop_media_tmp, alert_id, AUDIO)
+        if not kept:
+            raise AudioClipError("ffmpeg wrote an empty file")
 
     # Event entry points (called by Sources)
 
@@ -847,7 +967,12 @@ class SecurityAlerts:
         width, height = self.frigate.detect_size(camera) or (640, 360)
         return (width * 0.4, height * 0.25, width * 0.6, height * 0.75)
 
-    def clip_window(self, row: AlertRow) -> tuple[float, float] | None:
+    def clip_window(self, row: AlertRow) -> tuple[int, int] | None:
         if row.clip_start is None or row.clip_end is None:
             return None
         return math.floor(row.clip_start), math.ceil(row.clip_end)
+
+    @staticmethod
+    def clip_ready(window: tuple[int, int], now: float) -> bool:
+        """A clip counts as ready once its recording should be saved."""
+        return now >= window[1] + CLIP_READY_DELAY_SECONDS

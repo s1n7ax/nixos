@@ -67,8 +67,13 @@ PANEL_COMPONENT = "security-review-panel"
 PANEL_FILE = "security-review-panel.js"
 CARD_FILE = "security-alerts-card.js"
 IMAGE_URL = "/api/security_alerts/image/{alert_id}/{variant}.jpg"
+AUDIO_URL = "/api/security_alerts/audio/{alert_id}.m4a"
+# Media variants: the notification image, the review image, a sound's audio clip.
 THUMB = "thumb"
 FULL = "full"
+AUDIO = "audio"
+# ffmpeg copies a sound's audio out of Frigate's clip; it is killed after this long.
+FFMPEG_TIMEOUT_SECONDS = 60
 
 ACTION_SIREN = "SECURITY_ALERTS_SIREN"
 ACTION_SNOOZE_PREFIX = "SECURITY_ALERTS_SNOOZE_"

@@ -1,7 +1,8 @@
-"""State that survives restarts: quiet entries and timers, the alert log, images.
+"""State that survives restarts: quiet entries and timers, the alert log, media.
 
 The small state lives in a Home Assistant `Store`. The alert log is SQLite
-(a JSON store would be rewritten whole on every save), and images are files.
+(a JSON store would be rewritten whole on every save), and images and audio
+clips are files.
 """
 
 from __future__ import annotations
@@ -20,14 +21,17 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .const import DATA_DIR, DB_FILE, MEDIA_DIR, STORAGE_KEY, STORAGE_VERSION
+from .const import AUDIO, DATA_DIR, DB_FILE, MEDIA_DIR, STORAGE_KEY, STORAGE_VERSION
 
 _LOGGER = logging.getLogger(__name__)
 
 SAVE_DELAY_SECONDS = 1
-# An image with no row is only deleted once it is this old: its row may be
+# A media file with no row is only deleted once it is this old: its row may be
 # being written right now.
 ORPHAN_MEDIA_SECONDS = 3600
+# Images are JPEG; a sound's audio clip is AAC in an MP4 file.
+IMAGE_EXTENSION = ".jpg"
+AUDIO_EXTENSION = ".m4a"
 
 
 class StateStore:
@@ -132,7 +136,7 @@ def _to_row(values: sqlite3.Row) -> AlertRow:
 
 
 class AlertLog:
-    """The SQLite alert log and the image directory.
+    """The SQLite alert log and the media directory.
 
     Every method blocks; call them through `hass.async_add_executor_job`.
     Every method raises AlertLogError when the database or a file fails.
@@ -236,7 +240,19 @@ class AlertLog:
         )
 
     def media_path(self, alert_id: str, variant: str) -> Path:
-        return self.media / f"{alert_id}-{variant}.jpg"
+        extension = AUDIO_EXTENSION if variant == AUDIO else IMAGE_EXTENSION
+        return self.media / f"{alert_id}-{variant}{extension}"
+
+    def media_tmp_path(self, alert_id: str, variant: str) -> Path:
+        """Where a media file is written before it is moved into place."""
+        return self.media_path(alert_id, variant).with_suffix(".tmp")
+
+    def has_media(self, alert_id: str, variant: str) -> bool:
+        try:
+            return self.media_path(alert_id, variant).is_file()
+        except OSError as err:
+            _LOGGER.error("Could not read an alert file: %s", err)
+            raise AlertLogError(str(err)) from err
 
     def read_media(self, alert_id: str, variant: str) -> bytes | None:
         try:
@@ -248,14 +264,37 @@ class AlertLog:
             raise AlertLogError(str(err)) from err
 
     def write_media(self, alert_id: str, variant: str, data: bytes) -> None:
-        path = self.media_path(alert_id, variant)
-        tmp = path.with_suffix(".tmp")
+        tmp = self.media_tmp_path(alert_id, variant)
         try:
             tmp.write_bytes(data)
-            tmp.replace(path)
+            tmp.replace(self.media_path(alert_id, variant))
         except OSError as err:
             _LOGGER.error("Could not save an alert image: %s", err)
             raise AlertLogError(str(err)) from err
+
+    def keep_media_tmp(self, alert_id: str, variant: str) -> bool:
+        """Move a media file written to its temporary path into place.
+
+        Returns False, and keeps nothing, when that file is missing or empty.
+        """
+        tmp = self.media_tmp_path(alert_id, variant)
+        try:
+            if tmp.stat().st_size == 0:
+                return False
+            tmp.replace(self.media_path(alert_id, variant))
+        except FileNotFoundError:
+            return False
+        except OSError as err:
+            _LOGGER.error("Could not save an alert file: %s", err)
+            raise AlertLogError(str(err)) from err
+        return True
+
+    def drop_media_tmp(self, alert_id: str, variant: str) -> None:
+        """Delete a half-written or empty media file; failing to is only logged."""
+        try:
+            self.media_tmp_path(alert_id, variant).unlink(missing_ok=True)
+        except OSError as err:
+            _LOGGER.warning("Could not delete a temporary alert file: %s", err)
 
     def delete_media(self, alert_id: str, variant: str) -> None:
         try:
@@ -265,16 +304,20 @@ class AlertLog:
             raise AlertLogError(str(err)) from err
 
     def prune(self, days: int) -> int:
-        """Drop log rows older than `days` and their images; return the rows dropped.
+        """Drop log rows older than `days` and their media; return the rows dropped.
 
-        Images go with their rows: any image whose row is gone is dropped, once
-        it is old enough not to belong to an alert being written right now.
+        Images and audio clips go with their rows: any file whose row is gone is
+        dropped, once it is old enough not to belong to an alert being written
+        right now.
         """
         now = time.time()
         cutoff = now - days * 86400
         dropped = self._execute("DELETE FROM alerts WHERE time < ? RETURNING id", (cutoff,))
         kept = {r["id"] for r in self._execute("SELECT id FROM alerts")}
-        for path in self.media.glob("*.jpg"):
+        files = (
+            p for ext in (IMAGE_EXTENSION, AUDIO_EXTENSION) for p in self.media.glob(f"*{ext}")
+        )
+        for path in files:
             if path.name.split("-", 1)[0] in kept:
                 continue
             try:

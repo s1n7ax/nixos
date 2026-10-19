@@ -67,7 +67,7 @@ from .const import (
 from .core.policy import LEVELS
 from .pipeline import SecurityAlerts
 from .sources import Sources
-from .views import ImageView
+from .views import AudioView, ImageView
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -149,6 +149,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data[DOMAIN] = alerts
 
     hass.http.register_view(ImageView(alerts))
+    hass.http.register_view(AudioView(alerts))
     websocket.async_register(hass)
     services.async_register(hass, alerts)
     await _async_register_frontend(hass)
