@@ -14,6 +14,7 @@ with lib;
     ./mqtt.nix
     ./z2m.nix
     ./home-assistant.nix
+    ./wyoming-piper.nix
     ./frigate.nix
     ./homepage.nix
     ./pairdrop.nix

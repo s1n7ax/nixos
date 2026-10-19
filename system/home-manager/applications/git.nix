@@ -7,7 +7,7 @@
 
       ignores = [
         ".claude/worktrees/"
-        ".agent/goals/"
+        ".goals/"
       ];
 
       settings = {

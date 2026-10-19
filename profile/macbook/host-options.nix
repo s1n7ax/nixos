@@ -85,5 +85,7 @@
     };
 
     fonts.enable = true;
+
+    readAloud.enable = true;
   };
 }

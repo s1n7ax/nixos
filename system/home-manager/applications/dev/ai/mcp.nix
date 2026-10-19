@@ -19,6 +19,20 @@ let
   '';
 
   /**
+    Without this wrapper Chromium never starts. Claude Code's nixpkgs wrapper
+    prefixes LD_LIBRARY_PATH with an alsa-lib built against a newer glibc than
+    this Chromium, and every MCP server inherits it. Without `--isolated` the
+    server puts its browser profile under PLAYWRIGHT_BROWSERS_PATH, which is
+    the read-only store. `--output-dir` keeps its snapshots and logs out of
+    the project the agent runs in.
+  */
+  playwrightMcp = pkgs.writeShellScript "playwright-mcp" ''
+    unset LD_LIBRARY_PATH
+    exec ${lib.getExe pkgs.playwright-mcp} --isolated \
+      --output-dir "''${XDG_CACHE_HOME:-$HOME/.cache}/playwright-mcp" "$@"
+  '';
+
+  /**
     Slack's MCP has no dynamic client registration, so each client needs a
     pre-registered Slack app. The IDs below are the public ones Slack's docs
     give for Claude Code and Cursor (docs.slack.dev/ai/slack-mcp-server);
@@ -55,7 +69,7 @@ let
     }
     // lib.optionalAttrs cfg.playwright.enable {
       playwright = {
-        command = lib.getExe pkgs.playwright-mcp;
+        command = "${playwrightMcp}";
         args = lib.optional cfg.playwright.headless "--headless";
       };
     }

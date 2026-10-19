@@ -21,22 +21,24 @@ Three rules hold the whole skill up. Everything below is detail.
 Resolve the `<goal>`:
 
 - The user gave a goal name or path → use it.
-- The current branch name starts with a goal directory name under `.agent/goals/` → use that goal.
-- Exactly one goal under `.agent/goals/` has a plan → use it.
+- The current branch name starts with a goal directory name under `.goals/` → use that goal.
+- Exactly one goal under `.goals/` has a plan → use it.
 - Several candidates → ask which one, following the `questions` skill, and wait.
 - None → tell the user to run `/requirement` and `/plan` first, and stop.
 
-Read the requirement and the plan: `.agent/goals/<goal>/requirement/requirement.md` and `.agent/goals/<goal>/plan/plan.md`, or — when `/requirement` and `/plan` wrote them to a project ticket — the ticket. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
+Read the requirement and the plan: `.goals/<goal>/requirement/requirement.md` and `.goals/<goal>/plan/plan.md`, or — when `/requirement` and `/plan` wrote them to a project ticket — the ticket. If the plan is missing, tell the user to run `/plan` first and stop. The requirement is the definition of done; the plan is how to get there. Both constrain everything that follows.
 
 ### 2. Set up the workspace
 
-Follow the plan's branch instructions. With multiple approaches, the plan names one branch per approach (`<goal>_approach_<approach>`) — each approach is implemented on its own branch, starting from the shared Changes. With no branch named, work on a `<goal>` branch created from the project's base branch. Never commit to the user's current branch unless it is already the goal's branch.
+Follow the plan's branch instructions. With multiple approaches, the plan names one branch per approach (`<goal>_approach_<approach>`) — each approach is implemented in full on its own branch, starting from the shared Changes. With no branch named, work on a `<goal>` branch created from the project's base branch. Never commit to the user's current branch unless it is already the goal's branch.
+
+`.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ### 3. Implement
 
-Execute the plan's Changes in order, across every project listed, respecting the dependencies the steps declare. One step = one change; commit per logical change. With several approaches: implement the shared Changes first, then each approach in full on its branch.
+Execute the plan's Changes in order, across every project listed, respecting the dependencies the steps declare. One step = one change; commit per logical change. Stage files by path.
 
-When a step cannot be executed as written — the code contradicts it, a spike finding no longer holds, a dependency is missing — stop that line of work. A wrong plan is not permission to redesign: name the contradiction, tell the user the plan needs another `/plan` pass, and wait. Steps already completed stay committed; do not roll them back unless the user asks.
+When a step cannot be executed as written — the code contradicts it, a spike finding no longer holds, a dependency is missing — stop that line of work, name the contradiction, tell the user the plan needs another `/plan` pass, and wait. Steps already completed stay committed; do not roll them back unless the user asks.
 
 ### 4. Validate
 
@@ -50,9 +52,9 @@ Fix failures and rerun until green. Never move to review with failing checks, an
 
 ### 5. Review
 
-Run the review as a **subagent** — a fresh context reviewing the diff. Where the environment provides named subagents (pi's `subagent` tool, Claude Code's Agent tool), dispatch the `code-reviewer` agent with the changes as the target, defaulting to `medium` effort unless the user asked for another level. The subagent reviews; it never fixes. If the environment has no subagent capability, run the review in this session and say so, per the code-review skill's own fallback rule.
+Run the review as a **subagent**: a fresh context does not defend the code it wrote. Where the environment provides named subagents (pi's `subagent` tool, Claude Code's Agent tool), dispatch the `code-reviewer` agent with the changes as the target, defaulting to `medium` effort unless the user asked for another level. The subagent reviews; it never fixes. If the environment has no subagent capability, run the review in this session and say so, per the code-review skill's own fallback rule.
 
-Write the findings to `.agent/goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds.
+Write the findings to `.goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds.
 
 ```markdown
 # Review <n> — <goal>
@@ -85,11 +87,11 @@ After all fixes, rerun the Validation step. A fix that breaks a check is not a f
 
 ### 7. Simplify
 
-Run `/simplify` as a **subagent**, for the same reason as the review: a fresh context does not defend the code it wrote. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool), otherwise a general-purpose agent (Claude Code's Agent tool) — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and plan. If the environment has no subagent capability, run it in this session and say so.
+Run `/simplify` as a **subagent**, for the same reason as the review. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool), otherwise a general-purpose agent (Claude Code's Agent tool) — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and plan. If the environment has no subagent capability, run it in this session and say so.
 
 Review the subagent's changes, then rerun Validation. Simplify is quality-only; its changes need no entries in the review file.
 
-When `/ship` is driving this skill, it runs these steps in separate subagents and stops here: `/ship` runs its own checks and opens the PRs.
+When `/ship` is driving this skill, stop here: `/ship` runs its own checks and opens the PRs.
 
 ### 8. Finish
 
@@ -99,7 +101,13 @@ When `/ship` is driving this skill, it runs these steps in separate subagents an
 
 ## Handing off to the next step
 
-`/implement` is the last step of the workflow. After finishing, **tell the user the workflow is complete** — there is no next command to run or copy. If review or validation left unresolved work, name it explicitly instead of implying a next step.
+When `/ship` is driving this skill, skip this section.
+
+After finishing, the workflow's next step is `/verify <goal>`, which tests the change the way its end user would. If review or validation left unresolved work, name it explicitly instead, and do not hand off.
+
+1. **Tell the user** the next step: run `/verify <goal>`.
+2. **Copy the command to the clipboard** so the user can paste it: run `printf '%s' '/verify <goal>' | wl-copy` (Wayland; fall back to `xclip -selection clipboard` or `xsel --clipboard` when wl-copy is unavailable).
+3. **Confirm the copy worked** — say the command is on the clipboard.
 
 ## Never
 

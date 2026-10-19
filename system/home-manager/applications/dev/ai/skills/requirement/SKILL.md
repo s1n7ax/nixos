@@ -32,12 +32,6 @@ Yes → requirement, ask it. No → implementation, out of bounds for this skill
 
 When a tool choice leaks into the user's world, rewrite it as the consequence they feel. Not "ffmpeg or OBS?" but "Is it OK if the user has to install another program first, or must this work on its own?"
 
-If the code or docs hold the answer, look it up — questions are for decisions only, never for facts you could fetch.
-
-## Asking the question
-
-The dumbness score, the shape of one question, and the agent's ask-question tool all live in the `questions` skill — follow it for every question this session asks. Requirement adds one rule on top: the question must be about the requirement, and it must still answer exactly one decision. A question that scores 3 or more is never asked; decide it yourself, note the assumption, and carry on.
-
 ## Running the session
 
 1. **Restate the fuzzy requirement** in one or two sentences and confirm the restatement is right. If it is too fuzzy to even restate, the restatement attempt _is_ the first question.
@@ -51,7 +45,7 @@ When the requirement is clear, first **summarize it back in full** — every sec
 
 Then ask where the requirement should live. Check first which project management tools are available — `gh` for a GitHub repo, or a Jira / Linear MCP or CLI if the project is set up for one. The suggestions:
 
-1. **Local document.** Write it to `.agent/goals/<goal>/requirement/requirement.md` under the repo root, where `<goal>` is a short kebab-case description of what we are trying to achieve (e.g. `record-screen-demos`).
+1. **Local document.** Write it to `.goals/<goal>/requirement/requirement.md` under the repo root, where `<goal>` is a short kebab-case description of what we are trying to achieve (e.g. `record-screen-demos`). `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 2. **Project ticket.** Create a ticket in the project's management tool — one suggestion per available tool.
 
 Either way, the content is the same:

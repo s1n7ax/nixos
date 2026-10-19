@@ -18,7 +18,7 @@ Five rules hold the whole skill up. Everything below is detail.
 
 ## Code first
 
-Jump straight into the code. Read every project the requirement touches and work out the plan from what is there. Do not ask the user anything the code can tell you.
+Jump straight into the code. Read every project the requirement touches and work out the plan from what is there.
 
 ### When the code is out of reach
 
@@ -43,7 +43,18 @@ The plan hinges on a technical claim the code and docs cannot prove ("the librar
 
 ### Type 1 — Fork in the road
 
-Two or more clearly viable approaches exist, and every one of them satisfies the requirement. Ask which one the user prefers.
+Two or more clearly viable approaches exist, and every one of them satisfies the requirement. Ask which one the user prefers. If the user keeps more than one, record each as an approach (see Multiple approaches) and move on.
+
+#### Example
+
+> **Where should request validation live?**
+>
+> All three spots satisfy the requirement; they differ in how much code moves and who owns the rule.
+>
+> 1. **In the existing shared schema package — recommended.** One definition, both projects import it. Simplest change, and the rule cannot drift between projects. Cost: a version bump of the shared package.
+> 2. **In each project separately.** No cross-project dependency, but the rule now exists twice and will drift.
+> 3. **In a new validation service.** Cleanest separation and scales to future projects, but a new deployable to run and monitor — the most moving parts by far.
+> 4. **None of these — let me explain.**
 
 ### Type 2 — Significant stretch
 
@@ -54,6 +65,14 @@ The change costs something big or risky. **Always ask**, even when only one way 
 - The change crosses an ownership boundary: it touches a project owned by someone else or shared with other efforts.
 
 The user may opt out. When they do, update the requirement document: move the unachievable part into **Out of scope** with the reason (e.g. "full-text search — rejected, new dependency was too big a stretch"), then re-plan around what remains.
+
+#### Example
+
+> **The search requirement needs a real index, and the current in-memory store cannot provide one. The only viable path adds a new dependency (a search engine) and a new service in docker-compose. Is that stretch acceptable?**
+>
+> 1. **Yes, add it — recommended.** The requirement explicitly demands typo-tolerant search; no in-process trick delivers that.
+> 2. **No — cut search back to exact filtering on existing fields.** The requirement document gets "typo-tolerant search" moved to out of scope, with the reason: new dependency rejected.
+> 3. **None of these — let me explain.**
 
 ### Type 3 — Requirement gap
 
@@ -69,34 +88,9 @@ The gate test for any decision:
 
 Yes → decide it yourself, without asking. No → it must fit one of the three types to be asked. If it fits none, decide it yourself and record it in the plan's Decisions section.
 
-Never ask for facts you could fetch or prove. If the code or docs hold the answer, go read them; if only running code can tell, spike it.
-
-## The shape of one question
-
-Scoring and shaping a question is the `questions` skill's job — read it before the first one. Plan adds only the three allowed types above. When several options are kept at a Type 1 fork, record each as an approach (see Multiple approaches) and move on. The examples below show the shape on plan-shaped decisions.
-
-### Example — Type 1
-
-> **Where should request validation live?**
->
-> All three spots satisfy the requirement; they differ in how much code moves and who owns the rule.
->
-> 1. **In the existing shared schema package — recommended.** One definition, both projects import it. Simplest change, and the rule cannot drift between projects. Cost: a version bump of the shared package.
-> 2. **In each project separately.** No cross-project dependency, but the rule now exists twice and will drift.
-> 3. **In a new validation service.** Cleanest separation and scales to future projects, but a new deployable to run and monitor — the most moving parts by far.
-> 4. **None of these — let me explain.**
-
-### Example — Type 2
-
-> **The search requirement needs a real index, and the current in-memory store cannot provide one. The only viable path adds a new dependency (a search engine) and a new service in docker-compose. Is that stretch acceptable?**
->
-> 1. **Yes, add it — recommended.** The requirement explicitly demands typo-tolerant search; no in-process trick delivers that.
-> 2. **No — cut search back to exact filtering on existing fields.** The requirement document gets "typo-tolerant search" moved to out of scope, with the reason: new dependency rejected.
-> 3. **None of these — let me explain.**
-
 ## Running the session
 
-1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.agent/goals/*/requirement/requirement.md`, where `/requirement` writes it. One found → use it. Several → picking which one is the first question. None → ask for a path or ticket, or tell the user to run `/requirement` first, and stop until there is one. Its `<goal>` — used in branch names and the plan's path — is its directory name under `.agent/goals/`, or for a ticket a short kebab-case description of what the requirement achieves (e.g. `validate-requests`).
+1. **Load the requirement.** If the user gave a path or ticket, read it. Otherwise look in `.goals/*/requirement/requirement.md`, where `/requirement` writes it. One found → use it. Several → picking which one is the first question. None → ask for a path or ticket, or tell the user to run `/requirement` first, and stop until there is one. Its `<goal>` — used in branch names and the plan's path — is its directory name under `.goals/`, or for a ticket a short kebab-case description of what the requirement achieves (e.g. `validate-requests`).
 2. **Analyze the code before asking anything.** Explore every project the requirement touches, and spike any claim that decides whether an approach is viable; claims that matter only inside one approach wait until it is chosen or kept. Build the full list of viable approaches and the decisions each one forces — the first question must already be informed.
 3. **Ask breadth-first.** Settle the big forks and stretches in dependency order before any detail; detail on an approach that later gets rejected is wasted.
 4. **Track decisions visibly.** After each answer, briefly note what is now decided and what has been ruled out.
@@ -117,7 +111,7 @@ When the user keeps more than one option at a fork, the plan carries each kept o
 
 First run the no-questions test below, then **summarize the plan back in full**: the chosen approach — or every kept approach — every decision with its reason, the changes per project in execution order, and what is explicitly out. Print the summary as regular output, never inside the ask-question tool; the tool's question is only a short "Is this summary correct?". Get a "yes, that's it" before writing anything down. Any change after the user confirmed the summary needs a fresh summary and confirmation.
 
-The plan lives next to the requirement it implements: a local requirement doc gets its plan at `.agent/goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket.
+The plan lives next to the requirement it implements: a local requirement doc gets its plan at `.goals/<goal>/plan/plan.md`; a ticket gets the plan added to the ticket. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # Plan: <title>

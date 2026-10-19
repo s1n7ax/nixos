@@ -16,6 +16,10 @@
 # `sleep`, so "Suspend now" still works), whatever auto says: controller play
 # makes no keyboard/mouse input.
 #
+# It also samples CPU and network load for the busy check (`power-profile
+# can-sleep`): every POWER_WATCH_LOAD_EVERY seconds it writes the averages
+# over the last POWER_WATCH_LOAD_WINDOW seconds to the load file.
+#
 # Environment (set by the NixOS module; tests point it at a fake tree):
 #   POWER_WATCH_APPS              named apps, one per line
 #   POWER_WATCH_IGNORED_APPIDS    Steam AppIds that never count, space-separated
@@ -23,17 +27,26 @@
 #   POWER_WATCH_RETRY_SECS        wait before retrying a failed sync or
 #                                 inhibitor (default 30)
 #   POWER_WATCH_PROC              procfs root (default /proc)
+#   POWER_WATCH_SYS               sysfs root (default /sys)
 #   POWER_WATCH_STEAM_ROOTS       Steam roots, one per line (default
 #                                 ~/.local/share/Steam and ~/.steam/steam)
+#   POWER_WATCH_LOAD_EVERY        seconds between load samples (default 5)
+#   POWER_WATCH_LOAD_WINDOW       seconds the load averages cover (default 60)
 #   POWER_PROFILE_GAMES_FILE      games file; default
 #                                 $XDG_RUNTIME_DIR/power-profile/games
+#   POWER_PROFILE_LOAD_FILE       load file; default
+#                                 $XDG_RUNTIME_DIR/power-profile/load
 
 interval=${POWER_WATCH_INTERVAL:-2}
 retry_secs=${POWER_WATCH_RETRY_SECS:-30}
 proc=${POWER_WATCH_PROC:-/proc}
+sys=${POWER_WATCH_SYS:-/sys}
 ignored_appids=" ${POWER_WATCH_IGNORED_APPIDS:-} "
 uid=$(id -u)
 games_file=${POWER_PROFILE_GAMES_FILE:-${XDG_RUNTIME_DIR:-/run/user/$uid}/power-profile/games}
+load_file=${POWER_PROFILE_LOAD_FILE:-${XDG_RUNTIME_DIR:-/run/user/$uid}/power-profile/load}
+load_every=${POWER_WATCH_LOAD_EVERY:-5}
+load_window=${POWER_WATCH_LOAD_WINDOW:-60}
 
 apps=()
 if [ -n "${POWER_WATCH_APPS:-}" ]; then
@@ -273,6 +286,136 @@ release_inhibitor() {
   inhibit_why=
 }
 
+# --- load (busy check) -------------------------------------------------------
+# CPU: busy jiffies of all CPUs over all jiffies, times the CPU count, so a
+# window with a suspend in it still gives the right core count (the dev VM's
+# vCPUs are host threads, so they count). Network: bytes received + sent on
+# the default-route interface (the dev VM's user-mode network goes through
+# host sockets, so its traffic shows there too). Everything is read with
+# builtins; one `mv` per sample keeps the file atomic.
+
+# Samples in the window, oldest first: uptime in 1/100 s, busy and total
+# jiffies, rx and tx bytes.
+load_t=()
+load_busy=()
+load_total=()
+load_rx=()
+load_tx=()
+load_iface=
+load_next=0
+ncpu=0
+
+count_cpus() {
+  local name _rest
+  ncpu=0
+  while read -r name _rest; do
+    case $name in cpu[0-9]*) ncpu=$((ncpu + 1)) ;; esac
+  done <"$proc/stat"
+  [ "$ncpu" -gt 0 ] || ncpu=1
+}
+
+# Sets iface to the default-route interface with the lowest metric; empty
+# when there is none (no network).
+default_iface() {
+  local ifc dst _gw _flags _ref _use metric mask _rest best_metric=
+  iface=
+  while read -r ifc dst _gw _flags _ref _use metric mask _rest; do
+    [ "$dst" = 00000000 ] && [ "$mask" = 00000000 ] || continue
+    if [ -z "$iface" ] || [ "$metric" -lt "$best_metric" ]; then
+      iface=$ifc
+      best_metric=$metric
+    fi
+  done 2>/dev/null <"$proc/net/route" || true
+}
+
+load_reset() {
+  load_t=()
+  load_busy=()
+  load_total=()
+  load_rx=()
+  load_tx=()
+}
+
+load_drop_oldest() {
+  load_t=("${load_t[@]:1}")
+  load_busy=("${load_busy[@]:1}")
+  load_total=("${load_total[@]:1}")
+  load_rx=("${load_rx[@]:1}")
+  load_tx=("${load_tx[@]:1}")
+}
+
+# Takes a sample and rewrites the load file:
+#   time=<epoch> span=<s> cores=<n.nn> cores_centi=<n> net_kib=<KiB/s>
+#   rx_kib=<KiB/s> tx_kib=<KiB/s> iface=<name>
+# The window restarts after a gap of more than 3 samples (suspend), on an
+# interface change, or when a counter goes back (interface re-created).
+load_sample() {
+  local up _cpu user nice system idle iowait irq softirq steal _rest busy total
+  local iface rx=0 tx=0 n span dbusy dtotal centi rx_kib tx_kib tmp
+  read -r up _rest <"$proc/uptime" || return 0
+  up=${up/./}
+  up=$((10#$up))
+  read -r _cpu user nice system idle iowait irq softirq steal _rest <"$proc/stat" || return 0
+  busy=$((user + nice + system + irq + softirq + ${steal:-0}))
+  total=$((busy + idle + iowait))
+  default_iface
+  if [ -n "$iface" ]; then
+    read -r rx 2>/dev/null <"$sys/class/net/$iface/statistics/rx_bytes" || rx=0
+    read -r tx 2>/dev/null <"$sys/class/net/$iface/statistics/tx_bytes" || tx=0
+  fi
+
+  n=${#load_t[@]}
+  if [ "$n" -gt 0 ] &&
+    { [ $((up - load_t[n - 1])) -gt $((3 * load_every * 100)) ] ||
+      [ "$iface" != "$load_iface" ] ||
+      [ "$rx" -lt "${load_rx[n - 1]}" ] || [ "$tx" -lt "${load_tx[n - 1]}" ] ||
+      [ "$total" -lt "${load_total[n - 1]}" ]; }; then
+    load_reset
+    n=0
+  fi
+  load_iface=$iface
+  load_t+=("$up")
+  load_busy+=("$busy")
+  load_total+=("$total")
+  load_rx+=("$rx")
+  load_tx+=("$tx")
+  n=$((n + 1))
+  # Keep the newest sample that is at least a window old as the base.
+  while [ "$n" -gt 2 ] && [ $((up - load_t[1])) -ge $((load_window * 100)) ]; do
+    load_drop_oldest
+    n=$((n - 1))
+  done
+  [ "$n" -ge 2 ] || return 0
+
+  span=$((up - load_t[0]))
+  [ "$span" -gt 0 ] || return 0
+  dbusy=$((busy - load_busy[0]))
+  dtotal=$((total - load_total[0]))
+  centi=0
+  if [ "$dtotal" -gt 0 ]; then
+    centi=$((dbusy * ncpu * 100 / dtotal))
+  fi
+  # bytes / 1024 / (span / 100) KiB/s
+  rx_kib=$(((rx - load_rx[0]) * 100 / 1024 / span))
+  tx_kib=$(((tx - load_tx[0]) * 100 / 1024 / span))
+
+  tmp=$load_file.tmp
+  if ! printf 'time=%s\nspan=%s\ncores=%d.%02d\ncores_centi=%s\nnet_kib=%s\nrx_kib=%s\ntx_kib=%s\niface=%s\n' \
+    "$EPOCHSECONDS" $((span / 100)) $((centi / 100)) $((centi % 100)) "$centi" \
+    $((rx_kib + tx_kib)) "$rx_kib" "$tx_kib" "${iface:-none}" 2>/dev/null >"$tmp" ||
+    ! mv -f "$tmp" "$load_file"; then
+    warn "cannot write $load_file"
+  fi
+}
+
+# Samples when due (every load_every seconds).
+load_tick() {
+  if [ "$SECONDS" -ge "$load_next" ]; then
+    load_next=$((SECONDS + load_every))
+    load_sample
+  fi
+}
+
 # --- main --------------------------------------------------------------------
 
 # Exits inside the trap: a trap that returns would let the poll's `read -t`
@@ -287,7 +430,10 @@ cmd_run() {
   trap on_term TERM INT
   # Sleeps with `read -t` on a pipe nobody writes to: no fork per poll.
   exec {tick_fd}<> <(:)
-  echo "watching for games every ${interval}s (named apps: ${#apps[@]})"
+  mkdir -p "${load_file%/*}"
+  count_cpus
+  echo "watching for games every ${interval}s (named apps: ${#apps[@]});" \
+    "load every ${load_every}s over ${load_window}s (${ncpu} CPUs)"
   while :; do
     scan
     keys=
@@ -313,7 +459,7 @@ cmd_run() {
       # Restarts a dead inhibitor.
       hold_inhibitor "$inhibit_why"
     fi
-    # Later samplers (e.g. CPU / network load for the busy check) go here.
+    load_tick
     read -r -t "$interval" -u "$tick_fd" _tick || true
   done
 }
@@ -321,12 +467,13 @@ cmd_run() {
 # A stopped watcher cannot see games end, so drop them and go back to the
 # picked profile (a restarted watcher picks running games up again). Always
 # syncs: a sync cut short by the stop may have left the game's profile
-# applied; with nothing to change, sync starts no unit.
+# applied; with nothing to change, sync starts no unit. The load file goes
+# too: no load data counts as busy.
 cmd_stop() {
   if [ -s "$games_file" ]; then
     echo "stopped: games cleared"
   fi
-  rm -f "$games_file"
+  rm -f "$games_file" "$load_file" "$load_file.tmp"
   if ! timeout 20 power-profile sync >/dev/null; then
     warn "power-profile sync failed"
   fi

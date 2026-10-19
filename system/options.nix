@@ -342,6 +342,59 @@ with lib;
             example = [ "046d:c52b" ];
             description = "USB devices (vendor:product) that may wake the PC from suspend, e.g. a wireless mouse receiver. The kernel allows only keyboards by default.";
           };
+          suspendTimeout = mkOption {
+            type = types.nullOr types.ints.positive;
+            default = 300;
+            description = "Seconds without keyboard/mouse input before the PC suspends, unless something is busy (`power-profile can-sleep`); while busy it checks again every busy.retry seconds. null turns auto-suspend off.";
+          };
+
+          # What keeps the PC awake past suspendTimeout (`power-profile
+          # can-sleep --explain` shows each signal).
+          busy = {
+            retry = mkOption {
+              type = types.ints.positive;
+              default = 30;
+              description = "Seconds between busy checks once the suspend timeout has passed.";
+            };
+            cpuCores = mkOption {
+              type = types.addCheck types.number (x: x > 0);
+              default = 1.5;
+              description = "Busy while the whole machine (dev VM included) uses at least this many CPU cores, averaged over busy.window seconds.";
+            };
+            networkKiBps = mkOption {
+              type = types.ints.positive;
+              default = 128;
+              description = "Busy while the default-route interface moves at least this many KiB/s (received + sent), averaged over busy.window seconds. The dev VM's traffic goes through the host's interface.";
+            };
+            window = mkOption {
+              type = types.ints.between 10 600;
+              default = 60;
+              description = "Seconds the CPU and network averages cover (sampled by the power-watch user unit every 5 s).";
+            };
+            agentProcesses = mkOption {
+              type = types.listOf (types.strMatching "[^/[:cntrl:]]{1,15}");
+              default = [
+                "claude"
+                ".claude-wrapped"
+                "pi"
+                "opencode"
+                ".opencode-wrapp"
+              ];
+              description = "Process names (comm, at most 15 characters) of agent sessions that keep the PC awake, even idle, on the host and in busy.statusVm. Claude Code runs as `.claude-wrapped`, pi as `pi` (it sets its process title), opencode as `.opencode-wrapp` (`.opencode-wrapped` cut to 15).";
+            };
+            audioIgnore = mkOption {
+              type = types.listOf types.str;
+              default = [ ];
+              example = [ "easyeffects" ];
+              description = "PipeWire output streams that never count as playing audio, matched against application.name, application.process.binary or node.name.";
+            };
+            statusVm = mkOption {
+              type = types.nullOr (types.strMatching "[A-Za-z0-9_-]+");
+              default = null;
+              example = "dev-vm";
+              description = "microvm.nix VM that reports its agent sessions to the host through a virtiofs share (host /run/<name>-status, guest /run/host-status). While the VM runs, a status older than 60 s counts as busy. Adding or removing the share restarts the VM on deploy.";
+            };
+          };
         };
       };
     };
@@ -399,6 +452,25 @@ with lib;
       };
     };
 
+    readAloud = {
+      enable = mkEnableOption "local read-aloud text-to-speech";
+      rate = mkOption {
+        type = types.float;
+        default = 1.0;
+        description = "Read-aloud speech speed; higher is faster. Piper gets a length scale of 1 / rate, macOS `say` gets round(175 * rate) words per minute.";
+      };
+      voice = mkOption {
+        type = types.str;
+        default = "en_US-lessac-medium";
+        description = "Piper voice, as `<locale>-<name>-<quality>`; must be listed in system/shared/piper.nix.";
+      };
+      speaker = mkOption {
+        type = types.nullOr types.ints.unsigned;
+        default = null;
+        description = "Speaker id for multi-speaker Piper voices; null uses the voice's default.";
+      };
+    };
+
     homelab = {
       wireguard = {
         enable = mkEnableOption "Wireguard VPN";
@@ -410,6 +482,10 @@ with lib;
 
       home-assistant = {
         enable = mkEnableOption "Home Assistant";
+      };
+
+      wyoming-piper = {
+        enable = mkEnableOption "the Wyoming Piper local text-to-speech server for Home Assistant";
       };
 
       mqtt = {
