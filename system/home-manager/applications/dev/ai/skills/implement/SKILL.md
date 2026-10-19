@@ -30,13 +30,15 @@ Read the requirement and the plan: `.goals/<goal>/requirement/requirement.md` an
 
 ### 2. Set up the workspace
 
-Follow the plan's branch instructions. With multiple approaches, the plan names one branch per approach (`<goal>_approach_<approach>`) — each approach is implemented on its own branch, starting from the shared Changes. With no branch named, work on a `<goal>` branch created from the project's base branch. Never commit to the user's current branch unless it is already the goal's branch.
+Follow the plan's branch instructions. With multiple approaches, the plan names one branch per approach (`<goal>_approach_<approach>`) — each approach is implemented in full on its own branch, starting from the shared Changes. With no branch named, work on a `<goal>` branch created from the project's base branch. Never commit to the user's current branch unless it is already the goal's branch.
+
+`.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ### 3. Implement
 
-Execute the plan's Changes in order, across every project listed, respecting the dependencies the steps declare. One step = one change; commit per logical change. Stage files by path; never commit anything under `.goals/` — it is local working state, not part of the change. If `git status` lists `.goals/`, create `.goals/.gitignore` containing `*` instead of committing it. With several approaches: implement the shared Changes first, then each approach in full on its branch.
+Execute the plan's Changes in order, across every project listed, respecting the dependencies the steps declare. One step = one change; commit per logical change. Stage files by path.
 
-When a step cannot be executed as written — the code contradicts it, a spike finding no longer holds, a dependency is missing — stop that line of work. A wrong plan is not permission to redesign: name the contradiction, tell the user the plan needs another `/plan` pass, and wait. Steps already completed stay committed; do not roll them back unless the user asks.
+When a step cannot be executed as written — the code contradicts it, a spike finding no longer holds, a dependency is missing — stop that line of work, name the contradiction, tell the user the plan needs another `/plan` pass, and wait. Steps already completed stay committed; do not roll them back unless the user asks.
 
 ### 4. Validate
 
@@ -44,15 +46,15 @@ Before review, prove the implementation works:
 
 - Run every check in the plan's Verification section — at least one per acceptance criterion.
 - Run the project's formatter, linters, type checks, tests and builds — the same commands CI and the pre-commit hooks run. Find them in the CI config, pre-commit config, task runner (`Makefile`, `justfile`, `package.json` scripts, flake `checks`/`formatter`) and contributing docs; never guess a subset.
-- Run the formatter in its check mode (`--check`, `--fail-on-change`) after applying it, and commit what it changed. The working tree must be clean when Validate ends (`.goals/` is ignored, never committed).
+- Run the formatter in its check mode (`--check`, `--fail-on-change`) after applying it, and commit what it changed. The working tree must be clean when Validate ends.
 
 Fix failures and rerun until green. Never move to review with failing checks, and never claim a check passed that was not run. Report each command with its exit code.
 
 ### 5. Review
 
-Run the review as a **subagent** — a fresh context reviewing the diff. Where the environment provides named subagents (pi's `subagent` tool, Claude Code's Agent tool), dispatch the `code-reviewer` agent with the changes as the target, defaulting to `medium` effort unless the user asked for another level. The subagent reviews; it never fixes. If the environment has no subagent capability, run the review in this session and say so, per the code-review skill's own fallback rule.
+Run the review as a **subagent**: a fresh context does not defend the code it wrote. Where the environment provides named subagents (pi's `subagent` tool, Claude Code's Agent tool), dispatch the `code-reviewer` agent with the changes as the target, defaulting to `medium` effort unless the user asked for another level. The subagent reviews; it never fixes. If the environment has no subagent capability, run the review in this session and say so, per the code-review skill's own fallback rule.
 
-Write the findings to `.goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
+Write the findings to `.goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds.
 
 ```markdown
 # Review <n> — <goal>
@@ -85,11 +87,11 @@ After all fixes, rerun the Validation step. A fix that breaks a check is not a f
 
 ### 7. Simplify
 
-Run `/simplify` as a **subagent**, for the same reason as the review: a fresh context does not defend the code it wrote. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool), otherwise a general-purpose agent (Claude Code's Agent tool) — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and plan. If the environment has no subagent capability, run it in this session and say so.
+Run `/simplify` as a **subagent**, for the same reason as the review. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool), otherwise a general-purpose agent (Claude Code's Agent tool) — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and plan. If the environment has no subagent capability, run it in this session and say so.
 
 Review the subagent's changes, then rerun Validation. Simplify is quality-only; its changes need no entries in the review file.
 
-When `/ship` is driving this skill, it runs these steps in separate subagents and stops here: `/ship` runs its own checks and opens the PRs.
+When `/ship` is driving this skill, stop here: `/ship` runs its own checks and opens the PRs.
 
 ### 8. Finish
 
