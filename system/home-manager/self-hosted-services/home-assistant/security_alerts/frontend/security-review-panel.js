@@ -3,8 +3,10 @@
 // Opened at /security-review by tapping a security notification. With no query it records a
 // review (security_alerts/review/start) and rewrites the URL to ?from=&to=, so a reload shows
 // the same window without recording another. ?clip=<alert id> (the Play clip button) opens that
-// alert's clip over the window since the last review, without recording one.
-// Images and clips come as URLs signed for the logged-in user; this file holds no data.
+// alert over the window since the last review, without recording one: a sound plays its audio,
+// a detection its video.
+// Sounds show no picture: their row plays the audio in place, and Video opens the clip.
+// Images, audio and clips come as URLs signed for the logged-in user; this file holds no data.
 
 const PANEL_PATH = "/security-review";
 const POLL_CLIP_MS = 5000;
@@ -13,6 +15,9 @@ const PRELOAD_MARGIN = "600px 0px";
 const BADGES = { paused: "Paused" };
 // Types and cameras come from Frigate's config, which may not be loaded yet.
 const TYPES_RETRY_MS = 30000;
+// The popup plays a sound's audio or an alert's video.
+const SOUND_MODE = "sound";
+const VIDEO_MODE = "video";
 
 // Read at module load too: the frontend may rewrite the URL before the first panel starts.
 // Only that first panel may use it; later ones would replay a stale clip or window.
@@ -41,6 +46,21 @@ function hoursLabel(hours) {
 function sensorText(item) {
   if (item.kind === "door") return `${item.name} ${item.action || "opened"} ${item.clock}`;
   return `Motion: ${item.name} ${item.clock}`;
+}
+
+// The signed URL the popup plays in this mode, once the recording is saved.
+function mediaUrl(item, mode) {
+  const media = mode === SOUND_MODE ? item.audio : item.clip;
+  return media && media.ready && media.url ? media.url : null;
+}
+
+// Pauses and unloads every player in `root`, so nothing keeps playing or downloading.
+function stopMedia(root) {
+  for (const media of root.querySelectorAll("audio, video")) {
+    media.pause();
+    media.removeAttribute("src");
+    media.load();
+  }
 }
 
 const STYLE = `
@@ -82,6 +102,10 @@ const STYLE = `
   .row { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--card-background-color);
     border-radius: 12px; border: 1px solid var(--divider-color); }
   .row .type { font-size: 0.95em; }
+  .sound { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 0 12px 12px; }
+  .sound audio { flex: 1 1 240px; min-width: 0; }
+  .ghost { font: inherit; padding: 8px 18px; border-radius: 18px; cursor: pointer; background: transparent;
+    border: 1px solid var(--primary-color); color: var(--primary-color); }
   .empty, .error { padding: 24px 8px; text-align: center; color: var(--secondary-text-color); }
   .error { color: var(--error-color, #db4437); }
   dialog { padding: 0; border: 0; background: transparent; max-width: min(96vw, 1100px); width: 96vw; }
@@ -91,6 +115,7 @@ const STYLE = `
   .clip-title { font-weight: 600; margin-bottom: 4px; }
   .clip-note { color: var(--secondary-text-color); font-size: 0.9em; margin-bottom: 8px; }
   video { display: block; width: 100%; max-height: 75vh; background: #000; border-radius: 8px; }
+  .clip-body audio { display: block; width: 100%; margin-bottom: 10px; }
 `;
 
 class SecurityReviewPanel extends HTMLElement {
@@ -362,6 +387,7 @@ class SecurityReviewPanel extends HTMLElement {
         this._badge(item),
       ]);
     }
+    if (item.kind === "sound") return this._renderSound(item);
     const img = h("img", { "data-src": item.image, alt: `${item.type_name} at ${item.name}`, decoding: "async" });
     img.addEventListener("error", () => img.replaceWith(h("div", { class: "no-image", text: "No image" })));
     return h("article", { class: "card" }, [
@@ -371,6 +397,26 @@ class SecurityReviewPanel extends HTMLElement {
         this._badge(item),
       ]),
       h("button", { class: "shot", "aria-label": `Play the ${item.type_name} clip`, onclick: () => this._openClip(item.id, item) }, img),
+    ]);
+  }
+
+  // A sound plays in place; nothing downloads until play is pressed. Before its recording is
+  // saved, Play sound opens the popup, which waits for it.
+  _renderSound(item) {
+    const url = mediaUrl(item, SOUND_MODE);
+    const player = url
+      ? h("audio", { controls: true, preload: "none", src: url, "aria-label": `${item.type_name} at ${item.name}` })
+      : h("button", { class: "go", text: "Play sound", onclick: () => this._openClip(item.id, item, SOUND_MODE) });
+    return h("article", { class: "card" }, [
+      h("header", {}, [
+        h("span", { class: "type", text: item.type_name }),
+        h("span", { class: "meta", text: `${item.name} · ${item.clock}` }),
+        this._badge(item),
+      ]),
+      h("div", { class: "sound" }, [
+        player,
+        h("button", { class: "ghost", text: "Video", onclick: () => this._openClip(item.id, item, VIDEO_MODE) }),
+      ]),
     ]);
   }
 
@@ -411,12 +457,18 @@ class SecurityReviewPanel extends HTMLElement {
 
   // The clip popup
 
-  async _openClip(alertId, item) {
+  // Without a mode (?clip=), a sound opens in sound mode and a detection in video mode.
+  async _openClip(alertId, item, mode) {
     this._stopPoll();
+    stopMedia(this._dialog);
+    // The popup plays on its own: pause any sound playing in the list.
+    for (const audio of this._list.querySelectorAll("audio")) audio.pause();
+    this._liveCard = null;
     this._dialog.replaceChildren(h("div", { class: "clip-body" }, h("div", { class: "clip-note", text: "Loading…" })));
     if (!this._dialog.open) this._dialog.showModal();
     try {
-      this._showClip(item || (await this._fetchAlert(alertId)));
+      const alert = item || (await this._fetchAlert(alertId));
+      this._showClip(alert, mode || (alert.kind === "sound" ? SOUND_MODE : VIDEO_MODE));
     } catch (err) {
       this._dialog.replaceChildren(h("div", { class: "clip-body" }, h("div", { class: "error", text: `Could not open the clip: ${err.message || err}` })));
     }
@@ -426,33 +478,68 @@ class SecurityReviewPanel extends HTMLElement {
     return this._hass.callWS({ type: "security_alerts/alert", alert_id: alertId });
   }
 
-  _showClip(item) {
+  _showClip(item, mode) {
+    this._stopPoll();
+    stopMedia(this._dialog);
+    this._liveCard = null;
     const title = h("div", { class: "clip-title", text: `${item.type_name} · ${item.name} · ${item.clock}` });
-    if (item.clip && item.clip.ready && item.clip.url) {
+    if (mode === SOUND_MODE) {
+      this._showSound(item, title);
+      return;
+    }
+    const url = mediaUrl(item, VIDEO_MODE);
+    if (url) {
       const note = h("div", { class: "clip-note" });
       const video = h("video", { controls: true, playsinline: true, autoplay: true, preload: "auto" });
       video.addEventListener("error", () => {
         note.textContent = "The clip could not be played; the recording may not be saved yet.";
       });
-      video.src = item.clip.url;
+      video.src = url;
       this._dialog.replaceChildren(h("div", { class: "clip-body" }, [title, note, video]));
-      const playing = video.play();
-      if (playing && typeof playing.catch === "function") playing.catch(() => {});
+      this._play(video);
       return;
     }
     const note = h("div", { class: "clip-note", text: "Live view until the clip is saved." });
     const body = h("div", { class: "clip-body" }, [title, note]);
     this._dialog.replaceChildren(body);
     this._showLive(body, item.camera_entity, note);
+    this._pollUntilReady(item, VIDEO_MODE);
+  }
+
+  // Sound mode: the audio, trying to autoplay, and a Video button that switches this popup.
+  _showSound(item, title) {
+    const video = h("button", { class: "ghost", text: "Video", onclick: () => this._showClip(item, VIDEO_MODE) });
+    const url = mediaUrl(item, SOUND_MODE);
+    if (!url) {
+      const note = h("div", { class: "clip-note", text: "The sound is ready about 30 s after it ends." });
+      this._dialog.replaceChildren(h("div", { class: "clip-body" }, [title, note, video]));
+      this._pollUntilReady(item, SOUND_MODE);
+      return;
+    }
+    const note = h("div", { class: "clip-note" });
+    const audio = h("audio", { controls: true, autoplay: true, preload: "auto" });
+    audio.addEventListener("error", () => {
+      note.textContent = "The sound could not be played; try again in a moment.";
+    });
+    audio.src = url;
+    this._dialog.replaceChildren(h("div", { class: "clip-body" }, [title, note, audio, video]));
+    // If the WebView blocks autoplay, the controls stay for one tap.
+    this._play(audio);
+  }
+
+  _play(media) {
+    const playing = media.play();
+    if (playing && typeof playing.catch === "function") playing.catch(() => {});
+  }
+
+  // Asks for the alert every few seconds and shows it in this mode once its recording is saved.
+  _pollUntilReady(item, mode) {
     this._poll = setInterval(async () => {
       try {
         const fresh = await this._fetchAlert(item.id);
-        if (fresh.clip && fresh.clip.ready && this._dialog.open) {
-          this._stopPoll();
-          this._showClip(fresh);
-        }
+        if (mediaUrl(fresh, mode) && this._dialog.open) this._showClip(fresh, mode);
       } catch (_err) {
-        // Keep the live view; the next poll tries again.
+        // Keep waiting; the next poll tries again.
       }
     }, POLL_CLIP_MS);
   }
@@ -463,7 +550,8 @@ class SecurityReviewPanel extends HTMLElement {
       return;
     }
     const helpers = await window.loadCardHelpers();
-    if (!this._dialog.open) return;
+    // The popup may have closed or moved on while the helpers loaded.
+    if (!this._dialog.open || !body.isConnected) return;
     const card = helpers.createCardElement({
       type: "picture-entity",
       entity,
@@ -486,11 +574,7 @@ class SecurityReviewPanel extends HTMLElement {
   _closeClip() {
     this._stopPoll();
     this._liveCard = null;
-    for (const video of this._dialog.querySelectorAll("video")) {
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
-    }
+    stopMedia(this._dialog);
     this._dialog.replaceChildren();
   }
 }
