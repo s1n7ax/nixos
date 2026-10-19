@@ -148,7 +148,7 @@ Each check gets at most 2 fix-and-recheck rounds. Still failing after that → s
 
 Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement and plan, lists the checks that ran with their verdicts, includes `/verify`'s result line and test table, and lists every NOT RUN item. The screenshots stay local under `.goals/`.
 
-Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path, then the PRs as a list — one bullet per PR with its title and URL.
+Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
 
 ## Never
 
