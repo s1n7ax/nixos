@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Verify a finished change the way its end user would — in a real browser for web apps (Playwright MCP), in a real terminal for CLIs and TUIs, with curl against the running API for backend-only changes. Runs every test on the code before the change and after it, side by side, captures screenshots as proof, and writes a report with plain-language steps and a PASS/FAIL per test. Not the formatter/lint/unit-test validation /implement already does. Only use when the user explicitly runs the /verify command; never trigger on your own.
+description: Verify a finished change the way its end user would — in a real browser for web apps (Playwright MCP), in a real terminal for CLIs and TUIs, with curl against the running API for backend-only changes. Runs every test on the code before the change and after it, side by side, captures screenshots as proof, and writes an HTML report with plain-language steps and a PASS/FAIL per test, then opens it in the browser. Not the formatter/lint/unit-test validation /implement already does. Only use when the user explicitly runs the /verify command; never trigger on your own.
 disable-model-invocation: true
 ---
 
@@ -126,52 +126,58 @@ Stop every server and `term.sh` session you started, close the browser, and remo
 
 ### 8. Write the report
 
-Write `.goals/<goal>/verify/<n>-report.md`. Each run gets its own number; earlier reports are never edited. `.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing.
+The report is an HTML page that opens in the user's browser, with each test's before and after screenshots side by side. Never write it as Markdown, and never write the HTML by hand: describe the run as JSON and let `scripts/report.py` (next to `term.sh`) render it, so every report looks the same whichever agent wrote it.
 
-```markdown
-# Verification <n> — <goal>
+1. Write `.goals/<goal>/verify/<n>-report.json`. Screenshot paths in it are relative to `.goals/<goal>/verify/`.
+2. Run `~/.agents/skills/verify/scripts/report.py .goals/<goal>/verify/<n>-report.json` (it needs `python3`; on Nix without it, run it through `nix shell nixpkgs#python3 --command python3`). It writes `<n>-report.html` next to the JSON, prints the result line, and opens the page in the browser.
+3. If it lists problems instead (a PASS without screenshots on both sides, a FAIL or NOT RUN without a `why`, a screenshot path that does not exist), fix them and run it again: take the missing screenshot or correct the path; a PASS you cannot prove is NOT RUN.
 
-- **Date:** <date>
-- **Before:** `<base ref>` (<short sha>) at <URL or dir> · **After:** `<branch>` (<short sha>) at <URL or dir>
-- **Result:** <x> PASS · <y> FAIL · <z> NOT RUN
+Each run gets its own number; earlier reports are never edited. `.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing. The report holds screenshots of the user's app, so it stays on this machine: never upload or publish it.
 
-| #   | Test                      | Verdict    |
-| --- | ------------------------- | ---------- |
-| 1   | Profile image is a circle | ✅ PASS    |
-| 2   | Settings page still loads | ❌ FAIL    |
-| 3   | Admin can reset the image | ⏸️ NOT RUN |
-
-## 1. Profile image is a circle — ✅ PASS
-
-**Steps**
-
-1. Open the browser
-2. Go to the application
-3. Click the user profile in the top right corner
-4. Click Settings
-5. Check that the profile image is a circle (it used to be a square)
-
-| Before                       | After                        |
-| ---------------------------- | ---------------------------- |
-| ![before](<n>/1-before.png)  | ![after](<n>/1-after.png)    |
-| Square image, as expected.   | Circle image, as expected.   |
-
-## 2. ...
-
-## Setup
-
-- **Before:** <how it was started: command, port, state dir>
-- **After:** <same>
-- <uncommitted changes applied, copied local config, anything else a reader needs to reproduce it>
+```json
+{
+  "goal": "round-avatar",
+  "before": { "ref": "main", "sha": "1a2b3c4", "at": "http://localhost:3001", "setup": "pnpm dev --port 3001, DATA_DIR=<tmp>/data-before" },
+  "after": { "ref": "feat/round-avatar", "sha": "5d6e7f8", "at": "http://localhost:3002", "setup": "pnpm dev --port 3002, DATA_DIR=<tmp>/data-after" },
+  "notes": ["Uncommitted changes in the checkout were applied to after.", "Copied .env from the checkout into both sides."],
+  "tests": [
+    {
+      "title": "Profile image is a circle",
+      "verdict": "PASS",
+      "steps": ["Open the browser", "Go to the application", "Click the user profile in the top right corner", "Click Settings", "Check that the profile image is a circle (it used to be a square)"],
+      "before": { "images": ["<n>/1-before.png"], "note": "Square image, as expected." },
+      "after": { "images": ["<n>/1-after.png", "<n>/1-after-avatar.png"], "note": "Circle image, as expected." }
+    },
+    {
+      "title": "Settings page still loads",
+      "verdict": "FAIL",
+      "why": "After shows a blank page with a 500 error; before loads normally.",
+      "steps": ["Open the browser", "Go to Settings", "Check that the page loads"],
+      "before": { "images": ["<n>/2-before.png"], "note": "Loads, as expected." },
+      "after": { "images": ["<n>/2-after.png"], "note": "500 error.", "text": "optional text dump of the screen" }
+    },
+    {
+      "title": "Admin can reset the image",
+      "verdict": "NOT RUN",
+      "why": "No admin test account; the user has not provided one.",
+      "steps": ["Log in as an admin", "Open a user's profile", "Click Reset image", "Check that the default image is shown"],
+      "before": { "images": [] },
+      "after": { "images": [] }
+    }
+  ]
+}
 ```
 
-Steps are plain user actions, one per line, with no implementation detail: "Click Settings", "Run `todo add milk`", "Send `GET /users/42` with the admin token". The last step is the check, with the old behaviour in parentheses when it changed. A FAIL says under its images what happened instead; a NOT RUN says what blocked it.
+- **Verdict** is `PASS`, `FAIL` or `NOT RUN`. `why` says what happened instead (FAIL) or what blocked it (NOT RUN).
+- **Before and after** are the two sides of the comparison. `note` is one line saying what the screenshots show; `text` is an optional text dump. A side that did not exist before the change is `"before": null`.
+- **Steps** are plain user actions, one per entry, with no implementation detail: "Click Settings", "Run `todo add milk`", "Send `GET /users/42` with the admin token". The last step is the check, with the old behaviour in parentheses when it changed. Backticks render as code.
+- **Setup** (each side's `setup`, plus `notes`) is what a reader needs to reproduce the run: start command, port, state dir, uncommitted changes applied, copied local config.
 
 ### 9. Finish
 
-Report in chat: the result line, the table of tests with verdicts, the path to the report, and one line per FAIL or NOT RUN saying what went wrong or what blocked it.
+Report in chat: the result line, the table of tests with verdicts, the path to `<n>-report.html`, and one line per FAIL or NOT RUN saying what went wrong or what blocked it. If `report.py` said it could not open the browser, ask the user to open that path.
 
-When `/ship` is driving this skill, stop after the chat report; `/ship` opens the PR.
+When `/ship` is driving this skill, run `report.py` with `--no-open` and stop after the chat report; `/ship` opens the final report and the PR.
 
 Otherwise `/verify` is the last step of the workflow. When everything passed, tell the user the change is verified and the workflow is complete. Otherwise, name what failed or was not run; fixing it is a new piece of work, not part of this skill.
 
