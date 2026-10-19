@@ -697,8 +697,10 @@ class SecurityAlerts:
             AudioClipError: ffmpeg failed, timed out or wrote an empty file.
         """
         row = await self.async_get(alert_id)
-        window = self.clip_window(row) if row is not None and row.kind == SOUND else None
-        if row is None or window is None or not self.clip_ready(window, time.time()):
+        if row is None or row.kind != SOUND:
+            return None
+        window = self.clip_window(row)
+        if window is None or not self.clip_ready(window, time.time()):
             return None
         async with self._audio_lock(alert_id):
             if not await self.hass.async_add_executor_job(self.log.has_media, alert_id, AUDIO):

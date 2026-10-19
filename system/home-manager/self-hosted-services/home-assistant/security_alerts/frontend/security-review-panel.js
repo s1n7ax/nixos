@@ -380,6 +380,14 @@ class SecurityReviewPanel extends HTMLElement {
     return text ? h("span", { class: "badge", text }) : null;
   }
 
+  _cardHeader(item) {
+    return h("header", {}, [
+      h("span", { class: "type", text: item.type_name }),
+      h("span", { class: "meta", text: `${item.name} · ${item.clock}` }),
+      this._badge(item),
+    ]);
+  }
+
   _renderItem(item) {
     if (item.kind === "door" || item.kind === "motion") {
       return h("div", { class: "row" }, [
@@ -392,11 +400,7 @@ class SecurityReviewPanel extends HTMLElement {
     const img = h("img", { "data-src": item.image, alt: `${item.type_name} at ${item.name}`, decoding: "async" });
     img.addEventListener("error", () => img.replaceWith(h("div", { class: "no-image", text: "No image" })));
     return h("article", { class: "card" }, [
-      h("header", {}, [
-        h("span", { class: "type", text: item.type_name }),
-        h("span", { class: "meta", text: `${item.name} · ${item.clock}` }),
-        this._badge(item),
-      ]),
+      this._cardHeader(item),
       h("button", { class: "shot", "aria-label": `Play the ${item.type_name} clip`, onclick: () => this._openClip(item.id, item) }, img),
     ]);
   }
@@ -409,11 +413,7 @@ class SecurityReviewPanel extends HTMLElement {
       ? h("audio", { controls: true, preload: "none", src: url, "aria-label": `${item.type_name} at ${item.name}` })
       : h("button", { class: "go", text: "Play sound", onclick: () => this._openClip(item.id, item, SOUND_MODE) });
     return h("article", { class: "card" }, [
-      h("header", {}, [
-        h("span", { class: "type", text: item.type_name }),
-        h("span", { class: "meta", text: `${item.name} · ${item.clock}` }),
-        this._badge(item),
-      ]),
+      this._cardHeader(item),
       h("div", { class: "sound" }, [
         player,
         h("button", { class: "ghost", text: "Video", onclick: () => this._openClip(item.id, item, VIDEO_MODE) }),
@@ -461,10 +461,8 @@ class SecurityReviewPanel extends HTMLElement {
   // Without a mode (?clip=), a sound opens in sound mode and a detection in video mode.
   async _openClip(alertId, item, mode) {
     const request = this._nextClipRequest();
-    stopMedia(this._dialog);
     // The popup plays on its own: pause any sound playing in the list.
     for (const audio of this._list.querySelectorAll("audio")) audio.pause();
-    this._liveCard = null;
     this._dialog.replaceChildren(h("div", { class: "clip-body" }, h("div", { class: "clip-note", text: "Loading…" })));
     if (!this._dialog.open) this._dialog.showModal();
     try {
@@ -481,10 +479,13 @@ class SecurityReviewPanel extends HTMLElement {
     return this._hass.callWS({ type: "security_alerts/alert", alert_id: alertId });
   }
 
-  // Each open, mode switch and close is a new request for the popup. Async work started for an
-  // earlier one is dropped, so a late answer never replaces what the popup shows now.
+  // Each open, mode switch and close is a new request for the popup: it stops the poll, the
+  // players and the live view. Async work started for an earlier one is dropped, so a late
+  // answer never replaces what the popup shows now.
   _nextClipRequest() {
     this._stopPoll();
+    stopMedia(this._dialog);
+    this._liveCard = null;
     this._clipRequest += 1;
     return this._clipRequest;
   }
@@ -495,8 +496,6 @@ class SecurityReviewPanel extends HTMLElement {
 
   _showClip(item, mode) {
     this._nextClipRequest();
-    stopMedia(this._dialog);
-    this._liveCard = null;
     const title = h("div", { class: "clip-title", text: `${item.type_name} · ${item.name} · ${item.clock}` });
     if (mode === SOUND_MODE) {
       this._showSound(item, title);
@@ -589,8 +588,6 @@ class SecurityReviewPanel extends HTMLElement {
 
   _closeClip() {
     this._nextClipRequest();
-    this._liveCard = null;
-    stopMedia(this._dialog);
     this._dialog.replaceChildren();
   }
 }
