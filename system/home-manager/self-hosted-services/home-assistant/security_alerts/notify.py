@@ -20,7 +20,8 @@ from .const import (
     THUMB,
 )
 from .core.decide import POPUP
-from .core.policy import CRITICAL, DETECTION, DOOR, MOTION, REGULAR, SILENT, SOUND
+from .core.icons import icon_for
+from .core.policy import CRITICAL, DETECTION, DOOR, REGULAR, SILENT, SOUND
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,13 +32,6 @@ CHANNELS = {
     POPUP: ("Security popup", "high"),
     REGULAR: ("Security regular", "high"),
     SILENT: ("Security silent", "low"),
-}
-
-ICONS = {
-    DETECTION: "mdi:cctv",
-    SOUND: "mdi:waveform",
-    DOOR: "mdi:door",
-    MOTION: "mdi:motion-sensor",
 }
 
 SIREN_TAG = "security-siren"
@@ -102,7 +96,7 @@ def alert_payload(
 ) -> dict[str, Any]:
     """The notify service data for one alert."""
     data = _base_data(tag_for(event_type), delivery)
-    data["notification_icon"] = ICONS.get(kind, "mdi:shield-alert")
+    data["notification_icon"] = icon_for(kind, event_type)
     if has_image:
         data["image"] = IMAGE_URL.format(alert_id=alert_id, variant=THUMB)
     actions: list[dict[str, str]] = []
