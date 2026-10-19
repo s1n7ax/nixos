@@ -5,6 +5,8 @@
 //   entity: sensor.security_alerts_quiet   # optional, this is the default
 //
 // Loaded as a dashboard resource by the security_alerts integration. This file holds no data.
+// The pickers offer only the types the away mode that is on lets each kind change: Do not
+// disturb the critical ones, Pause the ones that notify. Styled like the Bubble Card buttons.
 
 const DEFAULT_ENTITY = "sensor.security_alerts_quiet";
 // Types and cameras come from Frigate's config, which may not be loaded yet; ask again
@@ -12,13 +14,18 @@ const DEFAULT_ENTITY = "sensor.security_alerts_quiet";
 const OPTIONS_RETRY_MS = 30000;
 const SENSOR_TYPES = new Set(["door", "motion"]);
 const KIND_NAMES = { pause: "Pause", dnd: "Do not disturb", snooze: "Snooze" };
-const SECTIONS = [
+const KIND_ICONS = { pause: "mdi:bell-off", dnd: "mdi:bell-sleep", snooze: "mdi:alarm-snooze" };
+const FORMS = [
   {
     kind: "dnd",
-    title: "Do not disturb",
-    hint: "Critical alerts of these types follow the phone's silent mode.",
+    hint: (mode) => `Critical in ${mode}. Picked types follow the phone's silent mode.`,
+    none: (mode) => `Nothing is critical in ${mode}.`,
   },
-  { kind: "pause", title: "Pause", hint: "No notifications for these types." },
+  {
+    kind: "pause",
+    hint: (mode) => `These notify in ${mode}. Picked types send nothing.`,
+    none: (mode) => `Nothing sends a notification in ${mode}.`,
+  },
 ];
 
 function h(tag, attrs = {}, children = []) {
@@ -45,42 +52,82 @@ function untilText(iso) {
   return `until ${end.toLocaleDateString([], { weekday: "short" })} ${time}`;
 }
 
+// Pill surfaces, icon bubbles and kind colours come from the theme (Bubble Card's own
+// variables first), so light and dark themes both work.
 const STYLE = `
-  ha-card { padding: 4px 16px 16px; }
-  h2 { font-size: 1.1em; font-weight: 500; margin: 12px 0 2px; }
-  .hint { color: var(--secondary-text-color); font-size: 0.9em; margin-bottom: 8px; }
-  .label { font-size: 0.85em; color: var(--secondary-text-color); margin: 6px 0 4px; }
+  :host {
+    --sa-surface: var(--bubble-main-background-color, var(--background-color-2, var(--secondary-background-color)));
+    --sa-bubble: var(--bubble-icon-background-color, var(--card-background-color, var(--ha-card-background)));
+    --sa-dnd: var(--indigo-color, #3f51b5);
+    --sa-pause: var(--deep-orange-color, #ff6f22);
+    --sa-snooze: var(--blue-grey-color, #607d8b);
+    --kind: var(--primary-color);
+  }
+  ha-card { padding: 12px; color: var(--primary-text-color); }
+  .k-dnd { --kind: var(--sa-dnd); }
+  .k-pause { --kind: var(--sa-pause); }
+  .k-snooze { --kind: var(--sa-snooze); }
+  button { font: inherit; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:disabled { cursor: default; }
+  .bubble { flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%;
+    background: color-mix(in srgb, var(--kind) 18%, transparent); color: var(--kind); }
+  .head { display: flex; align-items: center; gap: 10px; }
+  .head .bubble { width: 42px; height: 42px; --kind: var(--primary-color); --mdc-icon-size: 24px; }
+  .head > div { min-width: 0; }
+  .title { font-size: 15px; font-weight: 600; line-height: 20px; }
+  .sub { font-size: 13px; line-height: 18px; color: var(--secondary-text-color); min-height: 18px; }
+  .switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: 44px; box-sizing: border-box;
+    margin-top: 12px; padding: 4px; border-radius: 22px; background: var(--sa-surface); }
+  .seg { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; padding: 0 8px;
+    border-radius: 18px; background: transparent; color: var(--primary-text-color); font-size: 14px;
+    font-weight: 500; white-space: nowrap; --mdc-icon-size: 18px; }
+  .seg[aria-pressed="true"] { background: var(--kind); color: #fff; }
+  .hint, .note { font-size: 13px; line-height: 18px; color: var(--secondary-text-color); margin: 8px 4px 0; }
+  .note.error { color: var(--error-color, #db4437); }
+  .label { font-size: 12px; line-height: 16px; color: var(--secondary-text-color); margin: 12px 4px 6px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { font: inherit; font-size: 0.9em; padding: 6px 12px; border-radius: 16px; cursor: pointer;
-    border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); }
-  .chip[aria-pressed="true"] { background: var(--primary-color); border-color: var(--primary-color);
-    color: var(--text-primary-color, #fff); }
-  .chip:disabled { opacity: 0.4; cursor: default; }
-  .go { font: inherit; margin-top: 10px; padding: 8px 18px; border-radius: 18px; border: 0; cursor: pointer;
-    background: var(--primary-color); color: var(--text-primary-color, #fff); }
-  .go:disabled { opacity: 0.5; cursor: default; }
-  section + section { border-top: 1px solid var(--divider-color); margin-top: 12px; }
-  .entry { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
-  .entry + .entry { border-top: 1px solid var(--divider-color); }
-  .entry .what { flex: 1; }
-  .entry .kind { font-weight: 600; }
-  .entry .when { color: var(--secondary-text-color); font-size: 0.9em; }
-  .end { font: inherit; padding: 6px 14px; border-radius: 16px; cursor: pointer;
-    border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); }
-  .empty, .error { color: var(--secondary-text-color); padding: 8px 0; }
-  .error { color: var(--error-color, #db4437); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; box-sizing: border-box;
+    max-width: 100%; padding: 0 14px 0 10px; border-radius: 18px; background: var(--sa-surface);
+    color: var(--primary-text-color); font-size: 14px; --mdc-icon-size: 18px; }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.text { padding: 0 14px; }
+  .chip[aria-pressed="true"] { background: var(--kind); color: #fff; }
+  .go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px;
+    margin-top: 14px; border-radius: 22px; background: var(--kind); color: #fff; font-size: 15px;
+    font-weight: 600; --mdc-icon-size: 20px; }
+  .go:disabled { opacity: 0.4; }
+  .running-head { display: flex; align-items: center; justify-content: space-between; margin: 16px 4px 8px; }
+  .running-head .label { margin: 0; }
+  .count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 20px;
+    box-sizing: border-box; padding: 0 8px; border-radius: 10px; background: var(--sa-surface);
+    font-size: 12px; font-weight: 600; }
+  .running { display: grid; gap: 6px; }
+  .entry { display: flex; align-items: center; gap: 10px; min-height: 56px; box-sizing: border-box;
+    padding: 9px 12px 9px 9px; border-radius: 28px; background: var(--sa-surface); }
+  .entry.dim { opacity: 0.6; }
+  .entry .bubble { width: 38px; height: 38px; --mdc-icon-size: 20px; }
+  .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .what .main { font-size: 13px; font-weight: 600; line-height: 18px; }
+  .what .detail { font-size: 12px; line-height: 16px; color: var(--secondary-text-color); }
+  .end { flex: none; height: 32px; padding: 0 14px; border-radius: 16px; background: var(--sa-bubble);
+    color: var(--primary-text-color); font-size: 13px; font-weight: 500; }
+  .end:disabled { opacity: 0.5; }
 `;
 
 class SecurityAlertsCard extends HTMLElement {
   constructor() {
     super();
     this._choices = {};
-    for (const section of SECTIONS) {
-      this._choices[section.kind] = { types: new Set(), cameras: new Set(), hours: null, busy: false };
+    for (const form of FORMS) {
+      this._choices[form.kind] = { types: new Set(), cameras: new Set(), hours: null, busy: false };
     }
+    // The picked switch segment; kept in memory only.
+    this._kind = FORMS[0].kind;
     this._options = null;
+    this._error = null;
     this._retryAt = 0;
     this._lastState = undefined;
+    this._modeName = undefined;
   }
 
   static getStubConfig() {
@@ -100,28 +147,45 @@ class SecurityAlertsCard extends HTMLElement {
     if (!this._root) this._build();
     const complete = this._options && this._options.cameras.length;
     if (!complete && !this._loading && Date.now() >= this._retryAt) this._loadOptions();
+    // The pickers and the no-effect marks follow the mode live, without a reload.
+    let modeChanged = false;
+    if (this._options) {
+      const mode = this._activeMode();
+      const name = mode ? mode.name : null;
+      if (name !== this._modeName) {
+        this._modeName = name;
+        this._dropUnoffered(mode);
+        this._renderForm();
+        modeChanged = true;
+      }
+    }
     const state = hass.states[this._config.entity];
-    if (state !== this._lastState) {
+    if (state !== this._lastState || modeChanged) {
       this._lastState = state;
+      this._renderHead();
       this._renderRunning();
     }
   }
 
   _build() {
     this._root = this.attachShadow({ mode: "open" });
-    this._sections = {};
-    for (const section of SECTIONS) this._sections[section.kind] = h("section");
-    this._running = h("div");
+    this._sub = h("div", { class: "sub" });
+    this._form = h("div", { class: "form" });
+    this._count = h("span", { class: "count", text: "0" });
+    this._running = h("div", { class: "running" });
     this._root.append(
       h("style", { text: STYLE }),
-      h("ha-card", { header: "Security alerts" }, [
-        ...SECTIONS.map((s) => this._sections[s.kind]),
-        h("section", {}, [h("h2", { text: "Running" }), this._running]),
+      h("ha-card", {}, [
+        h("div", { class: "head" }, [
+          h("div", { class: "bubble" }, h("ha-icon", { icon: "mdi:shield-home" })),
+          h("div", {}, [h("div", { class: "title", text: "Security alerts" }), this._sub]),
+        ]),
+        this._form,
+        h("div", { class: "running-head" }, [h("span", { class: "label", text: "Running" }), this._count]),
+        this._running,
       ]),
     );
-    for (const section of SECTIONS) {
-      this._sections[section.kind].replaceChildren(h("h2", { text: section.title }), h("div", { class: "empty", text: "Loading…" }));
-    }
+    this._renderForm();
   }
 
   async _loadOptions() {
@@ -129,82 +193,170 @@ class SecurityAlertsCard extends HTMLElement {
     this._retryAt = Date.now() + OPTIONS_RETRY_MS;
     try {
       this._options = await this._hass.callWS({ type: "security_alerts/types" });
-      for (const section of SECTIONS) {
-        const choice = this._choices[section.kind];
+      this._error = null;
+      for (const form of FORMS) {
+        const choice = this._choices[form.kind];
         if (choice.hours === null) choice.hours = this._options.durations[0];
-        this._renderSection(section);
       }
+      const mode = this._activeMode();
+      this._modeName = mode ? mode.name : null;
+      this._dropUnoffered(mode);
+      this._renderForm();
+      this._renderHead();
       this._renderRunning();
     } catch (err) {
       if (!this._options) {
-        for (const section of SECTIONS) {
-          this._sections[section.kind].replaceChildren(
-            h("h2", { text: section.title }),
-            h("div", { class: "error", text: `Unavailable: ${err.message || err}` }),
-          );
-        }
+        this._error = `Unavailable: ${err.message || err}`;
+        this._renderForm();
       }
     } finally {
       this._loading = false;
     }
   }
 
-  _chip(text, pressed, onclick, disabled = false) {
-    return h("button", { class: "chip", "aria-pressed": String(pressed), text, onclick, disabled });
+  // The highest away mode that is on (the modes come in ladder order), or null.
+  _activeMode() {
+    const modes = (this._options && this._options.modes) || [];
+    return (
+      modes.find((mode) => {
+        const state = this._hass.states[mode.entity];
+        return state && state.state === "on";
+      }) || null
+    );
   }
 
-  _renderSection(section) {
-    const choice = this._choices[section.kind];
-    const rerender = () => this._renderSection(section);
+  // The types a kind changes in this mode: what its picker offers.
+  _offered(kind, mode) {
+    const kinds = new Set((mode && mode.changes[kind]) || []);
+    return this._options.types.filter((t) => kinds.has(t.kind));
+  }
+
+  _dropUnoffered(mode) {
+    for (const form of FORMS) {
+      const offered = new Set(this._offered(form.kind, mode).map((t) => t.id));
+      const picked = this._choices[form.kind].types;
+      for (const id of [...picked]) if (!offered.has(id)) picked.delete(id);
+    }
+  }
+
+  // An entry has an effect when one of its types has a kind its kind changes in this mode.
+  // A type the card does not know counts as having one, so nothing is wrongly marked.
+  _hasEffect(entry, mode) {
+    const kinds = new Set(mode.changes[entry.kind] || []);
+    return entry.types.some((id) => {
+      const type = this._options.types.find((t) => t.id === id);
+      return !type || kinds.has(type.kind);
+    });
+  }
+
+  _entries() {
+    return (this._lastState && this._lastState.attributes.entries) || [];
+  }
+
+  _chip(text, icon, pressed, onclick) {
+    return h("button", { class: icon ? "chip" : "chip text", "aria-pressed": String(pressed), onclick }, [
+      icon && h("ha-icon", { icon }),
+      h("span", { text }),
+    ]);
+  }
+
+  _renderHead() {
+    if (!this._options) return;
+    const mode = this._activeMode();
+    const count = this._entries().length;
+    this._sub.textContent = mode
+      ? `${mode.name} · ${count ? `${count} running` : "nothing running"}`
+      : "No away mode is on";
+  }
+
+  _renderForm() {
+    const note = (text, error = false) => h("div", { class: error ? "note error" : "note", text });
+    if (!this._options) {
+      this._form.replaceChildren(this._error ? note(this._error, true) : note("Loading…"));
+      return;
+    }
+    const mode = this._activeMode();
+    if (!mode) {
+      this._form.replaceChildren(note("No away mode is on."));
+      return;
+    }
+    const form = FORMS.find((f) => f.kind === this._kind);
+    const choice = this._choices[form.kind];
+    const rerender = () => this._renderForm();
+    this._form.className = `form k-${form.kind}`;
+    const segments = FORMS.map((f) =>
+      h(
+        "button",
+        {
+          class: `seg k-${f.kind}`,
+          "aria-pressed": String(f.kind === form.kind),
+          onclick: () => {
+            this._kind = f.kind;
+            rerender();
+          },
+        },
+        [h("ha-icon", { icon: KIND_ICONS[f.kind] }), h("span", { text: KIND_NAMES[f.kind] })],
+      ),
+    );
+    const switcher = h("div", { class: "switch", role: "group" }, segments);
+    const offered = this._offered(form.kind, mode);
+    if (!offered.length) {
+      this._form.replaceChildren(switcher, note(form.none(mode.name)));
+      return;
+    }
     const toggle = (set, id) => () => {
       if (set.has(id)) set.delete(id);
       else set.add(id);
       rerender();
     };
+    const types = offered.map((t) => this._chip(t.name, t.icon, choice.types.has(t.id), toggle(choice.types, t.id)));
     const cameraTypesPicked = [...choice.types].some((t) => !SENSOR_TYPES.has(t));
-    const types = this._options.types.map((t) => this._chip(t.name, choice.types.has(t.id), toggle(choice.types, t.id)));
-    const cameras = [
-      this._chip("All cameras", choice.cameras.size === 0, () => {
-        choice.cameras.clear();
-        rerender();
-      }, !cameraTypesPicked),
-      ...this._options.cameras.map((c) =>
-        this._chip(c.name, choice.cameras.has(c.id), toggle(choice.cameras, c.id), !cameraTypesPicked),
-      ),
+    const cameras = cameraTypesPicked && [
+      h("div", { class: "label", text: "Cameras" }),
+      h("div", { class: "chips" }, [
+        this._chip("All cameras", "mdi:cctv", choice.cameras.size === 0, () => {
+          choice.cameras.clear();
+          rerender();
+        }),
+        ...this._options.cameras.map((c) =>
+          this._chip(c.name, "mdi:cctv", choice.cameras.has(c.id), toggle(choice.cameras, c.id)),
+        ),
+      ]),
     ];
     const durations = this._options.durations.map((hours) =>
-      this._chip(`${hours} h`, hours === choice.hours, () => {
+      this._chip(`${hours} h`, null, hours === choice.hours, () => {
         choice.hours = hours;
         rerender();
       }),
     );
-    const go = h("button", {
-      class: "go",
-      text: `Start ${section.title.toLowerCase()}`,
-      disabled: choice.busy || choice.types.size === 0,
-      onclick: () => this._start(section),
-    });
-    this._sections[section.kind].replaceChildren(
-      h("h2", { text: section.title }),
-      h("div", { class: "hint", text: section.hint }),
+    const go = h(
+      "button",
+      { class: "go", disabled: choice.busy || choice.types.size === 0, onclick: () => this._start(form.kind) },
+      [
+        h("ha-icon", { icon: KIND_ICONS[form.kind] }),
+        h("span", { text: choice.busy ? "Starting…" : `${KIND_NAMES[form.kind]} for ${choice.hours} h` }),
+      ],
+    );
+    this._form.replaceChildren(
+      switcher,
+      h("div", { class: "hint", text: form.hint(mode.name) }),
       h("div", { class: "label", text: "Types" }),
       h("div", { class: "chips" }, types),
-      h("div", { class: "label", text: "Cameras (camera types only)" }),
-      h("div", { class: "chips" }, cameras),
+      ...(cameras || []),
       h("div", { class: "label", text: "For" }),
       h("div", { class: "chips" }, durations),
       go,
     );
   }
 
-  async _start(section) {
-    const choice = this._choices[section.kind];
+  async _start(kind) {
+    const choice = this._choices[kind];
     choice.busy = true;
-    this._renderSection(section);
+    this._renderForm();
     try {
       await this._hass.callWS({
         type: "security_alerts/quiet/add",
-        kind: section.kind,
+        kind,
         types: [...choice.types],
         cameras: [...choice.cameras],
         hours: choice.hours,
@@ -212,10 +364,10 @@ class SecurityAlertsCard extends HTMLElement {
       choice.types.clear();
       choice.cameras.clear();
     } catch (err) {
-      this._toast(`Could not start ${section.title.toLowerCase()}: ${err.message || err}`);
+      this._toast(`Could not start ${KIND_NAMES[kind].toLowerCase()}: ${err.message || err}`);
     } finally {
       choice.busy = false;
-      this._renderSection(section);
+      this._renderForm();
     }
   }
 
@@ -228,31 +380,45 @@ class SecurityAlertsCard extends HTMLElement {
     return found ? found.name : id.replace(/_/g, " ");
   }
 
+  _row(kind, icon, main, detail, action, dim = false) {
+    return h("div", { class: `entry k-${kind}${dim ? " dim" : ""}` }, [
+      h("div", { class: "bubble" }, h("ha-icon", { icon })),
+      h("div", { class: "what" }, [h("div", { class: "main", text: main }), detail && h("div", { class: "detail", text: detail })]),
+      action,
+    ]);
+  }
+
   _renderRunning() {
     if (!this._running) return;
     const state = this._lastState;
+    const entries = this._entries();
+    this._count.textContent = String(entries.length);
     if (!state) {
-      this._running.replaceChildren(h("div", { class: "error", text: `${this._config.entity} is not available.` }));
+      this._running.replaceChildren(h("div", { class: "note error", text: `${this._config.entity} is not available.` }));
       return;
     }
-    const entries = state.attributes.entries || [];
     if (!entries.length) {
-      this._running.replaceChildren(h("div", { class: "empty", text: "Nothing running." }));
+      this._running.replaceChildren(this._row("none", "mdi:check", "Nothing running"));
       return;
     }
     const opts = this._options || {};
+    // With no away mode on (or before the types load), nothing is marked.
+    const mode = this._options ? this._activeMode() : null;
     this._running.replaceChildren(
       ...entries.map((entry) => {
         const types = entry.types.map((t) => this._name(opts.types, t)).join(", ");
         const cameras = entry.cameras.length ? entry.cameras.map((c) => this._name(opts.cameras, c)).join(", ") : "";
+        const noEffect = mode !== null && !this._hasEffect(entry, mode);
+        const detail = [cameras, untilText(entry.ends_at), noEffect && `No effect in ${mode.name}`];
         const end = h("button", { class: "end", text: "End", onclick: () => this._end(entry.id, end) });
-        return h("div", { class: "entry" }, [
-          h("div", { class: "what" }, [
-            h("div", {}, [h("span", { class: "kind", text: KIND_NAMES[entry.kind] || entry.kind }), ` · ${types}`]),
-            h("div", { class: "when", text: [cameras, untilText(entry.ends_at)].filter(Boolean).join(" · ") }),
-          ]),
+        return this._row(
+          entry.kind,
+          KIND_ICONS[entry.kind] || "mdi:bell",
+          `${KIND_NAMES[entry.kind] || entry.kind} · ${types}`,
+          detail.filter(Boolean).join(" · "),
           end,
-        ]);
+          noEffect,
+        );
       }),
     );
   }
