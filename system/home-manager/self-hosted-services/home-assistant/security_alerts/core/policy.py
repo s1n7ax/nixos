@@ -48,6 +48,12 @@ class Mode:
             return self.motion_top if top_floor else self.motion_other
         raise ValueError(f"Unknown event kind: {kind}")
 
+    def levels(self, kind: str) -> tuple[str, ...]:
+        """Every level `kind` has in this mode: door and motion top floor, then the others."""
+        if kind in SENSOR_KINDS:
+            return (self.level(kind, True), self.level(kind, False))
+        return (self.level(kind, True),)
+
 
 @dataclass(frozen=True)
 class HomeRules:

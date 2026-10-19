@@ -2,19 +2,27 @@ from __future__ import annotations
 
 import pytest
 
+from core.burst import BurstWindow
+from core.decide import decide
+from core.policy import DETECTION, DOOR, EVENT_KINDS, MOTION, SOUND
 from core.quiet import (
     DND,
     PAUSE,
+    QUIET_KINDS,
     SNOOZE,
     QuietEntry,
+    changed_kinds,
     new_entries,
     next_expiry,
     running,
     strongest,
 )
+from modes import ALL_AWAY, I_AWAY, LADDER, WE_AWAY
 
 NOW = 1_000_000.0
 HOUR = 3600.0
+# One made-up event type per event kind; sensors are typed by their kind.
+EVENT_TYPES = {DETECTION: "person", SOUND: "bark", DOOR: DOOR, MOTION: MOTION}
 
 
 def entry(kind, types, cameras=(), ends_in=HOUR, id_="e"):
@@ -115,3 +123,41 @@ def test_new_entries_only_sensor_types_with_cameras(make_id):
 def test_new_entries_rejects_bad_requests(kind, types, hours, make_id):
     with pytest.raises(ValueError):
         new_entries(kind, types, [], hours, NOW, make_id)
+
+
+# What the dashboard offers: Do not disturb the critical kinds, Pause and Snooze
+# the kinds that send a notification.
+@pytest.mark.parametrize(
+    ("mode", "expected"),
+    [
+        (I_AWAY, {PAUSE: (DETECTION, SOUND), SNOOZE: (DETECTION, SOUND), DND: (DETECTION,)}),
+        (WE_AWAY, {PAUSE: EVENT_KINDS, SNOOZE: EVENT_KINDS, DND: (DETECTION, DOOR, MOTION)}),
+        (ALL_AWAY, {PAUSE: EVENT_KINDS, SNOOZE: EVENT_KINDS, DND: (DETECTION, DOOR, MOTION)}),
+    ],
+)
+def test_changed_kinds_follow_the_mode_table(mode, expected):
+    assert changed_kinds(mode) == expected
+
+
+@pytest.mark.parametrize("mode", LADDER)
+@pytest.mark.parametrize("kind", EVENT_KINDS)
+@pytest.mark.parametrize("quiet_kind", QUIET_KINDS)
+def test_changed_kinds_match_decide(mode, kind, quiet_kind):
+    event_type = EVENT_TYPES[kind]
+    camera = "cam_a" if kind in (DETECTION, SOUND) else None
+
+    def delivery(top_floor, entries):
+        return decide(
+            base=mode.level(kind, top_floor),
+            mode_name=mode.name,
+            event_type=event_type,
+            camera=camera,
+            quiet_entries=entries,
+            quiet_after_restart=False,
+            burst=BurstWindow(600),
+            now=NOW,
+        ).delivery
+
+    matching = [entry(quiet_kind, [event_type])]
+    changes = any(delivery(top, matching) != delivery(top, []) for top in (True, False))
+    assert (kind in changed_kinds(mode)[quiet_kind]) is changes

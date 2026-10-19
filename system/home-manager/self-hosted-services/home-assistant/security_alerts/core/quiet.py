@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from .policy import SENSOR_KINDS
+from .policy import CRITICAL, EVENT_KINDS, REGULAR, SENSOR_KINDS, SILENT, Mode
 
 PAUSE = "pause"
 DND = "dnd"
@@ -15,6 +15,10 @@ QUIET_KINDS = (PAUSE, DND, SNOOZE)
 
 # The quietest effect wins when several entries match one event.
 _STRENGTH = {PAUSE: 3, SNOOZE: 2, DND: 1}
+
+# The levels each kind changes, as decide applies it: Pause sends nothing, Snooze
+# sends silent and Do-not-disturb turns critical into regular.
+_CHANGES = {PAUSE: (SILENT, REGULAR, CRITICAL), SNOOZE: (REGULAR, CRITICAL), DND: (CRITICAL,)}
 
 
 @dataclass(frozen=True)
@@ -123,3 +127,17 @@ def strongest(
         if best is None or _STRENGTH[entry.kind] > _STRENGTH[best.kind]:
             best = entry
     return best
+
+
+def changed_kinds(mode: Mode) -> dict[str, tuple[str, ...]]:
+    """For each quiet kind, the event kinds (in EVENT_KINDS order) it changes in `mode`.
+
+    A kind is changed when at least one of its levels in the mode is, so door counts
+    when only its top-floor level is.
+    """
+    return {
+        quiet_kind: tuple(
+            kind for kind in EVENT_KINDS if any(level in levels for level in mode.levels(kind))
+        )
+        for quiet_kind, levels in _CHANGES.items()
+    }

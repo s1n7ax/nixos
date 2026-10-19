@@ -15,6 +15,7 @@ from core.policy import (
     REVIEW_ONLY,
     SILENT,
     SOUND,
+    Mode,
     active_mode,
     base_level,
     is_asleep,
@@ -109,6 +110,28 @@ def test_unknown_kind_raises():
         base_level("smoke", mode=WE_AWAY, home=HOME, top_floor=True, asleep=False, night=False)
     with pytest.raises(ValueError):
         base_level("smoke", mode=None, home=HOME, top_floor=True, asleep=False, night=False)
+
+
+def test_mode_levels_list_every_level_of_a_kind():
+    mode = Mode(
+        name="Made up",
+        entity="input_boolean.mode_x",
+        detection=CRITICAL,
+        sound=REGULAR,
+        door_top=SILENT,
+        door_other=NONE,
+        motion_top=REVIEW_ONLY,
+        motion_other=CRITICAL,
+    )
+    assert mode.levels(DETECTION) == (CRITICAL,)
+    assert mode.levels(SOUND) == (REGULAR,)
+    assert mode.levels(DOOR) == (SILENT, NONE)
+    assert mode.levels(MOTION) == (REVIEW_ONLY, CRITICAL)
+
+
+def test_mode_levels_unknown_kind_raises():
+    with pytest.raises(ValueError):
+        WE_AWAY.levels("smoke")
 
 
 @pytest.mark.parametrize(
