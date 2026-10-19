@@ -24,8 +24,9 @@ from .const import (
     IMAGE_URL,
     SIGNED_URL_HOURS,
 )
+from .core.icons import icon_for
 from .core.policy import DETECTION, DOOR, MOTION, SOUND
-from .core.quiet import QUIET_KINDS
+from .core.quiet import QUIET_KINDS, changed_kinds
 from .notify import local_clock, type_name
 from .pipeline import SecurityAlerts
 from .services import QUIET_FIELDS
@@ -153,23 +154,35 @@ async def ws_alert(
 def ws_types(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """The types and cameras the pickers offer, and the durations."""
+    """The types and cameras the pickers offer, the durations, and the modes.
+
+    Each mode, in ladder order, lists per quiet kind the event kinds it changes
+    there, so the card offers only those types for the mode that is on.
+    """
     alerts = _alerts(hass)
+    typed = [(label, DETECTION) for label in alerts.frigate.object_labels()]
+    typed += [(label, SOUND) for label in alerts.frigate.sound_labels()]
+    typed += [(kind, kind) for kind in (DOOR, MOTION)]
     types = [
-        {"id": label, "name": type_name(label), "kind": DETECTION}
-        for label in alerts.frigate.object_labels()
+        {"id": type_id, "name": type_name(type_id), "kind": kind, "icon": icon_for(kind, type_id)}
+        for type_id, kind in typed
     ]
-    types += [
-        {"id": label, "name": type_name(label), "kind": SOUND}
-        for label in alerts.frigate.sound_labels()
-    ]
-    types += [{"id": kind, "name": type_name(kind), "kind": kind} for kind in (DOOR, MOTION)]
     cameras = [
         {"id": camera, "name": alerts.camera_name(camera)}
         for camera in alerts.frigate.camera_names()
     ]
+    modes = [
+        {"name": mode.name, "entity": mode.entity, "changes": changed_kinds(mode)}
+        for mode in alerts.modes
+    ]
     connection.send_result(
-        msg["id"], {"types": types, "cameras": cameras, "durations": alerts.durations_hours}
+        msg["id"],
+        {
+            "types": types,
+            "cameras": cameras,
+            "durations": alerts.durations_hours,
+            "modes": modes,
+        },
     )
 
 
