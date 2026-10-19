@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from core.policy import CRITICAL, NONE, REGULAR, SILENT, HomeRules, Mode
+from core.policy import CRITICAL, NONE, REGULAR, REVIEW_ONLY, SILENT, HomeRules, Mode
 
 ALL_AWAY = Mode(
     name="All away",
@@ -35,4 +35,4 @@ I_AWAY = Mode(
     motion_other=NONE,
 )
 LADDER = (ALL_AWAY, WE_AWAY, I_AWAY)
-HOME = HomeRules(detection=REGULAR, detection_asleep_or_night=CRITICAL, sound=SILENT)
+HOME = HomeRules(detection=REGULAR, detection_asleep_or_night=CRITICAL, sound=REVIEW_ONLY)

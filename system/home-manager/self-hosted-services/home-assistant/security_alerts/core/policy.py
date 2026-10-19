@@ -7,10 +7,12 @@ from dataclasses import dataclass
 from datetime import time
 
 NONE = "none"
+# Logged for the review view, never sent.
+REVIEW_ONLY = "review_only"
 SILENT = "silent"
 REGULAR = "regular"
 CRITICAL = "critical"
-LEVELS = (NONE, SILENT, REGULAR, CRITICAL)
+LEVELS = (NONE, REVIEW_ONLY, SILENT, REGULAR, CRITICAL)
 
 DETECTION = "detection"
 SOUND = "sound"

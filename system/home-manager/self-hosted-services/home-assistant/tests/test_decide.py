@@ -16,6 +16,7 @@ from core.policy import (
     MOTION,
     NONE,
     REGULAR,
+    REVIEW_ONLY,
     SILENT,
     SOUND,
     active_mode,
@@ -80,7 +81,7 @@ def quiet(kind, types, cameras=(), id_="q"):
     ("on", "kind", "top_floor", "expected"),
     [
         ((), DETECTION, False, REGULAR),
-        ((), SOUND, False, SILENT),
+        ((), SOUND, False, REVIEW_ONLY),
         ((), DOOR, True, NONE),
         ((), MOTION, True, NONE),
         ((I_AWAY.entity,), DETECTION, False, CRITICAL),
@@ -220,6 +221,40 @@ def test_none_is_not_an_alert():
     assert not d.is_alert
 
 
+def test_home_sound_is_logged_but_not_sent():
+    d = run(SOUND, "bark")
+    assert d.delivery == REVIEW_ONLY
+    assert d.is_alert and not d.is_sent and not d.rings
+    assert d.quiet_id is None
+    assert d.reason == "Home: review_only"
+
+
+@pytest.mark.parametrize("kind", [PAUSE, SNOOZE, DND])
+def test_review_only_ignores_quiet_entries(kind):
+    d = run(SOUND, "bark", quiet=[quiet(kind, ["bark"])])
+    assert d.delivery == REVIEW_ONLY
+    assert d.quiet_id is None
+
+
+def test_review_only_ignores_quiet_after_restart():
+    assert run(SOUND, "bark", restart=True).delivery == REVIEW_ONLY
+
+
+def test_review_only_leaves_the_burst_window_alone():
+    burst = BurstWindow(WINDOW, {"bark": NOW - 1})
+    assert run(SOUND, "bark", burst=burst).delivery == REVIEW_ONLY
+    assert burst.as_dict() == {"bark": NOW - 1}
+    fresh = BurstWindow(WINDOW)
+    assert run(SOUND, "bark", burst=fresh).delivery == REVIEW_ONLY
+    assert fresh.as_dict() == {}
+
+
+def test_away_sound_is_still_sent():
+    d = run(SOUND, "bark", on=(I_AWAY.entity,))
+    assert d.delivery == REGULAR
+    assert d.is_sent
+
+
 def test_reason_names_each_step():
     burst = BurstWindow(WINDOW, {"person": NOW - 1})
     d = run(DETECTION, "person", on=(I_AWAY.entity,), burst=burst)
@@ -243,4 +278,4 @@ def test_unknown_level_raises():
 def test_home_rules_fixture_matches_requirement():
     assert HOME_RULES.detection == REGULAR
     assert HOME_RULES.detection_asleep_or_night == CRITICAL
-    assert HOME_RULES.sound == SILENT
+    assert HOME_RULES.sound == REVIEW_ONLY

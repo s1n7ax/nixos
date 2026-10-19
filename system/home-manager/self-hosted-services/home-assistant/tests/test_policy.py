@@ -8,9 +8,11 @@ from core.policy import (
     CRITICAL,
     DETECTION,
     DOOR,
+    LEVELS,
     MOTION,
     NONE,
     REGULAR,
+    REVIEW_ONLY,
     SILENT,
     SOUND,
     active_mode,
@@ -83,11 +85,15 @@ def test_home_detection(asleep, night, expected):
     assert level == expected
 
 
-@pytest.mark.parametrize(("asleep", "night"), [(False, False), (True, True)])
-def test_home_sound_is_silent(asleep, night):
-    assert base_level(SOUND, mode=None, home=HOME, top_floor=True, asleep=asleep, night=night) == (
-        SILENT
-    )
+@pytest.mark.parametrize(("asleep", "night"), [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize("top_floor", [True, False])
+def test_home_sound_is_review_only(asleep, night, top_floor):
+    level = base_level(SOUND, mode=None, home=HOME, top_floor=top_floor, asleep=asleep, night=night)
+    assert level == REVIEW_ONLY
+
+
+def test_review_only_is_a_level_between_none_and_silent():
+    assert LEVELS.index(NONE) < LEVELS.index(REVIEW_ONLY) < LEVELS.index(SILENT)
 
 
 @pytest.mark.parametrize("kind", [DOOR, MOTION])
