@@ -192,9 +192,9 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
 async def _async_load_card(hass: HomeAssistant, url: str) -> None:
     """Load the card from a dashboard resource, kept at this version.
 
-    Dashboards fetch their resources over the websocket when they open. An extra JS URL is
-    written into the page instead, so a page served while Home Assistant was starting, or
-    the service worker's cached copy of one, has no card ("Custom element doesn't exist").
+    Dashboards load their resources after the frontend has booted. An extra JS URL runs at
+    page load, racing the frontend's swap of `window.customElements` for its own registry:
+    a card defined before the swap is lost ("Custom element doesn't exist").
     """
     lovelace = hass.data[LOVELACE_DATA]
     if lovelace.resource_mode != MODE_STORAGE:
