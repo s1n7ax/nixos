@@ -130,6 +130,7 @@ class SecurityReviewPanel extends HTMLElement {
     this._typesRetry = null;
     this._poll = null;
     this._liveCard = null;
+    this._clipRequest = 0;
   }
 
   set hass(hass) {
@@ -459,7 +460,7 @@ class SecurityReviewPanel extends HTMLElement {
 
   // Without a mode (?clip=), a sound opens in sound mode and a detection in video mode.
   async _openClip(alertId, item, mode) {
-    this._stopPoll();
+    const request = this._nextClipRequest();
     stopMedia(this._dialog);
     // The popup plays on its own: pause any sound playing in the list.
     for (const audio of this._list.querySelectorAll("audio")) audio.pause();
@@ -468,8 +469,10 @@ class SecurityReviewPanel extends HTMLElement {
     if (!this._dialog.open) this._dialog.showModal();
     try {
       const alert = item || (await this._fetchAlert(alertId));
+      if (!this._isCurrentClip(request)) return;
       this._showClip(alert, mode || (alert.kind === "sound" ? SOUND_MODE : VIDEO_MODE));
     } catch (err) {
+      if (!this._isCurrentClip(request)) return;
       this._dialog.replaceChildren(h("div", { class: "clip-body" }, h("div", { class: "error", text: `Could not open the clip: ${err.message || err}` })));
     }
   }
@@ -478,8 +481,20 @@ class SecurityReviewPanel extends HTMLElement {
     return this._hass.callWS({ type: "security_alerts/alert", alert_id: alertId });
   }
 
-  _showClip(item, mode) {
+  // Each open, mode switch and close is a new request for the popup. Async work started for an
+  // earlier one is dropped, so a late answer never replaces what the popup shows now.
+  _nextClipRequest() {
     this._stopPoll();
+    this._clipRequest += 1;
+    return this._clipRequest;
+  }
+
+  _isCurrentClip(request) {
+    return request === this._clipRequest && this._dialog.open;
+  }
+
+  _showClip(item, mode) {
+    this._nextClipRequest();
     stopMedia(this._dialog);
     this._liveCard = null;
     const title = h("div", { class: "clip-title", text: `${item.type_name} · ${item.name} · ${item.clock}` });
@@ -534,10 +549,11 @@ class SecurityReviewPanel extends HTMLElement {
 
   // Asks for the alert every few seconds and shows it in this mode once its recording is saved.
   _pollUntilReady(item, mode) {
+    const request = this._clipRequest;
     this._poll = setInterval(async () => {
       try {
         const fresh = await this._fetchAlert(item.id);
-        if (mediaUrl(fresh, mode) && this._dialog.open) this._showClip(fresh, mode);
+        if (this._isCurrentClip(request) && mediaUrl(fresh, mode)) this._showClip(fresh, mode);
       } catch (_err) {
         // Keep waiting; the next poll tries again.
       }
@@ -572,7 +588,7 @@ class SecurityReviewPanel extends HTMLElement {
   }
 
   _closeClip() {
-    this._stopPoll();
+    this._nextClipRequest();
     this._liveCard = null;
     stopMedia(this._dialog);
     this._dialog.replaceChildren();
