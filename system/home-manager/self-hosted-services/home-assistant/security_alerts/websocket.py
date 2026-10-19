@@ -25,7 +25,7 @@ from .const import (
     SIGNED_URL_HOURS,
 )
 from .core.icons import icon_for
-from .core.policy import DETECTION, DOOR, MOTION, SOUND
+from .core.policy import DETECTION, SENSOR_KINDS, SOUND
 from .core.quiet import QUIET_KINDS, changed_kinds
 from .notify import local_clock, type_name
 from .pipeline import SecurityAlerts
@@ -162,7 +162,7 @@ def ws_types(
     alerts = _alerts(hass)
     typed = [(label, DETECTION) for label in alerts.frigate.object_labels()]
     typed += [(label, SOUND) for label in alerts.frigate.sound_labels()]
-    typed += [(kind, kind) for kind in (DOOR, MOTION)]
+    typed += [(kind, kind) for kind in SENSOR_KINDS]
     types = [
         {"id": type_id, "name": type_name(type_id), "kind": kind, "icon": icon_for(kind, type_id)}
         for type_id, kind in typed
