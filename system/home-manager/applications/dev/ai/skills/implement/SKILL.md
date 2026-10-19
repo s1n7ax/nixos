@@ -101,7 +101,7 @@ When `/ship` is driving this skill, stop here: `/ship` runs its own checks and o
 
 ## Handing off to the next step
 
-`/implement` is the last step of the workflow. After finishing, **tell the user the workflow is complete** — there is no next command to run or copy. If review or validation left unresolved work, name it explicitly instead of implying a next step.
+After finishing, the workflow's next step is `/verify <goal>`, which tests the change as its end user would. **Tell the user** to run it. If review or validation left unresolved work, name it explicitly instead.
 
 ## Never
 
