@@ -4,7 +4,7 @@
 //   type: custom:security-alerts-card
 //   entity: sensor.security_alerts_quiet   # optional, this is the default
 //
-// Loaded on every page by the security_alerts integration. This file holds no data.
+// Loaded as a dashboard resource by the security_alerts integration. This file holds no data.
 
 const DEFAULT_ENTITY = "sensor.security_alerts_quiet";
 // Types and cameras come from Frigate's config, which may not be loaded yet; ask again

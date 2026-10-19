@@ -7,6 +7,7 @@
   "dependencies": [
     "frontend",
     "http",
+    "lovelace",
     "mobile_app",
     "mqtt",
     "panel_custom",
