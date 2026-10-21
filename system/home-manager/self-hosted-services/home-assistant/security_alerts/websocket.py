@@ -25,7 +25,7 @@ from .const import (
     SIGNED_URL_HOURS,
 )
 from .core.icons import icon_for
-from .core.policy import DETECTION, SENSOR_KINDS, SOUND
+from .core.policy import DETECTION, HOME, SENSOR_KINDS, SOUND
 from .core.quiet import QUIET_KINDS, changed_kinds
 from .notify import local_clock, type_name
 from .pipeline import SecurityAlerts
@@ -154,10 +154,11 @@ async def ws_alert(
 def ws_types(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """The types and cameras the pickers offer, the durations, and the modes.
+    """The types and cameras the pickers offer, the durations, the modes and Home.
 
-    Each mode, in ladder order, lists per quiet kind the event kinds it changes
-    there, so the card offers only those types for the mode that is on.
+    Each mode, in ladder order, and Home (no away mode on) list per quiet kind the
+    event kinds it changes there, so the card offers only those types for the mode
+    that is on, or for Home when none is.
     """
     alerts = _alerts(hass)
     typed = [(label, DETECTION) for label in alerts.frigate.object_labels()]
@@ -182,6 +183,7 @@ def ws_types(
             "cameras": cameras,
             "durations": alerts.durations_hours,
             "modes": modes,
+            "home": {"name": HOME, "changes": changed_kinds(alerts.home)},
         },
     )
 
