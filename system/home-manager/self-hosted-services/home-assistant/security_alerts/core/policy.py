@@ -72,6 +72,12 @@ class HomeRules:
             return NONE
         raise ValueError(f"Unknown event kind: {kind}")
 
+    def levels(self, kind: str) -> tuple[str, ...]:
+        """Every level `kind` has at Home: a detection's awake level, then asleep or night."""
+        if kind == DETECTION:
+            return (self.detection, self.detection_asleep_or_night)
+        return (self.level(kind, False, False),)
+
 
 def active_mode(modes: Sequence[Mode], is_on: Callable[[str], bool]) -> Mode | None:
     """Return the highest mode that is on; `modes` is in ladder order, highest first."""

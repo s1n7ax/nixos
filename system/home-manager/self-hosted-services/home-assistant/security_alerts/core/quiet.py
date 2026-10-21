@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from .policy import CRITICAL, EVENT_KINDS, REGULAR, SENSOR_KINDS, SILENT, Mode
+from .policy import CRITICAL, EVENT_KINDS, REGULAR, SENSOR_KINDS, SILENT, HomeRules, Mode
 
 PAUSE = "pause"
 DND = "dnd"
@@ -129,11 +129,12 @@ def strongest(
     return best
 
 
-def changed_kinds(mode: Mode) -> dict[str, tuple[str, ...]]:
+def changed_kinds(mode: Mode | HomeRules) -> dict[str, tuple[str, ...]]:
     """For each quiet kind, the event kinds (in EVENT_KINDS order) it changes in `mode`.
 
-    A kind is changed when at least one of its levels in the mode is, so door counts
-    when only its top-floor level is.
+    `mode` is an away mode or the Home rules. A kind is changed when at least one of
+    its levels there is, so door counts when only its top-floor level is, and a Home
+    detection when only its asleep-or-night level is.
     """
     return {
         quiet_kind: tuple(
