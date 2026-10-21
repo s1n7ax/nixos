@@ -428,12 +428,11 @@ class SecurityAlertsCard extends HTMLElement {
       return;
     }
     const opts = this._options || {};
-    const typeIds = (opts.types || []).map((t) => t.id);
     const complete = this._complete();
     // Before the types load nothing is marked; until they are complete every type is named.
     this._running.replaceChildren(
       ...entries.map((entry) => {
-        const all = complete && typeIds.every((id) => entry.types.includes(id));
+        const all = complete && opts.types.every((t) => entry.types.includes(t.id));
         const types = all ? "All types" : entry.types.map((t) => this._name(opts.types, t)).join(", ");
         const cameras = entry.cameras.length ? entry.cameras.map((c) => this._name(opts.cameras, c)).join(", ") : "";
         const noEffect = mode !== null && !this._hasEffect(entry);

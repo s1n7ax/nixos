@@ -146,6 +146,20 @@ def test_changed_kinds_follow_the_mode_table(mode, expected):
     assert changed_kinds(mode) == expected
 
 
+def delivery(base, event_type, camera, entries):
+    """What decide delivers for one event at `base` with `entries` running."""
+    return decide(
+        base=base,
+        mode_name="Test",
+        event_type=event_type,
+        camera=camera,
+        quiet_entries=entries,
+        quiet_after_restart=False,
+        burst=BurstWindow(600),
+        now=NOW,
+    ).delivery
+
+
 def base_levels(mode, kind):
     """Every base level of `kind`: per floor in an away mode, per asleep and night at Home."""
     if isinstance(mode, HomeRules):
@@ -161,22 +175,10 @@ def base_levels(mode, kind):
 def test_changed_kinds_match_decide(mode, kind, quiet_kind):
     event_type = EVENT_TYPES[kind]
     camera = "cam_a" if kind in (DETECTION, SOUND) else None
-
-    def delivery(base, entries):
-        return decide(
-            base=base,
-            mode_name="Test",
-            event_type=event_type,
-            camera=camera,
-            quiet_entries=entries,
-            quiet_after_restart=False,
-            burst=BurstWindow(600),
-            now=NOW,
-        ).delivery
-
     matching = [entry(quiet_kind, [event_type])]
     changes = any(
-        delivery(base, matching) != delivery(base, []) for base in base_levels(mode, kind)
+        delivery(base, event_type, camera, matching) != delivery(base, event_type, camera, [])
+        for base in base_levels(mode, kind)
     )
     assert (kind in changed_kinds(mode)[quiet_kind]) is changes
 
@@ -189,14 +191,4 @@ def test_an_entry_with_every_type_quiets_every_event_kind(kind, make_id):
     cameras = ("cam_a", "cam_b") if kind in (DETECTION, SOUND) else (None,)
     for camera in cameras:
         assert every.matches(event_type, camera)
-        decision = decide(
-            base=ALL_AWAY.level(kind, True),
-            mode_name=ALL_AWAY.name,
-            event_type=event_type,
-            camera=camera,
-            quiet_entries=[every],
-            quiet_after_restart=False,
-            burst=BurstWindow(600),
-            now=NOW,
-        )
-        assert decision.delivery == PAUSED
+        assert delivery(ALL_AWAY.level(kind, True), event_type, camera, [every]) == PAUSED
