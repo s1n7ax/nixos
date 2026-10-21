@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 from core.burst import BurstWindow
-from core.decide import decide
-from core.policy import DETECTION, DOOR, EVENT_KINDS, MOTION, SOUND
+from core.decide import PAUSED, decide
+from core.policy import DETECTION, DOOR, EVENT_KINDS, MOTION, SOUND, HomeRules
 from core.quiet import (
     DND,
     PAUSE,
@@ -17,7 +17,7 @@ from core.quiet import (
     running,
     strongest,
 )
-from modes import ALL_AWAY, I_AWAY, LADDER, WE_AWAY
+from modes import ALL_AWAY, HOME, I_AWAY, LADDER, WE_AWAY
 
 NOW = 1_000_000.0
 HOUR = 3600.0
@@ -125,31 +125,47 @@ def test_new_entries_rejects_bad_requests(kind, types, hours, make_id):
         new_entries(kind, types, [], hours, NOW, make_id)
 
 
-# What the dashboard offers: Do not disturb the critical kinds, Pause and Snooze
-# the kinds that send a notification.
+# What the dashboard offers: Do not disturb the critical kinds, Pause the kinds that
+# send a notification, and Snooze the kinds that make a sound.
 @pytest.mark.parametrize(
     ("mode", "expected"),
     [
-        (I_AWAY, {PAUSE: (DETECTION, SOUND), SNOOZE: (DETECTION, SOUND), DND: (DETECTION,)}),
-        (WE_AWAY, {PAUSE: EVENT_KINDS, SNOOZE: EVENT_KINDS, DND: (DETECTION, DOOR, MOTION)}),
-        (ALL_AWAY, {PAUSE: EVENT_KINDS, SNOOZE: EVENT_KINDS, DND: (DETECTION, DOOR, MOTION)}),
+        (I_AWAY, {PAUSE: (DETECTION, SOUND), SNOOZE: (DETECTION,), DND: (DETECTION,)}),
+        (
+            WE_AWAY,
+            {PAUSE: EVENT_KINDS, SNOOZE: (DETECTION, DOOR, MOTION), DND: (DETECTION, DOOR, MOTION)},
+        ),
+        (
+            ALL_AWAY,
+            {PAUSE: EVENT_KINDS, SNOOZE: (DETECTION, DOOR, MOTION), DND: (DETECTION, DOOR, MOTION)},
+        ),
+        (HOME, {PAUSE: (DETECTION, SOUND), SNOOZE: (DETECTION,), DND: (DETECTION,)}),
     ],
 )
 def test_changed_kinds_follow_the_mode_table(mode, expected):
     assert changed_kinds(mode) == expected
 
 
-@pytest.mark.parametrize("mode", LADDER)
+def base_levels(mode, kind):
+    """Every base level of `kind`: per floor in an away mode, per asleep and night at Home."""
+    if isinstance(mode, HomeRules):
+        return {
+            mode.level(kind, asleep, night) for asleep in (True, False) for night in (True, False)
+        }
+    return {mode.level(kind, top_floor) for top_floor in (True, False)}
+
+
+@pytest.mark.parametrize("mode", [*LADDER, HOME])
 @pytest.mark.parametrize("kind", EVENT_KINDS)
 @pytest.mark.parametrize("quiet_kind", QUIET_KINDS)
 def test_changed_kinds_match_decide(mode, kind, quiet_kind):
     event_type = EVENT_TYPES[kind]
     camera = "cam_a" if kind in (DETECTION, SOUND) else None
 
-    def delivery(top_floor, entries):
+    def delivery(base, entries):
         return decide(
-            base=mode.level(kind, top_floor),
-            mode_name=mode.name,
+            base=base,
+            mode_name="Test",
             event_type=event_type,
             camera=camera,
             quiet_entries=entries,
@@ -159,5 +175,28 @@ def test_changed_kinds_match_decide(mode, kind, quiet_kind):
         ).delivery
 
     matching = [entry(quiet_kind, [event_type])]
-    changes = any(delivery(top, matching) != delivery(top, []) for top in (True, False))
+    changes = any(
+        delivery(base, matching) != delivery(base, []) for base in base_levels(mode, kind)
+    )
     assert (kind in changed_kinds(mode)[quiet_kind]) is changes
+
+
+# The card's quick buttons send every type and no cameras: one entry that quiets all.
+@pytest.mark.parametrize("kind", EVENT_KINDS)
+def test_an_entry_with_every_type_quiets_every_event_kind(kind, make_id):
+    (every,) = new_entries(PAUSE, EVENT_TYPES.values(), [], 1, NOW, make_id)
+    event_type = EVENT_TYPES[kind]
+    cameras = ("cam_a", "cam_b") if kind in (DETECTION, SOUND) else (None,)
+    for camera in cameras:
+        assert every.matches(event_type, camera)
+        decision = decide(
+            base=ALL_AWAY.level(kind, True),
+            mode_name=ALL_AWAY.name,
+            event_type=event_type,
+            camera=camera,
+            quiet_entries=[every],
+            quiet_after_restart=False,
+            burst=BurstWindow(600),
+            now=NOW,
+        )
+        assert decision.delivery == PAUSED

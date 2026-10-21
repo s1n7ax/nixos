@@ -19,6 +19,7 @@ from core.policy import (
     REVIEW_ONLY,
     SILENT,
     SOUND,
+    HomeRules,
     active_mode,
     base_level,
     is_asleep,
@@ -38,6 +39,7 @@ def run(
     event_type=None,
     *,
     on=(),
+    home=HOME_RULES,
     camera="cam_a",
     top_floor=False,
     sleep="0",
@@ -51,7 +53,7 @@ def run(
     base = base_level(
         kind,
         mode=mode,
-        home=HOME_RULES,
+        home=home,
         top_floor=top_floor,
         asleep=is_asleep(sleep, 90),
         night=is_night(clock, *NIGHT),
@@ -76,26 +78,32 @@ def quiet(kind, types, cameras=(), id_="q"):
     return QuietEntry(id_, kind, tuple(types), tuple(cameras), NOW - 60, NOW + 3600)
 
 
+# Home rules that log sounds for the review view without sending them.
+REVIEW_ONLY_HOME = HomeRules(
+    detection=REGULAR, detection_asleep_or_night=CRITICAL, sound=REVIEW_ONLY
+)
+
+
 # Modes: a detection, a sound and door/motion events in each mode.
 @pytest.mark.parametrize(
     ("on", "kind", "top_floor", "expected"),
     [
         ((), DETECTION, False, REGULAR),
-        ((), SOUND, False, REVIEW_ONLY),
+        ((), SOUND, False, SILENT),
         ((), DOOR, True, NONE),
         ((), MOTION, True, NONE),
         ((I_AWAY.entity,), DETECTION, False, CRITICAL),
-        ((I_AWAY.entity,), SOUND, False, REGULAR),
+        ((I_AWAY.entity,), SOUND, False, SILENT),
         ((I_AWAY.entity,), DOOR, True, NONE),
         ((I_AWAY.entity,), MOTION, True, NONE),
         ((WE_AWAY.entity,), DETECTION, False, CRITICAL),
-        ((WE_AWAY.entity,), SOUND, False, REGULAR),
+        ((WE_AWAY.entity,), SOUND, False, SILENT),
         ((WE_AWAY.entity,), DOOR, True, CRITICAL),
         ((WE_AWAY.entity,), MOTION, True, CRITICAL),
         ((WE_AWAY.entity,), DOOR, False, NONE),
         ((WE_AWAY.entity,), MOTION, False, NONE),
         ((ALL_AWAY.entity,), DETECTION, False, CRITICAL),
-        ((ALL_AWAY.entity,), SOUND, False, REGULAR),
+        ((ALL_AWAY.entity,), SOUND, False, SILENT),
         ((ALL_AWAY.entity,), DOOR, True, CRITICAL),
         ((ALL_AWAY.entity,), DOOR, False, CRITICAL),
         ((ALL_AWAY.entity,), MOTION, True, CRITICAL),
@@ -179,8 +187,9 @@ def test_dnd_on_one_camera_quiets_only_that_type_there():
 
 
 def test_dnd_leaves_regular_and_silent_alone():
-    q = [quiet(DND, ["bark", "motion"])]
-    assert run(SOUND, "bark", on=(I_AWAY.entity,), quiet=q).delivery == REGULAR
+    q = [quiet(DND, ["person", "bark", "motion"])]
+    assert run(DETECTION, "person", quiet=q).delivery == REGULAR
+    assert run(SOUND, "bark", on=(I_AWAY.entity,), quiet=q).delivery == SILENT
     assert run(MOTION, on=(ALL_AWAY.entity,), quiet=q).delivery == SILENT
 
 
@@ -222,7 +231,7 @@ def test_none_is_not_an_alert():
 
 
 def test_home_sound_is_logged_but_not_sent():
-    d = run(SOUND, "bark")
+    d = run(SOUND, "bark", home=REVIEW_ONLY_HOME)
     assert d.delivery == REVIEW_ONLY
     assert d.is_alert and not d.is_sent and not d.rings
     assert d.quiet_id is None
@@ -231,27 +240,27 @@ def test_home_sound_is_logged_but_not_sent():
 
 @pytest.mark.parametrize("kind", [PAUSE, SNOOZE, DND])
 def test_review_only_ignores_quiet_entries(kind):
-    d = run(SOUND, "bark", quiet=[quiet(kind, ["bark"])])
+    d = run(SOUND, "bark", home=REVIEW_ONLY_HOME, quiet=[quiet(kind, ["bark"])])
     assert d.delivery == REVIEW_ONLY
     assert d.quiet_id is None
 
 
 def test_review_only_ignores_quiet_after_restart():
-    assert run(SOUND, "bark", restart=True).delivery == REVIEW_ONLY
+    assert run(SOUND, "bark", home=REVIEW_ONLY_HOME, restart=True).delivery == REVIEW_ONLY
 
 
 def test_review_only_leaves_the_burst_window_alone():
     burst = BurstWindow(WINDOW, {"bark": NOW - 1})
-    assert run(SOUND, "bark", burst=burst).delivery == REVIEW_ONLY
+    assert run(SOUND, "bark", home=REVIEW_ONLY_HOME, burst=burst).delivery == REVIEW_ONLY
     assert burst.as_dict() == {"bark": NOW - 1}
     fresh = BurstWindow(WINDOW)
-    assert run(SOUND, "bark", burst=fresh).delivery == REVIEW_ONLY
+    assert run(SOUND, "bark", home=REVIEW_ONLY_HOME, burst=fresh).delivery == REVIEW_ONLY
     assert fresh.as_dict() == {}
 
 
 def test_away_sound_is_still_sent():
     d = run(SOUND, "bark", on=(I_AWAY.entity,))
-    assert d.delivery == REGULAR
+    assert d.delivery == SILENT
     assert d.is_sent
 
 
@@ -278,4 +287,4 @@ def test_unknown_level_raises():
 def test_home_rules_fixture_matches_requirement():
     assert HOME_RULES.detection == REGULAR
     assert HOME_RULES.detection_asleep_or_night == CRITICAL
-    assert HOME_RULES.sound == REVIEW_ONLY
+    assert HOME_RULES.sound == SILENT

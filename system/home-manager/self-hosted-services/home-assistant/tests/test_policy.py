@@ -15,6 +15,7 @@ from core.policy import (
     REVIEW_ONLY,
     SILENT,
     SOUND,
+    HomeRules,
     Mode,
     active_mode,
     base_level,
@@ -30,24 +31,24 @@ FIVE_AM = time(5, 0)
 MODE_TABLE = {
     (I_AWAY, DETECTION, True): CRITICAL,
     (I_AWAY, DETECTION, False): CRITICAL,
-    (I_AWAY, SOUND, True): REGULAR,
-    (I_AWAY, SOUND, False): REGULAR,
+    (I_AWAY, SOUND, True): SILENT,
+    (I_AWAY, SOUND, False): SILENT,
     (I_AWAY, DOOR, True): NONE,
     (I_AWAY, DOOR, False): NONE,
     (I_AWAY, MOTION, True): NONE,
     (I_AWAY, MOTION, False): NONE,
     (WE_AWAY, DETECTION, True): CRITICAL,
     (WE_AWAY, DETECTION, False): CRITICAL,
-    (WE_AWAY, SOUND, True): REGULAR,
-    (WE_AWAY, SOUND, False): REGULAR,
+    (WE_AWAY, SOUND, True): SILENT,
+    (WE_AWAY, SOUND, False): SILENT,
     (WE_AWAY, DOOR, True): CRITICAL,
     (WE_AWAY, DOOR, False): NONE,
     (WE_AWAY, MOTION, True): CRITICAL,
     (WE_AWAY, MOTION, False): NONE,
     (ALL_AWAY, DETECTION, True): CRITICAL,
     (ALL_AWAY, DETECTION, False): CRITICAL,
-    (ALL_AWAY, SOUND, True): REGULAR,
-    (ALL_AWAY, SOUND, False): REGULAR,
+    (ALL_AWAY, SOUND, True): SILENT,
+    (ALL_AWAY, SOUND, False): SILENT,
     (ALL_AWAY, DOOR, True): CRITICAL,
     (ALL_AWAY, DOOR, False): CRITICAL,
     (ALL_AWAY, MOTION, True): CRITICAL,
@@ -88,8 +89,14 @@ def test_home_detection(asleep, night, expected):
 
 @pytest.mark.parametrize(("asleep", "night"), [(False, False), (True, False), (True, True)])
 @pytest.mark.parametrize("top_floor", [True, False])
-def test_home_sound_is_review_only(asleep, night, top_floor):
+def test_home_sound_is_silent(asleep, night, top_floor):
     level = base_level(SOUND, mode=None, home=HOME, top_floor=top_floor, asleep=asleep, night=night)
+    assert level == SILENT
+
+
+def test_home_sound_can_be_review_only():
+    home = HomeRules(detection=REGULAR, detection_asleep_or_night=CRITICAL, sound=REVIEW_ONLY)
+    level = base_level(SOUND, mode=None, home=home, top_floor=False, asleep=False, night=False)
     assert level == REVIEW_ONLY
 
 
@@ -132,6 +139,19 @@ def test_mode_levels_list_every_level_of_a_kind():
 def test_mode_levels_unknown_kind_raises():
     with pytest.raises(ValueError):
         WE_AWAY.levels("smoke")
+
+
+def test_home_levels_list_every_level_of_a_kind():
+    home = HomeRules(detection=SILENT, detection_asleep_or_night=CRITICAL, sound=REGULAR)
+    assert home.levels(DETECTION) == (SILENT, CRITICAL)
+    assert home.levels(SOUND) == (REGULAR,)
+    assert home.levels(DOOR) == (NONE,)
+    assert home.levels(MOTION) == (NONE,)
+
+
+def test_home_levels_unknown_kind_raises():
+    with pytest.raises(ValueError):
+        HOME.levels("smoke")
 
 
 @pytest.mark.parametrize(
