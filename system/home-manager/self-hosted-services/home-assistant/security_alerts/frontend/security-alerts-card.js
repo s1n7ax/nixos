@@ -5,8 +5,10 @@
 //   entity: sensor.security_alerts_quiet   # optional, this is the default
 //
 // Loaded as a dashboard resource by the security_alerts integration. This file holds no data.
-// The pickers offer only the types the away mode that is on lets each kind change: Do not
-// disturb the critical ones, Pause the ones that notify. Styled like the Bubble Card buttons.
+// The pickers follow the mode that is on, Home when no away mode is, and offer only the types
+// each kind changes there: Do not disturb the ones that can ring critical, Pause the ones that
+// notify. Each tab's quick buttons start it for every type and camera for 1 h or 2 h in one
+// tap. Styled like the Bubble Card buttons.
 
 const DEFAULT_ENTITY = "sensor.security_alerts_quiet";
 // Types and cameras come from Frigate's config, which may not be loaded yet; ask again
@@ -15,10 +17,14 @@ const OPTIONS_RETRY_MS = 30000;
 const SENSOR_TYPES = new Set(["door", "motion"]);
 const KIND_NAMES = { pause: "Pause", dnd: "Do not disturb", snooze: "Snooze" };
 const KIND_ICONS = { pause: "mdi:bell-off", dnd: "mdi:bell-sleep", snooze: "mdi:alarm-snooze" };
+// The quick buttons' hours; they start a kind for every type and camera.
+const QUICK_HOURS = [1, 2];
+// A tab's running request: Start, or the hours of the quick button pressed.
+const START = "start";
 const FORMS = [
   {
     kind: "dnd",
-    hint: (mode) => `Critical in ${mode}. Picked types follow the phone's silent mode.`,
+    hint: (mode) => `These can ring critical in ${mode}. Picked types follow the phone's silent mode.`,
     none: (mode) => `Nothing is critical in ${mode}.`,
   },
   {
@@ -92,6 +98,8 @@ const STYLE = `
   .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip.text { padding: 0 14px; }
   .chip[aria-pressed="true"] { background: var(--kind); color: #fff; }
+  .chip.quick { background: color-mix(in srgb, var(--kind) 18%, transparent); color: var(--kind); }
+  .chip.quick:disabled { opacity: 0.5; }
   .go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px;
     margin-top: 14px; border-radius: 22px; background: var(--kind); color: #fff; font-size: 15px;
     font-weight: 600; --mdc-icon-size: 20px; }
@@ -119,7 +127,7 @@ class SecurityAlertsCard extends HTMLElement {
     super();
     this._choices = {};
     for (const form of FORMS) {
-      this._choices[form.kind] = { types: new Set(), cameras: new Set(), hours: null, busy: false };
+      this._choices[form.kind] = { types: new Set(), cameras: new Set(), hours: null, busy: null };
     }
     // The picked switch segment; kept in memory only.
     this._segment = FORMS[0];
@@ -127,7 +135,8 @@ class SecurityAlertsCard extends HTMLElement {
     this._error = null;
     this._retryAt = 0;
     this._lastState = undefined;
-    // The away mode the card shows, one of _options.modes, or null.
+    // The mode the card shows: one of _options.modes, or _options.home when no away mode is
+    // on; null until the types load.
     this._mode = null;
   }
 
@@ -200,15 +209,15 @@ class SecurityAlertsCard extends HTMLElement {
     }
   }
 
-  // The highest away mode that is on (the modes come in ladder order), or null.
+  // The highest away mode that is on (the modes come in ladder order), else Home; null until
+  // the types load.
   _activeMode() {
-    const modes = (this._options && this._options.modes) || [];
-    return (
-      modes.find((mode) => {
-        const state = this._hass.states[mode.entity];
-        return state && state.state === "on";
-      }) || null
-    );
+    if (!this._options) return null;
+    const away = this._options.modes.find((mode) => {
+      const state = this._hass.states[mode.entity];
+      return state && state.state === "on";
+    });
+    return away || this._options.home;
   }
 
   // Shows `mode`: unpicks the types it no longer offers and re-renders the form.
@@ -224,7 +233,7 @@ class SecurityAlertsCard extends HTMLElement {
 
   // The types a kind changes in the shown mode: what its picker offers.
   _offered(kind) {
-    const kinds = new Set((this._mode && this._mode.changes[kind]) || []);
+    const kinds = new Set(this._mode.changes[kind] || []);
     return this._options.types.filter((t) => kinds.has(t.kind));
   }
 
@@ -252,10 +261,6 @@ class SecurityAlertsCard extends HTMLElement {
       return;
     }
     const mode = this._mode;
-    if (!mode) {
-      this._form.replaceChildren(note("No away mode is on."));
-      return;
-    }
     const form = this._segment;
     const choice = this._choices[form.kind];
     const rerender = () => this._renderForm();
@@ -275,9 +280,26 @@ class SecurityAlertsCard extends HTMLElement {
       ),
     );
     const switcher = h("div", { class: "switch", role: "group" }, segments);
+    const quick = [
+      h("div", { class: "label", text: "Quick" }),
+      h(
+        "div",
+        { class: "chips" },
+        QUICK_HOURS.map((hours) =>
+          h(
+            "button",
+            { class: "chip quick", disabled: choice.busy !== null, onclick: () => this._quick(form.kind, hours) },
+            [
+              h("ha-icon", { icon: KIND_ICONS[form.kind] }),
+              h("span", { text: choice.busy === hours ? "Starting…" : `All · ${hours} h` }),
+            ],
+          ),
+        ),
+      ),
+    ];
     const offered = this._offered(form.kind);
     if (!offered.length) {
-      this._form.replaceChildren(switcher, note(form.none(mode.name)));
+      this._form.replaceChildren(switcher, note(form.none(mode.name)), ...quick);
       return;
     }
     const toggle = (set, id) => () => {
@@ -307,15 +329,20 @@ class SecurityAlertsCard extends HTMLElement {
     );
     const go = h(
       "button",
-      { class: "go", disabled: choice.busy || choice.types.size === 0, onclick: () => this._start(form.kind) },
+      {
+        class: "go",
+        disabled: choice.busy !== null || choice.types.size === 0,
+        onclick: () => this._start(form.kind),
+      },
       [
         h("ha-icon", { icon: KIND_ICONS[form.kind] }),
-        h("span", { text: choice.busy ? "Starting…" : `${KIND_NAMES[form.kind]} for ${choice.hours} h` }),
+        h("span", { text: choice.busy === START ? "Starting…" : `${KIND_NAMES[form.kind]} for ${choice.hours} h` }),
       ],
     );
     this._form.replaceChildren(
       switcher,
       h("div", { class: "hint", text: form.hint(mode.name) }),
+      ...quick,
       h("div", { class: "label", text: "Types" }),
       h("div", { class: "chips" }, types),
       ...(cameras || []),
@@ -325,24 +352,36 @@ class SecurityAlertsCard extends HTMLElement {
     );
   }
 
-  async _start(kind) {
+  // Starts the picked types and cameras; success clears the picks.
+  _start(kind) {
     const choice = this._choices[kind];
-    choice.busy = true;
-    this._renderForm();
-    try {
-      await this._hass.callWS({
-        type: "security_alerts/quiet/add",
-        kind,
-        types: [...choice.types],
-        cameras: [...choice.cameras],
-        hours: choice.hours,
-      });
+    const request = { types: [...choice.types], cameras: [...choice.cameras], hours: choice.hours };
+    return this._add(kind, START, request, () => {
       choice.types.clear();
       choice.cameras.clear();
+    });
+  }
+
+  // A quick button: every known type, door and motion too whatever the mode offers, so a mode
+  // change while it runs lets nothing through. Every camera. The picks stay as they are.
+  _quick(kind, hours) {
+    const types = this._options.types.map((t) => t.id);
+    return this._add(kind, hours, { types, cameras: [], hours });
+  }
+
+  // Sends one quiet/add for a tab. While it runs, the tab's quick buttons and Start are
+  // disabled and the pressed one (`busy`) reads "Starting…".
+  async _add(kind, busy, request, onDone = () => {}) {
+    const choice = this._choices[kind];
+    choice.busy = busy;
+    this._renderForm();
+    try {
+      await this._hass.callWS({ type: "security_alerts/quiet/add", kind, ...request });
+      onDone();
     } catch (err) {
       this._toast(`Could not start ${KIND_NAMES[kind].toLowerCase()}: ${err.message || err}`);
     } finally {
-      choice.busy = false;
+      choice.busy = null;
       this._renderForm();
     }
   }
@@ -369,9 +408,9 @@ class SecurityAlertsCard extends HTMLElement {
     const state = this._lastState;
     const entries = (state && state.attributes.entries) || [];
     const mode = this._mode;
-    if (this._options) {
+    if (mode) {
       const running = entries.length ? `${entries.length} running` : "nothing running";
-      this._sub.textContent = mode ? `${mode.name} · ${running}` : "No away mode is on";
+      this._sub.textContent = `${mode.name} · ${running}`;
     }
     this._count.textContent = String(entries.length);
     if (!state) {
@@ -383,10 +422,12 @@ class SecurityAlertsCard extends HTMLElement {
       return;
     }
     const opts = this._options || {};
-    // With no away mode on (or before the types load), nothing is marked.
+    const typeIds = (opts.types || []).map((t) => t.id);
+    // Before the types load, nothing is marked and every type is named.
     this._running.replaceChildren(
       ...entries.map((entry) => {
-        const types = entry.types.map((t) => this._name(opts.types, t)).join(", ");
+        const all = typeIds.length > 0 && typeIds.every((id) => entry.types.includes(id));
+        const types = all ? "All types" : entry.types.map((t) => this._name(opts.types, t)).join(", ");
         const cameras = entry.cameras.length ? entry.cameras.map((c) => this._name(opts.cameras, c)).join(", ") : "";
         const noEffect = mode !== null && !this._hasEffect(entry);
         const detail = [cameras, untilText(entry.ends_at), noEffect && `No effect in ${mode.name}`];
