@@ -8,7 +8,7 @@
 // The pickers follow the mode that is on, Home when no away mode is, and offer only the types
 // each kind changes there: Do not disturb the ones that can ring critical, Pause the ones that
 // notify. Each tab's quick buttons start it for every type and camera for 1 h or 2 h in one
-// tap. Styled like the Bubble Card buttons.
+// tap, once Frigate's config is loaded. Styled like the Bubble Card buttons.
 
 const DEFAULT_ENTITY = "sensor.security_alerts_quiet";
 // Types and cameras come from Frigate's config, which may not be loaded yet; ask again
@@ -98,7 +98,8 @@ const STYLE = `
   .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip.text { padding: 0 14px; }
   .chip[aria-pressed="true"] { background: var(--kind); color: #fff; }
-  .chip.quick { background: color-mix(in srgb, var(--kind) 18%, transparent); color: var(--kind); }
+  .chip.quick { background: color-mix(in srgb, var(--kind) 18%, transparent); }
+  .chip.quick ha-icon { color: var(--kind); }
   .chip.quick:disabled { opacity: 0.5; }
   .go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px;
     margin-top: 14px; border-radius: 22px; background: var(--kind); color: #fff; font-size: 15px;
@@ -155,8 +156,7 @@ class SecurityAlertsCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     if (!this._root) this._build();
-    const complete = this._options && this._options.cameras.length;
-    if (!complete && !this._loading && Date.now() >= this._retryAt) this._loadOptions();
+    if (!this._complete() && !this._loading && Date.now() >= this._retryAt) this._loadOptions();
     // The pickers and the no-effect marks follow the mode live, without a reload.
     const mode = this._activeMode();
     const state = hass.states[this._config.entity];
@@ -207,6 +207,12 @@ class SecurityAlertsCard extends HTMLElement {
     } finally {
       this._loading = false;
     }
+  }
+
+  // Whether the types are complete: the answer lists a camera. Before Frigate's config loads
+  // only door and motion are listed, so "every type" would leave the cameras out.
+  _complete() {
+    return Boolean(this._options && this._options.cameras.length);
   }
 
   // The highest away mode that is on (the modes come in ladder order), else Home; null until
@@ -280,7 +286,7 @@ class SecurityAlertsCard extends HTMLElement {
       ),
     );
     const switcher = h("div", { class: "switch", role: "group" }, segments);
-    const quick = [
+    const quick = this._complete() && [
       h("div", { class: "label", text: "Quick" }),
       h(
         "div",
@@ -299,7 +305,7 @@ class SecurityAlertsCard extends HTMLElement {
     ];
     const offered = this._offered(form.kind);
     if (!offered.length) {
-      this._form.replaceChildren(switcher, note(form.none(mode.name)), ...quick);
+      this._form.replaceChildren(switcher, note(form.none(mode.name)), ...(quick || []));
       return;
     }
     const toggle = (set, id) => () => {
@@ -342,7 +348,7 @@ class SecurityAlertsCard extends HTMLElement {
     this._form.replaceChildren(
       switcher,
       h("div", { class: "hint", text: form.hint(mode.name) }),
-      ...quick,
+      ...(quick || []),
       h("div", { class: "label", text: "Types" }),
       h("div", { class: "chips" }, types),
       ...(cameras || []),
@@ -423,10 +429,11 @@ class SecurityAlertsCard extends HTMLElement {
     }
     const opts = this._options || {};
     const typeIds = (opts.types || []).map((t) => t.id);
-    // Before the types load, nothing is marked and every type is named.
+    const complete = this._complete();
+    // Before the types load nothing is marked; until they are complete every type is named.
     this._running.replaceChildren(
       ...entries.map((entry) => {
-        const all = typeIds.length > 0 && typeIds.every((id) => entry.types.includes(id));
+        const all = complete && typeIds.every((id) => entry.types.includes(id));
         const types = all ? "All types" : entry.types.map((t) => this._name(opts.types, t)).join(", ");
         const cameras = entry.cameras.length ? entry.cameras.map((c) => this._name(opts.cameras, c)).join(", ") : "";
         const noEffect = mode !== null && !this._hasEffect(entry);
