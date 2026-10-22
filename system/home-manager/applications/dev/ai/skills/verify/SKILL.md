@@ -35,7 +35,7 @@ A UI verdict comes from the rendered page in a browser. Never decide one with cu
 
 ### 1. Load the goal
 
-Resolve the `<goal>` the same way `/implement` does: the name or path the user gave, else the goal under `.goals/` the current branch name starts with, else the only goal with a plan. Several candidates → ask which, following the `questions` skill. Read the requirement and the plan: the requirement's acceptance criteria are what you test, the plan's Verification section is a hint at how.
+Resolve the `<goal>` the same way `/implement` does: the name or path the user gave, else the goal under `.goals/` the current branch name starts with, else the only goal with a requirement. Several candidates → ask which, following the `questions` skill. Read the requirement: its acceptance criteria are what you test.
 
 No goal at all is fine; the user may run `/verify` on any branch. Then `<goal>` is the branch name in kebab-case, the change is the diff from the branch's base, and the tests come from the commits, the PR description, and what the user said.
 
