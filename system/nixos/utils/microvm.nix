@@ -40,8 +40,8 @@ with lib;
 
           microvm = {
             hypervisor = "qemu";
-            vcpu = 4;
-            mem = 8192;
+            vcpu = 16;
+            mem = 16384;
             writableStoreOverlay = "/nix/.rw-store";
 
             volumes = [
