@@ -775,6 +775,13 @@ with lib;
       };
       javascript = {
         enable = mkEnableOption "JavaScript/TypeScript development tools";
+        fnm = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "fnm Node version manager. Owns Node on PATH and auto-switches from .nvmrc/.node-version; leave off where Nix/direnv already provides Node";
+          };
+        };
       };
       jsonnet = {
         enable = mkEnableOption "Jsonnet development tools";
