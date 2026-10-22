@@ -148,7 +148,6 @@ in
       [
         deno
         nodejs_24
-        fnm
         pnpm
         yarn
         emmet-language-server
@@ -164,6 +163,8 @@ in
         vtsls
         vscode-js-debug
       ]
+      # fnm owns Node on hosts that ask for it; elsewhere Nix/direnv provides it.
+      ++ lib.optionals f.development.javascript.fnm.enable [ fnm ]
     )
     ++ lib.optionals f.development.jsonnet.enable (
       with pkgs;
