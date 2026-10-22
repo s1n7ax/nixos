@@ -2,12 +2,19 @@
   pkgs,
   lib,
   config,
+  inputs,
   ...
 }:
+let
+  keymap = inputs.open-unicode-converter-m17n.packages.${pkgs.stdenv.hostPlatform.system}.default;
+in
 lib.mkIf config.features.desktop.sinhala.enable {
-  # Singlish is a transliteration keymap shipped by m17n-db; fcitx5-m17n exposes
-  # si-singlish as m17n_si_singlish. Super+Space (a Hyprland bind) toggles
-  # English <-> Sinhala.
+  # si-ouc is a Singlish transliteration keymap that types exactly like Open
+  # Unicode Converter (sinhalaunicode.org). It comes from the
+  # open-unicode-converter-m17n flake input
+  # (github.com/s1n7ax/open-unicode-converter-m17n) and is installed into
+  # ~/.m17n.d, where m17n-lib picks up user keymaps; fcitx5-m17n exposes it as
+  # m17n_si_ouc. Super+Space (a Hyprland bind) toggles English <-> Sinhala.
   #
   # No binding uses Shift: holding Space produces Shift on this keymap, so a
   # Shift+Space chord is impossible to press. fcitx5's default TriggerKeys
@@ -18,6 +25,8 @@ lib.mkIf config.features.desktop.sinhala.enable {
   # fcitx5 treats the *first* group item as the inactive (keyboard) state and
   # DefaultIM as the input method the toggle activates, so keyboard-us must stay
   # first and DefaultIM must name the Sinhala scheme.
+  home.file.".m17n.d/si-ouc.mim".source = "${keymap}/share/m17n/si-ouc.mim";
+
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
@@ -37,11 +46,11 @@ lib.mkIf config.features.desktop.sinhala.enable {
           "Groups/0" = {
             Name = "Default";
             "Default Layout" = "us";
-            DefaultIM = "m17n_si_singlish";
+            DefaultIM = "m17n_si_ouc";
           };
 
           "Groups/0/Items/0".Name = "keyboard-us";
-          "Groups/0/Items/1".Name = "m17n_si_singlish";
+          "Groups/0/Items/1".Name = "m17n_si_ouc";
         };
       };
     };
