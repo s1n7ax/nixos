@@ -114,6 +114,34 @@
       };
 
       formatter.${system} = pkgs.nixfmt-tree;
+
+      # The security_alerts Home Assistant integration: formatting, lint, unit
+      # tests and a syntax check of its frontend modules.
+      checks.${system}.security-alerts =
+        pkgs.runCommand "security-alerts-check"
+          {
+            src = ./system/home-manager/self-hosted-services/home-assistant;
+            nativeBuildInputs = [
+              (pkgs.python3.withPackages (ps: [
+                ps.pytest
+                ps.pillow
+              ]))
+              pkgs.ruff
+              pkgs.nodejs
+            ];
+          }
+          ''
+            cp -r $src source
+            chmod -R u+w source
+            cd source
+            ruff format --check --no-cache .
+            ruff check --no-cache .
+            python -m pytest
+            for js in security_alerts/frontend/*.js; do
+              node --check "$js"
+            done
+            touch $out
+          '';
     };
 
   inputs = {

@@ -7,9 +7,9 @@
 let
   front_road = config.sops.placeholder."frigate/front_road/pass";
   veranda = config.sops.placeholder."frigate/veranda/pass";
-  front_car = config.sops.placeholder."frigate/front_car/pass";
+  front_kitchen = config.sops.placeholder."frigate/front_car/pass";
   backyard_roof = config.sops.placeholder."frigate/backyard_roof/pass";
-  backyard_shower = config.sops.placeholder."frigate/backyard_shower/pass";
+  backyard_water_tank = config.sops.placeholder."frigate/backyard_shower/pass";
 
   data_path = "${config.home.homeDirectory}/.homelab/frigate";
   storage_path = "${config.settings.frigateStoragePath}/.homelab/frigate";
@@ -260,16 +260,16 @@ with lib;
                   roles: [detect, audio]
 
           #--------------------------------------------------------------------#
-          #                                CAR                                 #
+          #                              KITCHEN                               #
           #--------------------------------------------------------------------#
-          front_car:
+          front_kitchen:
             motion:
               threshold: 40
             ffmpeg:
               inputs:
-                - path: rtsp://viewer:${front_car}@192.168.1.123:554/Streaming/Channels/101/
+                - path: rtsp://viewer:${front_kitchen}@192.168.1.123:554/Streaming/Channels/101/
                   roles: [record]
-                - path: rtsp://viewer:${front_car}@192.168.1.123:554/Streaming/Channels/102/
+                - path: rtsp://viewer:${front_kitchen}@192.168.1.123:554/Streaming/Channels/102/
                   roles: [detect, audio]
           #--------------------------------------------------------------------#
           #                                ROOF                                #
@@ -285,16 +285,16 @@ with lib;
                   roles: [detect, audio]
 
           #--------------------------------------------------------------------#
-          #                               SHOWER                               #
+          #                             WATER TANK                             #
           #--------------------------------------------------------------------#
-          backyard_shower:
+          backyard_water_tank:
             motion:
               threshold: 35
             ffmpeg:
               inputs:
-                - path: rtsp://viewer:${backyard_shower}@192.168.1.121:554/Streaming/Channels/101/
+                - path: rtsp://viewer:${backyard_water_tank}@192.168.1.121:554/Streaming/Channels/101/
                   roles: [record]
-                - path: rtsp://viewer:${backyard_shower}@192.168.1.121:554/Streaming/Channels/102/
+                - path: rtsp://viewer:${backyard_water_tank}@192.168.1.121:554/Streaming/Channels/102/
                   roles: [detect, audio]
       '';
     };

@@ -1,0 +1,21 @@
+# Tooling for the security_alerts Home Assistant integration. Only
+# security_alerts/ is mounted into Home Assistant; this file and tests/ stay out.
+# Run from this directory: `ruff format --check . && ruff check . && pytest`
+# (or `nix build .#checks.x86_64-linux.security-alerts` from the repo root).
+
+[tool.pytest.ini_options]
+# Tests import the pure-Python parts (`core`, `imaging`) directly, without
+# Home Assistant installed.
+pythonpath = ["security_alerts"]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "imaging", "modes"]
