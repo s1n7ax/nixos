@@ -47,7 +47,11 @@
       github.enable = true;
       c.enable = true;
       java.enable = true;
-      javascript.enable = true;
+      javascript = {
+        enable = true;
+        # fnm owns Node on macOS; Linux hosts get it from Nix/direnv.
+        fnm.enable = true;
+      };
       jsonnet.enable = true;
       lua.enable = true;
       markdown.enable = true;
