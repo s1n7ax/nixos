@@ -11,6 +11,14 @@
       downloading.enable = true;
     };
 
+    # No sound card in the VM: synthesis runs here, playback goes to the
+    # desktop's PipeWire over the QEMU user-network host gateway (10.0.2.2),
+    # which the host serves on loopback (see system/nixos/utils/microvm.nix).
+    readAloud = {
+      enable = true;
+      pulseServer = "tcp:10.0.2.2:4713";
+    };
+
     virtualization = {
       docker.enable = true;
     };

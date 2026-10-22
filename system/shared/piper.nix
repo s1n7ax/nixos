@@ -2,6 +2,7 @@
   pkgs,
   voice ? "en_US-lessac-medium",
   speaker ? null,
+  pulseServer ? null,
 }:
 let
   /**
@@ -70,17 +71,37 @@ rec {
 
   /**
     Argv that plays the raw audio `synth` writes.
+
+    With `pulseServer` set the audio is sent to that PulseAudio server (a
+    remote host) over the network; otherwise it goes to the local PipeWire
+    daemon.
   */
-  play = [
-    "${pkgs.pipewire}/bin/pw-cat"
-    "--playback"
-    "--raw"
-    "--format"
-    "s16"
-    "--rate"
-    "22050"
-    "--channels"
-    "1"
-    "-"
-  ];
+  play =
+    if pulseServer == null then
+      [
+        "${pkgs.pipewire}/bin/pw-cat"
+        "--playback"
+        "--raw"
+        "--format"
+        "s16"
+        "--rate"
+        "22050"
+        "--channels"
+        "1"
+        "-"
+      ]
+    else
+      [
+        "${pkgs.pulseaudio}/bin/pacat"
+        "--playback"
+        "--server"
+        pulseServer
+        "--raw"
+        "--format"
+        "s16le"
+        "--rate"
+        "22050"
+        "--channels"
+        "1"
+      ];
 }
