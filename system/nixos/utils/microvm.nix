@@ -21,7 +21,7 @@ with lib;
     services.pipewire.extraConfig.pipewire-pulse."10-microvm-tcp" =
       mkIf config.features.hardware.audio.enable
         {
-          pulse.cmd = [
+          "pulse.cmd" = [
             {
               cmd = "load-module";
               args = "module-native-protocol-tcp listen=127.0.0.1 port=4713 auth-anonymous=1";
