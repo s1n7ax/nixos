@@ -8,7 +8,7 @@ let
   cfg = config.features.readAloud;
   piper = import ../../shared/piper.nix {
     inherit pkgs;
-    inherit (cfg) voice speaker;
+    inherit (cfg) voice speaker pulseServer;
   };
   synth = lib.concatStringsSep " " (piper.synth cfg.rate);
   play = lib.concatStringsSep " " piper.play;

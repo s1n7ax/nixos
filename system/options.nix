@@ -469,6 +469,16 @@ with lib;
         default = null;
         description = "Speaker id for multi-speaker Piper voices; null uses the voice's default.";
       };
+      pulseServer = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = ''
+          Play the synthesized audio through this PulseAudio server instead of
+          the local PipeWire daemon, e.g. `tcp:10.0.2.2:4713` for a MicroVM
+          whose host serves audio. Use this where the machine has no sound card
+          of its own; null plays through local PipeWire with `pw-cat`.
+        '';
+      };
     };
 
     homelab = {

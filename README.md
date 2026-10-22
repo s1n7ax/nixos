@@ -132,6 +132,15 @@ config is not declarative here, so connect it once by hand:
 Automations can then speak with `tts.speak`, using the `piper` TTS entity as
 the target.
 
+### Dev VM: text-to-speech through the host
+
+The dev VM has no sound card. `features.readAloud` is enabled in
+`profile/dev-vm/options.nix` with `pulseServer = "tcp:10.0.2.2:4713"`: Piper
+synthesizes inside the guest and `pacat` sends the PCM to the desktop's
+PipeWire over the QEMU user-network host gateway. `system/nixos/utils/microvm.nix`
+serves that port on the host's loopback only, so the guest plays through the
+host's speakers and nothing on the LAN can reach it.
+
 ### Additional Commands
 
 ```shell
