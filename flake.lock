@@ -254,6 +254,44 @@
         "type": "github"
       }
     },
+    "open-unicode-converter": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1658934580,
+        "narHash": "sha256-uzT8LWdu2icTjjStWYlf5cgE4/LSuJ96dPyDb+a57fo=",
+        "owner": "s1n7ax",
+        "repo": "open-unicode-converter",
+        "rev": "4b9bd6282311168016020326f52861fb117cfd80",
+        "type": "github"
+      },
+      "original": {
+        "owner": "s1n7ax",
+        "repo": "open-unicode-converter",
+        "rev": "4b9bd6282311168016020326f52861fb117cfd80",
+        "type": "github"
+      }
+    },
+    "open-unicode-converter-m17n": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "open-unicode-converter": "open-unicode-converter"
+      },
+      "locked": {
+        "lastModified": 1792657617,
+        "narHash": "sha256-ht5mOvX/8v5qfh6/zDatupC3P6oxXaUiRTIYBalngfc=",
+        "owner": "s1n7ax",
+        "repo": "open-unicode-converter-m17n",
+        "rev": "2ba9372e0e55beb557a3b884257293ea38f83a09",
+        "type": "github"
+      },
+      "original": {
+        "owner": "s1n7ax",
+        "repo": "open-unicode-converter-m17n",
+        "type": "github"
+      }
+    },
     "qmd": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -298,6 +336,7 @@
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "open-unicode-converter-m17n": "open-unicode-converter-m17n",
         "qmd": "qmd",
         "quadlet-nix": "quadlet-nix",
         "secrets": "secrets",
