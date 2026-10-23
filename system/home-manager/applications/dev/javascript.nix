@@ -16,7 +16,7 @@
       lib.mkIf (config.features.development.javascript.fnm.enable && config.features.shell.fish.enable)
         (
           lib.mkAfter ''
-            fnm env --use-on-cd --shell fish | source
+            fnm env --use-on-cd --corepack-enabled --shell fish | source
           ''
         );
 
@@ -24,7 +24,7 @@
       lib.mkIf (config.features.development.javascript.fnm.enable && config.features.shell.zsh.enable)
         (
           lib.mkAfter ''
-            eval "$(fnm env --use-on-cd --shell zsh)"
+            eval "$(fnm env --use-on-cd --corepack-enabled --shell zsh)"
           ''
         );
   };
