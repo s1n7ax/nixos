@@ -37,7 +37,8 @@ TMP_EXTENSION = ".tmp"
 
 
 class StateStore:
-    """Quiet entries, last review, last critical ring per type, shown tags."""
+    """Quiet entries, last review, last critical ring per type, shown tags, and the
+    version of the cached review images."""
 
     def __init__(self, hass: HomeAssistant) -> None:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
@@ -45,6 +46,7 @@ class StateStore:
         self.last_review: float | None = None
         self.last_rings: dict[str, float] = {}
         self.shown_tags: list[str] = []
+        self.full_image_version: int | None = None
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
@@ -52,6 +54,7 @@ class StateStore:
         self.last_review = data.get("last_review")
         self.last_rings = dict(data.get("last_rings", {}))
         self.shown_tags = list(data.get("shown_tags", []))
+        self.full_image_version = data.get("full_image_version")
 
     def save(self) -> None:
         self._store.async_delay_save(self._data, SAVE_DELAY_SECONDS)
@@ -62,6 +65,7 @@ class StateStore:
             "last_review": self.last_review,
             "last_rings": self.last_rings,
             "shown_tags": self.shown_tags,
+            "full_image_version": self.full_image_version,
         }
 
 
@@ -304,6 +308,19 @@ class AlertLog:
         except OSError as err:
             _LOGGER.error("Could not delete an alert image: %s", err)
             raise AlertLogError(str(err)) from err
+
+    def delete_variant_media(self, variant: str) -> int:
+        """Delete every alert's media file of one variant; return how many went."""
+        extension = AUDIO_EXTENSION if variant == AUDIO else IMAGE_EXTENSION
+        deleted = 0
+        try:
+            for path in self.media.glob(f"*-{variant}{extension}"):
+                path.unlink(missing_ok=True)
+                deleted += 1
+        except OSError as err:
+            _LOGGER.error("Could not delete alert images: %s", err)
+            raise AlertLogError(str(err)) from err
+        return deleted
 
     def prune(self, days: int) -> int:
         """Drop log rows older than `days` and their media; return the rows dropped.
