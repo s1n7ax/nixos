@@ -609,7 +609,9 @@ class SecurityAlerts:
             frame = await self.frigate.latest(event.camera)
             if event.snapshot_box is None:
                 return frame
-            return await self._async_render_thumb(event.camera, frame, event.snapshot_box)
+            return await self._async_render_thumb(
+                event.camera, frame, event.snapshot_box, type_name(event.type)
+            )
         frame, frame_time = await self.frigate.event_snapshot(event.event_id)
         if frame_time is not None and self.find_snapshot is not None:
             box = await self.find_snapshot(
@@ -617,17 +619,21 @@ class SecurityAlerts:
             )
             if box is not None:
                 event.snapshot_time, event.snapshot_box = frame_time, box
-                return await self._async_render_thumb(event.camera, frame, box)
+                return await self._async_render_thumb(
+                    event.camera, frame, box, type_name(event.type)
+                )
         _LOGGER.debug("No MQTT box for %s at %s; using Frigate's crop", event.event_id, frame_time)
         return await self.frigate.event_snapshot_cropped(event.event_id)
 
-    async def _async_render_thumb(self, camera: str, frame: bytes, detect_box: Box) -> bytes:
+    async def _async_render_thumb(
+        self, camera: str, frame: bytes, detect_box: Box, label: str
+    ) -> bytes:
         detect_size = self.frigate.detect_size(camera)
 
         def render() -> bytes:
             size = imaging.image_size(frame)
             box = scale_box(detect_box, detect_size or size, size)
-            return imaging.render_crop(frame, thumbnail_crop(box, size), box)
+            return imaging.render_crop(frame, thumbnail_crop(box, size), box, label)
 
         return await self.hass.async_add_executor_job(render)
 
@@ -666,10 +672,12 @@ class SecurityAlerts:
             return None
         detect_size = self.frigate.detect_size(row.source)
         detect_box = row.snapshot_box
+        label = type_name(row.type)
 
         def render() -> bytes:
             size = imaging.image_size(frame)
-            return imaging.render_full(frame, scale_box(detect_box, detect_size or size, size))
+            box = scale_box(detect_box, detect_size or size, size)
+            return imaging.render_full(frame, box, label)
 
         try:
             return await self.hass.async_add_executor_job(render)
