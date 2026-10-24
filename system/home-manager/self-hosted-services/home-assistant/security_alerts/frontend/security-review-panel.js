@@ -792,9 +792,8 @@ class SecurityReviewCard extends ReviewList {
     return {};
   }
 
-  setConfig(config) {
-    this._config = config || {};
-  }
+  // Dashboards require it; the card has no options.
+  setConfig(_config) {}
 
   getCardSize() {
     return 12;
