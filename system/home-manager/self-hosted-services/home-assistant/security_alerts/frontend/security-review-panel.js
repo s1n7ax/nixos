@@ -11,7 +11,8 @@
 // The card (type: custom:security-review-card, loaded as a dashboard resource) is the Review tab:
 // every alert in the log, under day headers, older ones loading as it scrolls. It never records a
 // review, and alerts logged while it is open appear at the top. It reloads from now each time it
-// is shown again.
+// is shown again. Left open past midnight, it renames its day headers ("Today" becomes
+// "Yesterday").
 //
 // Sounds show no picture: their row plays the audio in place, and Video opens the clip.
 // Images, audio and clips come as URLs signed for the logged-in user; this file holds no data.
@@ -26,6 +27,8 @@ const TYPES_RETRY_MS = 30000;
 // The popup plays a sound's audio or an alert's video.
 const SOUND_MODE = "sound";
 const VIDEO_MODE = "video";
+// How often the Review tab checks whether a new day has begun, to rename its day headers.
+const DAY_CHECK_MS = 60 * 1000;
 
 // Read at module load too: the frontend may rewrite the URL before the first panel starts.
 // Only that first panel may use it; later ones would replay a stale clip or window. Loaded by a
@@ -78,14 +81,13 @@ function isoDate(date, timeZone) {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
-// "Today", "Yesterday", else the server's name for the item's day, like "Thursday 22 October".
-function dayLabel(item, timeZone) {
-  const today = isoDate(new Date(), timeZone);
-  if (item.day === today) return "Today";
+// "Today", "Yesterday", else the server's name for the day, like "Thursday 22 October".
+function dayLabel(day, dayName, today) {
+  if (day === today) return "Today";
   const yesterday = new Date(`${today}T12:00:00Z`);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  if (item.day === yesterday.toISOString().slice(0, 10)) return "Yesterday";
-  return item.day_name;
+  if (day === yesterday.toISOString().slice(0, 10)) return "Yesterday";
+  return dayName;
 }
 
 function endText(logDays) {
@@ -188,6 +190,8 @@ class ReviewList extends HTMLElement {
     this._clipRequest = 0;
     this._ids = new Set();
     this._lastDay = null;
+    // The day that was today when the day headers were labelled.
+    this._labelDay = null;
     this._end = null;
     // Set by subclasses: day headers, the end-of-log note, and the text of an empty window.
     this._dayHeaders = false;
@@ -356,8 +360,26 @@ class ReviewList extends HTMLElement {
   _showCount(_more) {}
 
   _dayHeader(item) {
+    const today = this._relabelDays();
+    return h("div", {
+      class: "day",
+      "data-day": item.day,
+      "data-day-name": item.day_name,
+      text: dayLabel(item.day, item.day_name, today),
+    });
+  }
+
+  // Renames the day headers once a new day has begun since they were labelled, so the list left
+  // open past midnight has one "Today". Returns today, in Home Assistant's time zone.
+  _relabelDays() {
     const timeZone = this._hass && this._hass.config ? this._hass.config.time_zone : undefined;
-    return h("div", { class: "day", "data-day": item.day, text: dayLabel(item, timeZone) });
+    const today = isoDate(new Date(), timeZone);
+    if (today === this._labelDay) return today;
+    this._labelDay = today;
+    for (const header of this._list.querySelectorAll(".day")) {
+      header.textContent = dayLabel(header.dataset.day, header.dataset.dayName, today);
+    }
+    return today;
   }
 
   _updateEnd() {
@@ -739,6 +761,10 @@ class SecurityReviewCard extends ReviewList {
     this._unsubscribe = null;
     // Alerts pushed before the first page is shown.
     this._pending = null;
+    this._dayCheck = null;
+    this._onVisibility = () => {
+      if (document.visibilityState === "visible") this._relabelDays();
+    };
   }
 
   static getStubConfig() {
@@ -774,6 +800,9 @@ class SecurityReviewCard extends ReviewList {
     this._pending = null;
     if (this._unsubscribe) unsubscribeQuietly(this._unsubscribe);
     this._unsubscribe = null;
+    clearInterval(this._dayCheck);
+    this._dayCheck = null;
+    document.removeEventListener("visibilitychange", this._onVisibility);
     if (this._dialog && this._dialog.open) this._dialog.close();
   }
 
@@ -790,6 +819,8 @@ class SecurityReviewCard extends ReviewList {
     this._windowText.textContent = "All alerts · newest first";
     this._list.replaceChildren(h("div", { class: "empty", text: "Loading…" }));
     this._pending = [];
+    this._dayCheck = setInterval(() => this._relabelDays(), DAY_CHECK_MS);
+    document.addEventListener("visibilitychange", this._onVisibility);
     try {
       const subscribed = this._hass.connection.subscribeMessage((item) => this._pushed(run, item), {
         type: "security_alerts/review/subscribe",
