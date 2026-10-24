@@ -56,6 +56,13 @@ CLIP_FALLBACK_LENGTH_SECONDS = 60
 
 # How long a detection waits for the MQTT snapshot matching Frigate's image.
 SNAPSHOT_MATCH_TIMEOUT_SECONDS = 2.0
+# The review image is the recording frame that matches the detection snapshot,
+# looked for this long either side of the snapshot's frame time.
+MATCH_WINDOW_SECONDS = 3
+# Clip fetches and decodes for that match running at once, across the integration.
+MATCH_CONCURRENCY = 1
+# Bumped when cached review images must be rendered again; older ones are deleted.
+FULL_IMAGE_VERSION = 2
 
 SIGNED_URL_HOURS = 24
 FRIGATE_CONFIG_REFRESH_SECONDS = 3600
@@ -80,3 +87,5 @@ ACTION_SNOOZE_PREFIX = "SECURITY_ALERTS_SNOOZE_"
 SNOOZE_ACTION_HOURS = 1
 
 SIGNAL_QUIET_UPDATED = f"{DOMAIN}_quiet_updated"
+# Sent with the AlertRow after each new row is written to the log.
+SIGNAL_ALERT_LOGGED = f"{DOMAIN}_alert_logged"
