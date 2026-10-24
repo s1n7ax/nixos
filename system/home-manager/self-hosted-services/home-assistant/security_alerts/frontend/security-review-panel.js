@@ -11,8 +11,8 @@
 // The card (type: custom:security-review-card, loaded as a dashboard resource) is the Review tab:
 // every alert in the log, under day headers, older ones loading as it scrolls. It never records a
 // review, and alerts logged while it is open appear at the top. It reloads from now each time it
-// is shown again. Left open past midnight, it renames its day headers ("Today" becomes
-// "Yesterday").
+// is shown again, and when its signed URLs may have expired (see SIGNED_URL_REFRESH_MS). Left
+// open past midnight, it renames its day headers ("Today" becomes "Yesterday").
 //
 // Sounds show no picture: their row plays the audio in place, and Video opens the clip.
 // Images, audio and clips come as URLs signed for the logged-in user; this file holds no data.
@@ -29,6 +29,10 @@ const SOUND_MODE = "sound";
 const VIDEO_MODE = "video";
 // How often the Review tab checks whether a new day has begun, to rename its day headers.
 const DAY_CHECK_MS = 60 * 1000;
+// URLs are signed for 24 h (SIGNED_URL_HOURS on the server), and the Review tab can stay open
+// longer. Once its first ones are this old, it reloads from now when it is shown again or when a
+// list image or sound fails, and a clip asks for its alert anew.
+const SIGNED_URL_REFRESH_MS = 23 * 60 * 60 * 1000;
 
 // Read at module load too: the frontend may rewrite the URL before the first panel starts.
 // Only that first panel may use it; later ones would replay a stale clip or window. Loaded by a
@@ -468,7 +472,9 @@ class ReviewList extends HTMLElement {
     }
     if (item.kind === "sound") return this._renderSound(item);
     const img = h("img", { "data-src": item.image, alt: `${item.type_name} at ${item.name}`, decoding: "async" });
-    img.addEventListener("error", () => img.replaceWith(h("div", { class: "no-image", text: "No image" })));
+    img.addEventListener("error", () =>
+      this._mediaFailed(() => img.replaceWith(h("div", { class: "no-image", text: "No image" }))),
+    );
     return h("article", { class: "card" }, [
       this._cardHeader(item),
       h("button", { class: "shot", "aria-label": `Play the ${item.type_name} clip`, onclick: () => this._openClip(item.id, item) }, img),
@@ -480,7 +486,13 @@ class ReviewList extends HTMLElement {
   _renderSound(item) {
     const url = mediaUrl(item, SOUND_MODE);
     const player = url
-      ? h("audio", { controls: true, preload: "none", src: url, "aria-label": `${item.type_name} at ${item.name}` })
+      ? h("audio", {
+          controls: true,
+          preload: "none",
+          src: url,
+          "aria-label": `${item.type_name} at ${item.name}`,
+          onerror: () => this._mediaFailed(),
+        })
       : h("button", { class: "go", text: "Play sound", onclick: () => this._openClip(item.id, item, SOUND_MODE) });
     return h("article", { class: "card" }, [
       this._cardHeader(item),
@@ -489,6 +501,11 @@ class ReviewList extends HTMLElement {
         h("button", { class: "ghost", text: "Video", onclick: () => this._openClip(item.id, item, VIDEO_MODE) }),
       ]),
     ]);
+  }
+
+  // A signed URL in the list did not load; `fallback` shows it. The card may reload instead.
+  _mediaFailed(fallback) {
+    if (fallback) fallback();
   }
 
   // Images on the first screen load at once with high priority; the rest when scrolled near.
@@ -762,8 +779,12 @@ class SecurityReviewCard extends ReviewList {
     // Alerts pushed before the first page is shown.
     this._pending = null;
     this._dayCheck = null;
+    // When the first page was asked for: its URLs are the oldest in the list.
+    this._startedAt = null;
     this._onVisibility = () => {
-      if (document.visibilityState === "visible") this._relabelDays();
+      if (document.visibilityState !== "visible") return;
+      if (this._expired()) this._restart();
+      else this._relabelDays();
     };
   }
 
@@ -810,10 +831,31 @@ class SecurityReviewCard extends ReviewList {
     return CARD_STYLE;
   }
 
+  // Whether the list's signed URLs may have expired.
+  _expired() {
+    return this._running && Date.now() - this._startedAt >= SIGNED_URL_REFRESH_MS;
+  }
+
+  _restart() {
+    this._stop();
+    this._start();
+  }
+
+  _mediaFailed(fallback) {
+    if (this._expired()) this._restart();
+    else super._mediaFailed(fallback);
+  }
+
+  // A clip from an old list asks for its alert again, for freshly signed URLs.
+  _openClip(alertId, item, mode) {
+    return super._openClip(alertId, this._expired() ? null : item, mode);
+  }
+
   // Subscribes before anything else, so nothing logged while the first page loads is missed;
   // an alert both pushed and on that page is shown once.
   async _start() {
     this._running = true;
+    this._startedAt = Date.now();
     const run = ++this._run;
     this._shell();
     this._windowText.textContent = "All alerts · newest first";
