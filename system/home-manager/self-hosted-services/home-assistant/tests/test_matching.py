@@ -8,6 +8,7 @@ import av
 import pytest
 from PIL import Image
 
+from core.geometry import scale_box
 from matching import MAX_SCORE, FrameMatcher, MatchError, best_frame
 
 CLIP_SIZE = (640, 360)
@@ -53,9 +54,7 @@ def jpeg(image: Image.Image) -> bytes:
 
 
 def to_snapshot(box):
-    sx = SNAPSHOT_SIZE[0] / CLIP_SIZE[0]
-    sy = SNAPSHOT_SIZE[1] / CLIP_SIZE[1]
-    return (box[0] * sx, box[1] * sy, box[2] * sx, box[3] * sy)
+    return scale_box(box, CLIP_SIZE, SNAPSHOT_SIZE)
 
 
 @pytest.fixture(scope="module")

@@ -311,10 +311,9 @@ class AlertLog:
 
     def delete_variant_media(self, variant: str) -> int:
         """Delete every alert's media file of one variant; return how many went."""
-        extension = AUDIO_EXTENSION if variant == AUDIO else IMAGE_EXTENSION
         deleted = 0
         try:
-            for path in self.media.glob(f"*-{variant}{extension}"):
+            for path in self.media.glob(self.media_path("*", variant).name):
                 path.unlink(missing_ok=True)
                 deleted += 1
         except OSError as err:
