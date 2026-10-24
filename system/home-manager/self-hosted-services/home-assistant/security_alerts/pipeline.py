@@ -32,7 +32,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.util import dt as dt_util
 
-from . import imaging
+from . import imaging, matching
 from .const import (
     AUDIO,
     CLIP_FALLBACK_LENGTH_SECONDS,
@@ -65,7 +65,12 @@ from .const import (
     CONF_SOUND,
     CONF_TOP_FLOORS,
     FFMPEG_TIMEOUT_SECONDS,
+    FRAME_TIME_TOLERANCE,
     FULL,
+    FULL_IMAGE_VERSION,
+    MATCH_CONCURRENCY,
+    MATCH_WINDOW_SECONDS,
+    SIGNAL_ALERT_LOGGED,
     SIGNAL_QUIET_UPDATED,
     SNAPSHOT_MATCH_TIMEOUT_SECONDS,
     SNOOZE_ACTION_HOURS,
@@ -73,7 +78,7 @@ from .const import (
 )
 from .core.burst import BurstWindow
 from .core.decide import Decision, decide
-from .core.geometry import Box, scale_box, thumbnail_crop
+from .core.geometry import Box, Size, scale_box, thumbnail_crop
 from .core.policy import (
     DETECTION,
     DOOR,
@@ -106,8 +111,9 @@ _LOGGER = logging.getLogger(__name__)
 PRUNE_INTERVAL = timedelta(days=1)
 REVIEW_PAGE_SIZE = 100
 CLIP_END_CHECK_INTERVAL = timedelta(minutes=5)
-# A review image rendered from Frigate's snapshot instead of the recording is
-# cached only once the recording should exist, so an early look does not stick.
+# A review image rendered from Frigate's snapshot instead of the matched
+# recording frame is cached only once the recording should exist, so an early
+# look does not stick.
 FULL_FALLBACK_CACHE_AFTER_SECONDS = 10 * 60
 
 
@@ -148,11 +154,21 @@ class _PendingEnd:
 
 
 @dataclass
-class _AudioLock:
-    """One alert's audio cut, and how many requests hold or wait for it."""
+class _MediaLock:
+    """One alert's media file being made, and how many requests hold or wait for it."""
 
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     users: int = 0
+
+
+@dataclass
+class _Snapshot:
+    """Frigate's clean event snapshot and the box drawn on that very frame, in its pixels."""
+
+    frame: bytes
+    size: Size
+    frame_time: float
+    box: Box
 
 
 class AudioClipError(Exception):
@@ -161,6 +177,25 @@ class AudioClipError(Exception):
 
 def _new_id() -> str:
     return uuid.uuid4().hex
+
+
+def _event_box(event: dict[str, Any], frame_time: float, size: Size) -> Box | None:
+    """The event API's snapshot box in `size` pixels, if it was drawn at `frame_time`.
+
+    Frigate gives it relative to the frame, as (x, y, width, height).
+    """
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return None
+    box, box_time = data.get("box"), data.get("snapshot_frame_time")
+    if not isinstance(box_time, int | float) or abs(box_time - frame_time) >= FRAME_TIME_TOLERANCE:
+        return None
+    if not isinstance(box, list) or len(box) != 4:
+        return None
+    if not all(isinstance(v, int | float) for v in box):
+        return None
+    x, y, w, h = box
+    return (x * size[0], y * size[1], (x + w) * size[0], (y + h) * size[1])
 
 
 async def _async_ffmpeg(*args: str) -> None:
@@ -241,7 +276,11 @@ class SecurityAlerts:
         self._pending_ends: dict[str, _PendingEnd] = {}
         self._active_sounds: dict[tuple[str, str], str | None] = {}
         self._pending_offs: dict[tuple[str, str], float] = {}
-        self._audio_locks: dict[str, _AudioLock] = {}
+        self._media_locks: dict[tuple[str, str], _MediaLock] = {}
+        # Each frame match takes a core for a second or two.
+        self._match_slots = asyncio.Semaphore(MATCH_CONCURRENCY)
+        # Review images to render once their recording is saved, by alert id.
+        self._render_timers: dict[str, CALLBACK_TYPE] = {}
         self._expiry_unsub: CALLBACK_TYPE | None = None
         self._unsubs: list[CALLBACK_TYPE] = []
 
@@ -264,6 +303,10 @@ class SecurityAlerts:
         self.hass.async_create_background_task(
             self._async_fill_missing_clip_ends(), "security_alerts clip ends"
         )
+        if self.state.full_image_version != FULL_IMAGE_VERSION:
+            self.hass.async_create_background_task(
+                self._async_reset_full_images(), "security_alerts review images"
+            )
 
     @callback
     def add_unsub(self, unsub: CALLBACK_TYPE) -> None:
@@ -277,6 +320,9 @@ class SecurityAlerts:
         if self._expiry_unsub:
             self._expiry_unsub()
             self._expiry_unsub = None
+        for cancel in self._render_timers.values():
+            cancel()
+        self._render_timers.clear()
         await self.hass.async_add_executor_job(self.log.close)
 
     async def _async_prune(self, *_: Any) -> None:
@@ -300,6 +346,16 @@ class SecurityAlerts:
             )
         except AlertLogError:
             return  # Already logged; tried again in 5 minutes.
+
+    async def _async_reset_full_images(self) -> None:
+        """Delete the review images an older version cached, once; each renders again."""
+        try:
+            deleted = await self.hass.async_add_executor_job(self.log.delete_variant_media, FULL)
+        except AlertLogError:
+            return  # Already logged; tried again on the next start.
+        self.state.full_image_version = FULL_IMAGE_VERSION
+        self.state.save()
+        _LOGGER.info("Deleted %d review images cached by an older version", deleted)
 
     # Facts
 
@@ -540,7 +596,8 @@ class SecurityAlerts:
         try:
             event.time = await self.hass.async_add_executor_job(self.log.insert, row)
         except AlertLogError:
-            pass  # Already logged; the phone still gets the alert.
+            return  # Already logged; the phone still gets the alert.
+        async_dispatcher_send(self.hass, SIGNAL_ALERT_LOGGED, row)
 
     async def _async_store_thumbnail(
         self, event: AlertEvent, decision: Decision, alert_id: str
@@ -603,42 +660,78 @@ class SecurityAlerts:
         return None
 
     async def _async_detection_thumbnail(self, event: AlertEvent) -> bytes | None:
+        """The MQTT box on Frigate's snapshot, else the event API's box, else Frigate's crop."""
         assert event.camera is not None
+        label = type_name(event.type)
         if event.event_id is None:
             # Simulated: the live frame with the given box.
             frame = await self.frigate.latest(event.camera)
             if event.snapshot_box is None:
                 return frame
-            return await self._async_render_thumb(
-                event.camera, frame, event.snapshot_box, type_name(event.type)
-            )
+            detect_size = self.frigate.detect_size(event.camera)
+            return await self._async_render_thumb(frame, event.snapshot_box, label, detect_size)
         frame, frame_time = await self.frigate.event_snapshot(event.event_id)
+        known: tuple[float, Box] | None = None
         if frame_time is not None and self.find_snapshot is not None:
             box = await self.find_snapshot(
                 event.event_id, frame_time, SNAPSHOT_MATCH_TIMEOUT_SECONDS
             )
             if box is not None:
                 event.snapshot_time, event.snapshot_box = frame_time, box
-                return await self._async_render_thumb(
-                    event.camera, frame, box, type_name(event.type)
-                )
-        _LOGGER.debug("No MQTT box for %s at %s; using Frigate's crop", event.event_id, frame_time)
+                known = (frame_time, box)
+        try:
+            snapshot = await self._async_pair(
+                event.camera, event.event_id, frame, frame_time, known
+            )
+        except FrigateError as err:
+            _LOGGER.debug("No event box for %s: %s", event.event_id, err)
+            snapshot = None
+        if snapshot is not None:
+            return await self._async_render_thumb(snapshot.frame, snapshot.box, label)
+        _LOGGER.debug("No box for %s at %s; using Frigate's crop", event.event_id, frame_time)
         return await self.frigate.event_snapshot_cropped(event.event_id)
 
     async def _async_render_thumb(
-        self, camera: str, frame: bytes, detect_box: Box, label: str
+        self, frame: bytes, box: Box, label: str, box_size: Size | None = None
     ) -> bytes:
-        detect_size = self.frigate.detect_size(camera)
+        """The thumbnail around `box`, given in `box_size` pixels (default: the frame's)."""
 
         def render() -> bytes:
             size = imaging.image_size(frame)
-            box = scale_box(detect_box, detect_size or size, size)
-            return imaging.render_crop(frame, thumbnail_crop(box, size), box, label)
+            scaled = scale_box(box, box_size or size, size)
+            return imaging.render_crop(frame, thumbnail_crop(scaled, size), scaled, label)
 
         return await self.hass.async_add_executor_job(render)
 
+    async def _async_pair(
+        self,
+        camera: str,
+        event_id: str,
+        frame: bytes,
+        frame_time: float | None,
+        known: tuple[float, Box] | None,
+    ) -> _Snapshot | None:
+        """Pair Frigate's clean event snapshot with the box drawn on that very frame.
+
+        `known` is a frame time and a detect-resolution box, from MQTT or the log
+        row: it is the snapshot's box when its time is the snapshot's. Otherwise the
+        event API's box is, when its time is. None when neither is.
+
+        Raises:
+            FrigateError: the event API failed.
+            imaging.ImageRenderError: the snapshot is not an image.
+        """
+        if frame_time is None:
+            return None
+        size = await self.hass.async_add_executor_job(imaging.image_size, frame)
+        if known is not None and abs(known[0] - frame_time) < FRAME_TIME_TOLERANCE:
+            box = scale_box(known[1], self.frigate.detect_size(camera) or size, size)
+            return _Snapshot(frame, size, frame_time, box)
+        box = _event_box(await self.frigate.event(event_id), frame_time, size)
+        return None if box is None else _Snapshot(frame, size, frame_time, box)
+
     async def async_full_image(self, alert_id: str) -> bytes | None:
-        """The review image: rendered once from the recording, then cached.
+        """The review image: rendered once, at most one render at a time, then cached.
 
         Raises:
             AlertLogError: the log or the image directory failed.
@@ -653,39 +746,79 @@ class SecurityAlerts:
             return await self.hass.async_add_executor_job(self.log.read_media, alert_id, THUMB)
         if row.kind != DETECTION:
             return None
-        image = await self._async_render_full(row)
-        if image is not None:
-            await self.hass.async_add_executor_job(self.log.write_media, alert_id, FULL, image)
+        async with self._media_lock(alert_id, FULL):
+            # Another request may have rendered it while this one waited.
+            cached = await self.hass.async_add_executor_job(self.log.read_media, alert_id, FULL)
+            if cached is not None:
+                return cached
+            snapshot = await self._async_review_snapshot(row)
+            image = await self._async_render_full(row, snapshot)
+            if image is not None:
+                await self.hass.async_add_executor_job(self.log.write_media, alert_id, FULL, image)
+                return image
+            image = await self._async_full_fallback(row, snapshot)
+            if image is not None and time.time() - row.time > FULL_FALLBACK_CACHE_AFTER_SECONDS:
+                await self.hass.async_add_executor_job(self.log.write_media, alert_id, FULL, image)
             return image
-        image = await self._async_full_fallback(row)
-        if image is not None and time.time() - row.time > FULL_FALLBACK_CACHE_AFTER_SECONDS:
-            await self.hass.async_add_executor_job(self.log.write_media, alert_id, FULL, image)
+
+    async def _async_review_snapshot(self, row: AlertRow) -> _Snapshot | None:
+        """A detection's event snapshot and box; None for a simulated one, or on failure."""
+        if row.event_id is None:
+            return None
+        known = None
+        if row.snapshot_time is not None and row.snapshot_box is not None:
+            known = (row.snapshot_time, row.snapshot_box)
+        try:
+            frame, frame_time = await self.frigate.event_snapshot(row.event_id)
+            return await self._async_pair(row.source, row.event_id, frame, frame_time, known)
+        except (FrigateError, imaging.ImageRenderError) as err:
+            _LOGGER.debug("No event snapshot for %s: %s", row.id, err)
+            return None
+
+    async def _async_render_full(self, row: AlertRow, snapshot: _Snapshot | None) -> bytes | None:
+        """The recording frame the snapshot shows, at full resolution, with box and label."""
+        if snapshot is None:
+            return None
+        label = type_name(row.type)
+        async with self._match_slots:
+            try:
+                clip = await self.frigate.recording_clip(
+                    row.source,
+                    snapshot.frame_time - MATCH_WINDOW_SECONDS,
+                    snapshot.frame_time + MATCH_WINDOW_SECONDS,
+                )
+            except FrigateError as err:
+                _LOGGER.debug("No recording clip for %s: %s", row.id, err)
+                return None
+
+            def render() -> bytes | None:
+                found = matching.best_frame(
+                    clip, matching.FrameMatcher(snapshot.frame, snapshot.box)
+                )
+                if found is None:
+                    return None
+                frame, _ = found
+                box = scale_box(snapshot.box, snapshot.size, frame.size)
+                return imaging.render_frame(frame, box, label)
+
+            try:
+                image = await self.hass.async_add_executor_job(render)
+            except matching.MatchError as err:
+                _LOGGER.debug("Could not match the recording of %s: %s", row.id, err)
+                return None
+        if image is None:
+            _LOGGER.debug("No recording frame of %s matches its snapshot", row.id)
         return image
 
-    async def _async_render_full(self, row: AlertRow) -> bytes | None:
-        if row.snapshot_time is None or row.snapshot_box is None:
-            return None
-        try:
-            frame = await self.frigate.recording_frame(row.source, row.snapshot_time)
-        except FrigateError as err:
-            _LOGGER.debug("No recording frame for %s: %s", row.id, err)
-            return None
-        detect_size = self.frigate.detect_size(row.source)
-        detect_box = row.snapshot_box
-        label = type_name(row.type)
-
-        def render() -> bytes:
-            size = imaging.image_size(frame)
-            box = scale_box(detect_box, detect_size or size, size)
-            return imaging.render_full(frame, box, label)
-
-        try:
-            return await self.hass.async_add_executor_job(render)
-        except imaging.ImageRenderError as err:
-            _LOGGER.warning("Could not render the review image of %s: %s", row.id, err)
-            return None
-
-    async def _async_full_fallback(self, row: AlertRow) -> bytes | None:
+    async def _async_full_fallback(self, row: AlertRow, snapshot: _Snapshot | None) -> bytes | None:
+        """The detect snapshot with its box, else Frigate's boxed snapshot, else the thumbnail."""
+        if snapshot is not None:
+            try:
+                return await self.hass.async_add_executor_job(
+                    imaging.render_full, snapshot.frame, snapshot.box, type_name(row.type)
+                )
+            except imaging.ImageRenderError as err:
+                _LOGGER.warning("Could not render the review image of %s: %s", row.id, err)
         if row.event_id:
             try:
                 return await self.frigate.event_snapshot_boxed(row.event_id)
@@ -710,15 +843,16 @@ class SecurityAlerts:
         window = self.clip_window(row)
         if window is None or not self.clip_ready(window, time.time()):
             return None
-        async with self._audio_lock(alert_id):
+        async with self._media_lock(alert_id, AUDIO):
             if not await self.hass.async_add_executor_job(self.log.has_media, alert_id, AUDIO):
                 await self._async_cut_audio(row.source, window, alert_id)
         return self.log.media_path(alert_id, AUDIO)
 
     @contextlib.asynccontextmanager
-    async def _audio_lock(self, alert_id: str) -> AsyncIterator[None]:
-        """At most one ffmpeg run per alert at a time."""
-        entry = self._audio_locks.setdefault(alert_id, _AudioLock())
+    async def _media_lock(self, alert_id: str, variant: str) -> AsyncIterator[None]:
+        """At most one render or ffmpeg run per alert and variant at a time."""
+        key = (alert_id, variant)
+        entry = self._media_locks.setdefault(key, _MediaLock())
         entry.users += 1
         try:
             async with entry.lock:
@@ -726,7 +860,7 @@ class SecurityAlerts:
         finally:
             entry.users -= 1
             if not entry.users:
-                del self._audio_locks[alert_id]
+                del self._media_locks[key]
 
     async def _async_cut_audio(self, camera: str, window: tuple[int, int], alert_id: str) -> None:
         """Copy the audio of Frigate's clip, without re-encoding, into the media directory.
@@ -799,7 +933,7 @@ class SecurityAlerts:
         self, event_id: str, end_time: float | None, snapshot: tuple[float, Box] | None
     ) -> None:
         """Fill a detection's clip end and final snapshot (a newer box drops the cached
-        review image)."""
+        review image), and render its review image once the recording is saved."""
         try:
             row = await self.hass.async_add_executor_job(self.log.by_event_id, event_id)
             if row is None:
@@ -814,7 +948,31 @@ class SecurityAlerts:
                 )
                 await self.hass.async_add_executor_job(self.log.delete_media, row.id, FULL)
         except AlertLogError:
-            pass  # Already logged; the 30-minute fallback still gives a clip.
+            return  # Already logged; the 30-minute fallback still gives a clip.
+        if end_time is not None:
+            self._schedule_render(row.id, end_time + CLIP_POST_SECONDS + CLIP_READY_DELAY_SECONDS)
+
+    @callback
+    def _schedule_render(self, alert_id: str, when: float) -> None:
+        """Render a review image in the background at `when`, so the review list has it
+        ready; one not rendered by then renders on its first view."""
+        if (cancel := self._render_timers.pop(alert_id, None)) is not None:
+            cancel()
+
+        @callback
+        def _render(_now: Any) -> None:
+            self._render_timers.pop(alert_id, None)
+            self.hass.async_create_background_task(
+                self._async_prerender(alert_id), "security_alerts review image"
+            )
+
+        self._render_timers[alert_id] = async_track_point_in_utc_time(
+            self.hass, _render, dt_util.utc_from_timestamp(when)
+        )
+
+    async def _async_prerender(self, alert_id: str) -> None:
+        with contextlib.suppress(AlertLogError):  # Already logged; it renders on view.
+            await self.async_full_image(alert_id)
 
     async def async_sound(self, camera: str, label: str, when: float) -> None:
         key = (camera, label)

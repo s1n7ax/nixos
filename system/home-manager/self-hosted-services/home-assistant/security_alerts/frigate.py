@@ -144,8 +144,3 @@ class FrigateClient:
         """A camera's recording from `start` to `end`, as MP4 bytes."""
         body, _ = await self._get(f"api/{camera}/start/{start}/end/{end}/clip.mp4")
         return body
-
-    async def recording_frame(self, camera: str, frame_time: float) -> bytes:
-        """The full-resolution frame from the recording at `frame_time`."""
-        body, _ = await self._get(f"api/{camera}/recordings/{frame_time}/snapshot.jpg")
-        return body

@@ -56,6 +56,8 @@ CLIP_FALLBACK_LENGTH_SECONDS = 60
 
 # How long a detection waits for the MQTT snapshot matching Frigate's image.
 SNAPSHOT_MATCH_TIMEOUT_SECONDS = 2.0
+# Matching Frigate's X-Frame-Time header to a snapshot frame time.
+FRAME_TIME_TOLERANCE = 1e-3
 # The review image is the recording frame that matches the detection snapshot,
 # looked for this long either side of the snapshot's frame time.
 MATCH_WINDOW_SECONDS = 3
