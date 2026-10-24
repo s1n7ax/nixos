@@ -752,6 +752,10 @@ class SecurityAlerts:
             if cached is not None:
                 return cached
             snapshot = await self._async_review_snapshot(row)
+            if snapshot is not None and not self.match_ready(snapshot.frame_time, time.time()):
+                # A match on a recording that is not saved yet could miss the frame and
+                # stick, so a fallback shows, uncached, until it is.
+                return await self._async_full_fallback(row, snapshot)
             image = await self._async_render_full(row, snapshot)
             if image is not None:
                 await self.hass.async_add_executor_job(self.log.write_media, alert_id, FULL, image)
@@ -1144,3 +1148,8 @@ class SecurityAlerts:
     def clip_ready(window: tuple[int, int], now: float) -> bool:
         """A clip counts as ready once its recording should be saved."""
         return now >= window[1] + CLIP_READY_DELAY_SECONDS
+
+    @staticmethod
+    def match_ready(frame_time: float, now: float) -> bool:
+        """The recording a snapshot is matched against counts as saved, like a clip's."""
+        return now >= frame_time + MATCH_WINDOW_SECONDS + CLIP_READY_DELAY_SECONDS
