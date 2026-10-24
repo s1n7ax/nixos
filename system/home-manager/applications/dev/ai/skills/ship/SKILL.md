@@ -148,9 +148,9 @@ Each check gets at most 2 fix-and-recheck rounds. Still failing after that → s
 
 ## 6. PR
 
-Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement, lists the decisions the user made, lists the checks that ran with their verdicts, includes `/verify`'s result line and test table, and lists every NOT RUN item. The screenshots stay local under `.goals/`.
+Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement, lists the decisions the user made, lists the checks that ran with their verdicts, and lists every NOT RUN item of the final validation. `/verify`'s results stay out of the description, which would go stale the next time `/verify` runs: once each PR exists, post its branch's final `/verify` report on it with `publish.py --pr <url>`, as `/verify`'s "Post it on the PR" step describes. That comment carries the tests, the screenshots and the NOT RUN tests, and replaces the comment of any earlier run.
 
-Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
+Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path and its PR comment URL, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
 
 ## Never
 

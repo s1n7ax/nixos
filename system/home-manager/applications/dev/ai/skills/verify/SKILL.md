@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Verify a finished change the way its end user would — in a real browser for web apps (Playwright MCP), in a real terminal for CLIs and TUIs, with curl against the running API for backend-only changes. Runs every test on the code before the change and after it, side by side, captures screenshots as proof, and writes an HTML report with plain-language steps and a PASS/FAIL per test, then opens it in the browser. Not the formatter/lint/unit-test validation /implement already does. Only use when the user explicitly runs the /verify command; never trigger on your own.
+description: Verify a finished change the way its end user would — in a real browser for web apps (Playwright MCP), in a real terminal for CLIs and TUIs, with curl against the running API for backend-only changes. Runs every test on the code before the change and after it, side by side, captures screenshots as proof, and writes an HTML report with plain-language steps and a PASS/FAIL per test, then opens it in the browser and posts it, screenshots included, as a comment on the branch's pull request, replacing the previous run's. Not the formatter/lint/unit-test validation /implement already does. Only use when the user explicitly runs the /verify command; never trigger on your own.
 disable-model-invocation: true
 ---
 
@@ -132,7 +132,7 @@ The report is an HTML page that opens in the user's browser, with each test's be
 2. Run `~/.agents/skills/verify/scripts/report.py .goals/<goal>/verify/<n>-report.json` (it needs `python3`; on Nix without it, run it through `nix shell nixpkgs#python3 --command python3`). It writes `<n>-report.html` next to the JSON, prints the result line, and opens the page in the browser.
 3. If it lists problems instead (a PASS without screenshots on both sides, a FAIL or NOT RUN without a `why`, a screenshot path that does not exist), fix them and run it again: take the missing screenshot or correct the path; a PASS you cannot prove is NOT RUN.
 
-Each run gets its own number; earlier reports are never edited. `.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing. The report holds screenshots of the user's app, so it stays on this machine: never upload or publish it.
+Each run gets its own number; earlier reports are never edited. `.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing. The report holds screenshots of the user's app: the PR comment of step 9 is the only place it goes beyond this machine.
 
 ```json
 {
@@ -173,9 +173,25 @@ Each run gets its own number; earlier reports are never edited. `.goals/` is loc
 - **Steps** are plain user actions, one per entry, with no implementation detail: "Click Settings", "Run `todo add milk`", "Send `GET /users/42` with the admin token". The last step is the check, with the old behaviour in parentheses when it changed. Backticks render as code.
 - **Setup** (each side's `setup`, plus `notes`) is what a reader needs to reproduce the run: start command, port, state dir, uncommitted changes applied, copied local config.
 
-### 9. Finish
+### 9. Post it on the PR
 
-Report in chat: the result line, the table of tests with verdicts, the path to `<n>-report.html`, and one line per FAIL or NOT RUN saying what went wrong or what blocked it. If `report.py` said it could not open the browser, ask the user to open that path.
+Post the report on the branch's pull request, so whoever reviews it sees the results and the screenshots without this machine. Run from the checkout:
+
+```sh
+~/.agents/skills/verify/scripts/publish.py .goals/<goal>/verify/<n>-report.json
+```
+
+It checks the JSON as `report.py` does, finds the open PR of the current branch (`--pr <number|url>` names another), uploads this run's screenshots to the PR's repository under the ref `refs/verify/pr-<number>` (not a branch, so it stays out of the branch list, clones and the diff), posts the report as a comment, and deletes every earlier `/verify` comment on that PR. The PR only ever shows the latest run: after a requirement changes and you verify again, the new comment replaces the old one. It prints the comment's URL.
+
+- **No open PR** → it says so and posts nothing. Say so in the chat report; running it again once the PR exists posts this report.
+- **It fails** (no `gh`, not logged in, no write access) → report its error. The local report stands; the run is not redone.
+- **Visibility.** The screenshots become as visible as the PR: public on a public repository. One more reason no secret may appear in them.
+
+When `/ship` is driving this skill, skip this step; `/ship` posts the final report once the PR exists.
+
+### 10. Finish
+
+Report in chat: the result line, the table of tests with verdicts, the path to `<n>-report.html`, the PR comment's URL (or why there is none), and one line per FAIL or NOT RUN saying what went wrong or what blocked it. If `report.py` said it could not open the browser, ask the user to open that path.
 
 When `/ship` is driving this skill, run `report.py` with `--no-open` and stop after the chat report; `/ship` opens the final report and the PR.
 
