@@ -376,7 +376,7 @@ const CARD_STYLE = `
 `;
 const STYLE = `
   .content { max-width: 1400px; margin: 0 auto; padding: 12px 12px 48px; touch-action: pan-y; }
-  .controls { display: grid; gap: 12px; }
+  .controls { display: grid; }
   .siren { font: inherit; font-size: 1.05em; font-weight: 600; padding: 14px; border: 0; border-radius: 12px;
     background: var(--error-color, #db4437); color: #fff; cursor: pointer; }
   .siren:disabled { opacity: 0.6; }
@@ -769,14 +769,6 @@ class ReviewList extends HTMLElement {
     return text ? h("span", { class: "badge", text }) : null;
   }
 
-  _cardHeader(item) {
-    return h("header", {}, [
-      h("span", { class: "type", text: item.type_name }),
-      h("span", { class: "meta", text: `${item.name} · ${item.clock}` }),
-      this._badge(item),
-    ]);
-  }
-
   // A detection's photo holds both images: the full frame for level 1 and the crop for the grid.
   _renderItem(item) {
     if (item.kind === "door" || item.kind === "motion") {
@@ -802,12 +794,17 @@ class ReviewList extends HTMLElement {
       [img, h("span", { class: "when", text: item.clock }), this._badge(item)],
     );
     img.addEventListener("error", () => this._mediaFailed(() => shot.classList.add("failed")));
-    return h("article", { class: "tile", "data-id": item.id }, [this._cardHeader(item), shot]);
+    const header = h("header", {}, [
+      h("span", { class: "type", text: item.type_name }),
+      h("span", { class: "meta", text: `${item.name} · ${item.clock}` }),
+      this._badge(item),
+    ]);
+    return h("article", { class: "tile", "data-id": item.id }, [header, shot]);
   }
 
   // A signed URL in the list did not load; `fallback` shows it. The card may reload instead.
   _mediaFailed(fallback) {
-    if (fallback) fallback();
+    fallback();
   }
 
   // Images on the first screen load at once with high priority; the rest when scrolled near.
@@ -847,15 +844,15 @@ class ReviewList extends HTMLElement {
 
   // The viewer
 
-  // Without a mode (?clip=), a sound opens in sound mode and a detection in video mode.
-  async _openClip(alertId, item, mode) {
+  // A sound (only ?clip= opens one) plays its audio; a detection its video.
+  async _openClip(alertId, item) {
     const request = this._nextClipRequest();
     this._dialog.replaceChildren(this._viewerBar("Loading…"));
     if (!this._dialog.open) this._dialog.showModal();
     try {
       const alert = item || (await this._fetchAlert(alertId));
       if (!this._isCurrentClip(request)) return;
-      this._showClip(alert, mode || (alert.kind === "sound" ? SOUND_MODE : VIDEO_MODE));
+      this._showClip(alert, alert.kind === "sound" ? SOUND_MODE : VIDEO_MODE);
     } catch (err) {
       if (!this._isCurrentClip(request)) return;
       this._dialog.replaceChildren(
@@ -1192,8 +1189,8 @@ class SecurityReviewCard extends ReviewList {
   }
 
   // A clip from an old list asks for its alert again, for freshly signed URLs.
-  _openClip(alertId, item, mode) {
-    return super._openClip(alertId, this._expired() ? null : item, mode);
+  _openClip(alertId, item) {
+    return super._openClip(alertId, this._expired() ? null : item);
   }
 
   // The log's retention, for the end of the list.
