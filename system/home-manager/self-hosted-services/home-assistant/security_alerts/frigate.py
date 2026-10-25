@@ -90,6 +90,17 @@ class FrigateClient:
         cameras = self._enabled_cameras().values()
         return list(dict.fromkeys(label for cam in cameras for label in _listen(cam)))
 
+    async def event(self, event_id: str) -> dict[str, Any]:
+        """The event as `api/events/<id>` gives it; its `data` holds the snapshot's box."""
+        body, _ = await self._get(f"api/events/{event_id}")
+        try:
+            event = json_loads(body)
+        except ValueError as err:
+            raise FrigateError(f"api/events/{event_id} is not JSON: {err}") from err
+        if not isinstance(event, dict):
+            raise FrigateError(f"api/events/{event_id} is not an object")
+        return event
+
     async def _event_snapshot(
         self, event_id: str, *, bbox: int, crop: int
     ) -> tuple[bytes, Mapping[str, str]]:
@@ -129,7 +140,22 @@ class FrigateClient:
         """
         return f"{self._base_url()}/api/{camera}/start/{start}/end/{end}/clip.mp4"
 
-    async def recording_frame(self, camera: str, frame_time: float) -> bytes:
-        """The full-resolution frame from the recording at `frame_time`."""
-        body, _ = await self._get(f"api/{camera}/recordings/{frame_time}/snapshot.jpg")
+    async def recording_clip(self, camera: str, start: float, end: float) -> bytes:
+        """A camera's recording from `start` to `end`, as MP4 bytes."""
+        body, _ = await self._get(f"api/{camera}/start/{start}/end/{end}/clip.mp4")
         return body
+
+    async def recordings(self, camera: str, start: float, end: float) -> list[tuple[float, float]]:
+        """The (start, end) times of a camera's recording segments that overlap `start` to `end`."""
+        path = f"api/{camera}/recordings"
+        body, _ = await self._get(path, {"after": start, "before": end})
+        try:
+            segments = json_loads(body)
+        except ValueError as err:
+            raise FrigateError(f"{path} is not JSON: {err}") from err
+        if not isinstance(segments, list):
+            raise FrigateError(f"{path} is not a list")
+        try:
+            return [(float(s["start_time"]), float(s["end_time"])) for s in segments]
+        except (KeyError, TypeError, ValueError) as err:
+            raise FrigateError(f"{path} has a segment without times: {err}") from err

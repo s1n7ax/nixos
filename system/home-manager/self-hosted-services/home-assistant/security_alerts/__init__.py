@@ -172,7 +172,8 @@ def _version(*files: Path) -> str:
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
-    """Serve the panel and card (code only, no data) and load the card on dashboards."""
+    """Serve the panel and card (code only, no data) and load both on dashboards: the
+    review panel's module also holds the review tab's card."""
     version = await hass.async_add_executor_job(
         _version, FRONTEND_DIR / PANEL_FILE, FRONTEND_DIR / CARD_FILE
     )
@@ -187,11 +188,14 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
         module_url=f"{FRONTEND_URL}/{PANEL_FILE}?v={version}",
         require_admin=False,
     )
-    await _async_load_card(hass, f"{FRONTEND_URL}/{CARD_FILE}?v={version}")
+    await _async_load_cards(
+        hass,
+        [f"{FRONTEND_URL}/{CARD_FILE}?v={version}", f"{FRONTEND_URL}/{PANEL_FILE}?v={version}"],
+    )
 
 
-async def _async_load_card(hass: HomeAssistant, url: str) -> None:
-    """Load the card from a dashboard resource, kept at this version.
+async def _async_load_cards(hass: HomeAssistant, urls: list[str]) -> None:
+    """Load the card modules from dashboard resources, each kept at this version.
 
     Dashboards load their resources after the frontend has booted. An extra JS URL runs at
     page load, racing the frontend's swap of `window.customElements` for its own registry:
@@ -200,17 +204,19 @@ async def _async_load_card(hass: HomeAssistant, url: str) -> None:
     lovelace = hass.data[LOVELACE_DATA]
     if lovelace.resource_mode != MODE_STORAGE:
         # YAML resources are read-only here.
-        frontend.add_extra_js_url(hass, url)
+        for url in urls:
+            frontend.add_extra_js_url(hass, url)
         return
     resources = lovelace.resources
     await resources.async_get_info()  # Loads the collection from storage.
-    path = url.partition("?")[0]
-    for item in resources.async_items():
-        if item["url"].partition("?")[0] == path:
-            if item["url"] != url or item["type"] != "module":
-                await resources.async_update_item(item["id"], {"res_type": "module", "url": url})
-            return
-    await resources.async_create_item({"res_type": "module", "url": url})
+    for url in urls:
+        path = url.partition("?")[0]
+        items = resources.async_items()
+        item = next((i for i in items if i["url"].partition("?")[0] == path), None)
+        if item is None:
+            await resources.async_create_item({"res_type": "module", "url": url})
+        elif item["url"] != url or item["type"] != "module":
+            await resources.async_update_item(item["id"], {"res_type": "module", "url": url})
 
 
 @callback
