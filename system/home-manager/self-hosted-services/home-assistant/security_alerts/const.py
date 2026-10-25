@@ -77,6 +77,7 @@ PANEL_FILE = "security-review-panel.js"
 CARD_FILE = "security-alerts-card.js"
 IMAGE_URL = "/api/security_alerts/image/{alert_id}/{variant}.jpg"
 AUDIO_URL = "/api/security_alerts/audio/{alert_id}.m4a"
+CLIP_DOWNLOAD_URL = "/api/security_alerts/clip/{alert_id}.mp4"
 # Media variants: the notification image, the review image, a review tile's
 # square crop around the box, a sound's audio clip.
 THUMB = "thumb"

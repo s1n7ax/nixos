@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
@@ -60,6 +61,16 @@ def local_day(timestamp: float) -> tuple[str, str]:
     """The local date, as ('2026-10-22', 'Thursday 22 October')."""
     when = dt_util.as_local(dt_util.utc_from_timestamp(timestamp))
     return when.date().isoformat(), f"{when:%A} {when.day} {when:%B}"
+
+
+def download_name(name: str, event_type: str, timestamp: float, extension: str) -> str:
+    """A downloaded alert file's name, in ASCII: 'Front-door_Person_2026-10-22_22-42-05.jpg'."""
+    when = dt_util.as_local(dt_util.utc_from_timestamp(timestamp))
+    words = (
+        re.sub(r"[^A-Za-z0-9]+", "-", part).strip("-") or "alert"
+        for part in (name, type_name(event_type))
+    )
+    return f"{'_'.join(words)}_{when:%Y-%m-%d_%H-%M-%S}.{extension}"
 
 
 def alert_text(

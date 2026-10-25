@@ -20,6 +20,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import (
     AUDIO_URL,
+    CLIP_DOWNLOAD_URL,
     CONF_LOG_DAYS,
     CROP,
     DOMAIN,
@@ -76,15 +77,19 @@ def _item(
     if row.kind not in (DETECTION, SOUND):
         return item
     item["camera_entity"] = alerts.camera_entity(row.source)
-    clip: dict[str, Any] = {"ready": False, "url": None}
+    # `download` saves the clip as a named file; `url` plays it.
+    clip: dict[str, Any] = {"ready": False, "url": None, "download": None}
     if (window := alerts.clip_window(row)) is not None:
         start, end = window
         clip["ready"] = alerts.clip_ready(window, now)
         if clip["ready"]:
             clip["url"] = sign(CLIP_URL.format(camera=row.source, start=start, end=end))
+            clip["download"] = sign(CLIP_DOWNLOAD_URL.format(alert_id=row.id))
     item["clip"] = clip
     if row.kind == DETECTION:
-        item["image"] = sign(IMAGE_URL.format(alert_id=row.id, variant=FULL))
+        image = IMAGE_URL.format(alert_id=row.id, variant=FULL)
+        item["image"] = sign(image)
+        item["image_download"] = sign(f"{image}?download=1")
         item["crop"] = sign(IMAGE_URL.format(alert_id=row.id, variant=CROP))
     else:
         # A sound shows no picture: it plays its audio, cut from the same clip.
