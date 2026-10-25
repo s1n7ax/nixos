@@ -10,7 +10,7 @@ subagents, so changes to those two rows apply there too.
 
 ## Status
 
-- [ ] Verdicts agreed with the person (end of step 0)
+- [x] Verdicts agreed with the person (end of step 0), 2026-10-25
 - [ ] Main eval agreed and baseline measured (end of step 1)
 
 A new session picks up at the first unticked box here, then at the first unticked item in
@@ -84,7 +84,40 @@ Filled in during step 1.
 
 | Eval | What it measures | What to do with it |
 | --- | --- | --- |
-|  |  |  |
+| none found, built in this step | | |
+
+The 4 goals under `.goals/` are real requests, but 3 of them touch production systems
+(a public GitHub repo and release, Home Assistant and a phone, a host rebuild) and 1 has no
+requirement file, so they are not usable as tasks as they stand.
+
+Where the eval runs: the dev-vm (`profile/dev-vm/`, `system/nixos/utils/microvm.nix`),
+reached as `ssh -p 2222 localhost`. Claude Code 2.1.303 there is logged in, with every
+permission prompt bypassed (`yolo`). Found on 2026-10-25, before any run:
+
+- `gh` there is logged in as the real `s1n7ax` account, so an unisolated `/ship` run would
+  push branches, open real PRs and post `/verify` comments. Every task runs in a throwaway
+  repo whose `origin` is a local bare repo, with `gh` replaced on `PATH` by a stub that
+  records calls, and with the real `gh` config hidden.
+- `/home` is 97% full (1.7 GB free of 49 GB); `~/.cache/pp-store` holds 27 GB.
+- The Nix store overlay (`/nix/.rw-store`, 20 GB) is 100% full, and came up read-only at
+  the last boot, so every `nix` command in the VM fails (nixos#243 hit the same error).
+
+Fixed the same day: `~/.cache/pp-store` deleted (the person's call); the store image grown
+to 40 GB by the person on the host (nixos#251 sizes new images to match), then
+`nix store gc` in the VM: 30 GB free on the store, 29 GB on `/home`. An old commit
+(`db5d543`) evaluates in 31 s, private `nix-secrets` input included.
+
+Tasks: `single-loop/eval/tasks.md`, 10 replays of merged PRs, agreed by the person on
+2026-10-25. Real requests: each is a merged PR, replayed from its parent commit. Noise
+floor at 10 tasks × 3 reps: about ±18 points on the pass rate.
+
+**Blocked: no paid runs (the person's decision, 2026-10-25).** One measured `/ship` run
+from 2026-10-22 (own-singlish-keymap, main session plus 6 subagents) used 68 M cache-read,
+1.2 M cache-write and 130 k output tokens, about $35 at Opus 5.5 API prices, with stages
+2-5 taking about 80 minutes. That puts one variant (10 tasks × 3 reps) at about
+$300-1,000, and the 7-variant plan at about $2-7k. Asked to choose a scope, the person
+said not to run anything that costs. The verdicts and worklist stay a reading of the
+code; no item has a score.
 
 Main metric:
 
