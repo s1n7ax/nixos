@@ -89,7 +89,10 @@ def _item(
     if row.kind == DETECTION:
         image = IMAGE_URL.format(alert_id=row.id, variant=FULL)
         item["image"] = sign(image)
-        item["image_download"] = sign(f"{image}?download=1")
+        # Until the recording around the snapshot is saved, the review image is the
+        # detect snapshot. The clip is saved after it, so the full-resolution image
+        # downloads from then on, with the clip.
+        item["image_download"] = sign(f"{image}?download=1") if clip["ready"] else None
         item["crop"] = sign(IMAGE_URL.format(alert_id=row.id, variant=CROP))
     else:
         # A sound shows no picture: it plays its audio, cut from the same clip.
