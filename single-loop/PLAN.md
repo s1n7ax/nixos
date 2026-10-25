@@ -153,7 +153,7 @@ build and fix straight into ship in one change (step 3), as the kit allows for a
 whose merged agent would be folded next; both are the `worker` prompt plus `/implement`
 steps. It is also the change that turns ship from a router into the agent that builds.
 
-- [ ] 1. `fold build+fix into ship` · variant: · compared with: · result:
+- [x] 1. `fold build+fix into ship` · variant: none · compared with: none · result: made unmeasured, the person's call (2026-10-25); judged on real `/ship` runs
 - [ ] 2. `merge simplify into code-review` · variant: · compared with: · result:
 - [ ] 3. `merge impl-check into code-review` (needs `--critical` tasks) · variant: · compared with: · result:
 - [ ] 4. `fold final-validation into ship's gate` · variant: · compared with: · result:
@@ -178,12 +178,32 @@ to the estimate.
 - Decision (who, when): keep / fix / revert
 - Left open after the decision:
 
+### Item 1: `fold build+fix into ship` (no variant, branch `single-agent-loop`)
+
+Made without an eval: the person chose not to spend on eval runs. Not measured.
+
+- `/ship` stage 2 now follows `/implement` steps 1-9 in the main session; review and
+  simplify stay subagents. Gone: the build/fix worker briefs, the question relay and
+  resume, `/implement`'s "When `/ship` runs this step in a subagent", and every "dispatch
+  a fix `worker`". The gate is now `/implement`'s Validate run by `/ship` itself, still
+  with command output in `gate.log` and only exit codes read.
+- Shipped with it, also unmeasured: Claude Code agent definitions generated from
+  `agents/*.md` (code-reviewer and verifier get tool lists without Edit or Write
+  outside the report; Bash stays, so read-only is still partly a prompt rule), and the
+  duplicate MCP servers removed (open question 1 below).
+- Checked with no model: `nix fmt -- --ci`; the desktop home generation builds; its
+  `~/.claude/agents/*.md` and `settings.json` hold the expected tool lists and plugin flags.
+- Not checked: a live `/ship` run, and Claude Code loading the new agents in a session.
+- Decision (the person, 2026-10-25): make it, judge it on real `/ship` runs.
+- Watch for: questions now asked mid-build in the main session, and the main session's
+  context filling up on large builds (the reason the build had moved to a subagent, nixos#221).
+
 ## Open questions for owners
 
-1. Remove the duplicate MCP servers (official playwright and context7 plugins, the
-   hand-added nixos entry) before the baseline? Recommended: yes, as an environment fix,
-   so the baseline does not score a broken playwright pick. It edits every task's tool
-   list, so it has to come before the baseline, not between two variants.
+1. ~~Remove the duplicate MCP servers before the baseline?~~ Done with item 1: the
+   official playwright and context7 plugins are on only where `mcp.nix` does not run
+   that server (the server profile keeps them), and the hand-added `nixos` entry is gone
+   from `~/.claude.json` on the desktop and the dev-vm.
 2. Under `/ship`, which wins: AGENTS.md's short-answer style, or `/ship`'s full final report?
 3. Should a typed `/code-review` and `/simplify` run this repo's skills or Claude Code's
    built-ins, and is the code-simplifier plugin still wanted?
