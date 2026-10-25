@@ -144,3 +144,18 @@ class FrigateClient:
         """A camera's recording from `start` to `end`, as MP4 bytes."""
         body, _ = await self._get(f"api/{camera}/start/{start}/end/{end}/clip.mp4")
         return body
+
+    async def recordings(self, camera: str, start: float, end: float) -> list[tuple[float, float]]:
+        """The (start, end) times of a camera's recording segments that overlap `start` to `end`."""
+        path = f"api/{camera}/recordings"
+        body, _ = await self._get(path, {"after": start, "before": end})
+        try:
+            segments = json_loads(body)
+        except ValueError as err:
+            raise FrigateError(f"{path} is not JSON: {err}") from err
+        if not isinstance(segments, list):
+            raise FrigateError(f"{path} is not a list")
+        try:
+            return [(float(s["start_time"]), float(s["end_time"])) for s in segments]
+        except (KeyError, TypeError, ValueError) as err:
+            raise FrigateError(f"{path} has a segment without times: {err}") from err

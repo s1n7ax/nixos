@@ -10,7 +10,16 @@ import pytest
 from PIL import Image, ImageChops, ImageStat
 
 from core.geometry import scale_box
-from matching import COMPARE_SIZE, EDGE_SECONDS, MAX_BOX_SCORE, FrameMatcher, MatchError, best_frame
+from matching import (
+    COMPARE_SIZE,
+    EDGE_SECONDS,
+    MAX_BOX_SCORE,
+    MAX_RECORDING_GAP,
+    FrameMatcher,
+    MatchError,
+    best_frame,
+    covers,
+)
 
 CLIP_SIZE = (640, 360)
 # The snapshot is smaller than the recording, like a detect stream.
@@ -169,3 +178,38 @@ def test_unreadable_clips_raise_match_error(data):
 def test_unreadable_snapshot_raises_match_error():
     with pytest.raises(MatchError):
         FrameMatcher(b"not a jpeg", (10, 10, 50, 50))
+
+
+# A 6 s window, like the snapshot time +-3 s.
+START, END = 1000.0, 1006.0
+
+
+@pytest.mark.parametrize(
+    "segments",
+    [
+        [(995.0, 1007.0)],
+        # Neighbouring segments a second apart, as Frigate's times often are, and overlapping.
+        [(995.0, 1002.0), (1003.0, 1010.0)],
+        [(1003.0, 1010.0), (990.0, 1003.5)],
+        # Times a second short of the window's ends.
+        [(START + 1.0, END - 1.0)],
+    ],
+)
+def test_a_recording_covering_the_window_is_matched(segments):
+    assert covers(segments, START, END)
+
+
+@pytest.mark.parametrize(
+    "segments",
+    [
+        [],
+        # Cut short at the end or the start by a gap in the recording.
+        [(990.0, 1002.0)],
+        [(1003.0, 1012.0)],
+        [(990.0, END - 2 * MAX_RECORDING_GAP)],
+        # A gap inside the window.
+        [(990.0, 1001.0), (1004.0, 1012.0)],
+    ],
+)
+def test_a_recording_shorter_than_the_window_is_not_matched(segments):
+    assert not covers(segments, START, END)

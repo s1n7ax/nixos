@@ -14,7 +14,9 @@ unit standard deviation, and the best of a few small offsets counts. The frame
 is picked by the patch around the box (the object and the background around
 it). It is kept only when the box alone matches too, as the object has to be
 there and not just the scene around it, and when it is not at either end of the
-clip, where the snapshot's moment may lie beyond a clip cut short.
+clip, where the snapshot's moment may lie beyond a clip cut short. A clip is only
+matched when the recording covers its whole window (`covers`), as Frigate cuts a
+clip short at a gap in the recording.
 
 Takes JPEG and MP4 bytes and a box in snapshot pixels, so it has no imports
 from the integration and runs in an executor thread. PyAV comes with Home
@@ -51,6 +53,11 @@ MAX_BOX_SCORE = 0.3
 # The picked frame must be at least this far from either end of the clip. On real
 # alerts, the matching frame was at least 1 s from both ends.
 EDGE_SECONDS = 0.5
+# Frigate cuts a clip short where its recording has a gap, and the snapshot's
+# moment may be in the missing part, so the recording has to cover the clip's whole
+# window. Neighbouring segments' times can be up to about 1 s apart without a frame
+# missing; real gaps (restarts) were 22 s or more.
+MAX_RECORDING_GAP = 1.2
 DECODER_THREADS = 2
 # Scaled patches are 8-bit images: mid-grey at the mean, this many grey levels per
 # standard deviation. A flat patch counts as this much spread, to avoid dividing by 0.
@@ -62,6 +69,19 @@ _READ_ERRORS = (OSError, ValueError, Image.DecompressionBombError)
 
 class MatchError(ValueError):
     """The snapshot or the clip could not be decoded."""
+
+
+def covers(segments: Iterable[tuple[float, float]], start: float, end: float) -> bool:
+    """Whether recording segments, as (start, end) times, cover `start` to `end`.
+
+    Gaps up to MAX_RECORDING_GAP, inside or at either end, do not count.
+    """
+    covered = start
+    for segment_start, segment_end in sorted(segments):
+        if segment_start - covered > MAX_RECORDING_GAP:
+            return False
+        covered = max(covered, segment_end)
+    return end - covered <= MAX_RECORDING_GAP
 
 
 def _rect(box: Box, size: Size, growth: float) -> Rect:

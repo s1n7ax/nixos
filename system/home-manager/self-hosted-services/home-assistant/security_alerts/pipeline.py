@@ -784,13 +784,15 @@ class SecurityAlerts:
         if snapshot is None:
             return None
         label = type_name(row.type)
+        start = snapshot.frame_time - MATCH_WINDOW_SECONDS
+        end = snapshot.frame_time + MATCH_WINDOW_SECONDS
         async with self._match_slots:
             try:
-                clip = await self.frigate.recording_clip(
-                    row.source,
-                    snapshot.frame_time - MATCH_WINDOW_SECONDS,
-                    snapshot.frame_time + MATCH_WINDOW_SECONDS,
-                )
+                segments = await self.frigate.recordings(row.source, start, end)
+                if not matching.covers(segments, start, end):
+                    _LOGGER.debug("The recording of %s has a gap", row.id)
+                    return None
+                clip = await self.frigate.recording_clip(row.source, start, end)
             except FrigateError as err:
                 _LOGGER.debug("No recording clip for %s: %s", row.id, err)
                 return None
