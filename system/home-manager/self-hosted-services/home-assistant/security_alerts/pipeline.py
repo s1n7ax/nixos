@@ -853,7 +853,7 @@ class SecurityAlerts:
         Cut from the detect snapshot on the first request, so a grid of tiles fills
         without matching recordings; the review image's render replaces it with a
         crop of the matched recording frame. Without a paired snapshot (a simulated
-        alert, or Frigate not answering) the notification image shows, uncached.
+        alert, or Frigate not answering) a fallback shows, uncached.
 
         Raises:
             AlertLogError: the log or the image directory failed.
@@ -871,7 +871,7 @@ class SecurityAlerts:
                 return cached
             snapshot = await self._async_review_snapshot(row)
             if snapshot is None:
-                return await self.hass.async_add_executor_job(self.log.read_media, alert_id, THUMB)
+                return await self._async_tile_fallback(row)
 
             def render() -> bytes:
                 crop = square_crop(snapshot.box, snapshot.size)
@@ -881,9 +881,25 @@ class SecurityAlerts:
                 image = await self.hass.async_add_executor_job(render)
             except imaging.ImageRenderError as err:
                 _LOGGER.warning("Could not render the review tile of %s: %s", row.id, err)
-                return await self.hass.async_add_executor_job(self.log.read_media, alert_id, THUMB)
+                return await self._async_tile_fallback(row)
             await self.hass.async_add_executor_job(self.log.write_media, alert_id, CROP, image)
             return image
+
+    async def _async_tile_fallback(self, row: AlertRow) -> bytes | None:
+        """The notification image, else Frigate's own crop with its box: an alert that
+        was not sent has no notification image.
+
+        Raises:
+            AlertLogError: the image directory failed.
+        """
+        thumb = await self.hass.async_add_executor_job(self.log.read_media, row.id, THUMB)
+        if thumb is not None or row.event_id is None:
+            return thumb
+        try:
+            return await self.frigate.event_snapshot_cropped(row.event_id)
+        except FrigateError as err:
+            _LOGGER.debug("No Frigate crop for %s: %s", row.id, err)
+            return None
 
     # Audio
 
