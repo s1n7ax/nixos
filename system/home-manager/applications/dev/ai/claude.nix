@@ -6,8 +6,54 @@
   ...
 }:
 let
-  claude = config.features.development.ai.claude;
+  ai = config.features.development.ai;
+  claude = ai.claude;
   commonRules = builtins.readFile ./AGENTS.md;
+
+  /**
+    pi's tool names in ./agents frontmatter, as Claude Code names them. A name
+    missing here fails evaluation rather than silently granting nothing.
+  */
+  claudeToolNames = {
+    read = "Read";
+    grep = "Grep";
+    find = "Glob";
+    ls = "Glob";
+    bash = "Bash";
+    write = "Write";
+    edit = "Edit";
+  };
+
+  /**
+    One of ./agents with its `tools:` line in Claude Code's names, so the
+    harness, not the prompt, keeps the reviewer and verifier from editing. An
+    agent without a `tools:` line gets every tool in both agents.
+  */
+  toClaudeAgent =
+    file:
+    let
+      toClaudeLine =
+        line:
+        if lib.hasPrefix "tools: " line then
+          "tools: "
+          + lib.concatStringsSep ", " (
+            lib.unique (
+              map (tool: claudeToolNames.${lib.trim tool}) (lib.splitString "," (lib.removePrefix "tools: " line))
+            )
+          )
+        else
+          line;
+    in
+    lib.concatMapStringsSep "\n" toClaudeLine (lib.splitString "\n" (builtins.readFile file));
+
+  agents =
+    lib.mapAttrs'
+      (name: _: lib.nameValuePair (lib.removeSuffix ".md" name) (toClaudeAgent (./agents + "/${name}")))
+      (
+        lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".md" name) (
+          builtins.readDir ./agents
+        )
+      );
   headroom = config.features.development.ai.headroom;
   welcome = import ./welcome {
     inherit pkgs;
@@ -113,8 +159,13 @@ let
       "php-lsp@claude-plugins-official" = true;
       "kotlin-lsp@claude-plugins-official" = true;
       "frontend-design@claude-plugins-official" = true;
-      "context7@claude-plugins-official" = true;
-      "playwright@claude-plugins-official" = true;
+      /**
+        Only where ./mcp.nix does not already run the server: a second copy
+        doubles every tool, and the plugin's playwright lacks the wrapper
+        Chromium needs to start.
+      */
+      "context7@claude-plugins-official" = !(ai.enable && ai.mcp.context7.enable);
+      "playwright@claude-plugins-official" = !(ai.enable && ai.mcp.playwright.enable);
       "playground@claude-plugins-official" = true;
       "code-simplifier@claude-plugins-official" = true;
       "mattpocock-skills@claude-plugins-official" = false;
@@ -129,6 +180,7 @@ in
       context = commonRules;
       package = claudeCode;
       plugins = [ welcome.claudePlugin ];
+      inherit agents;
       # Read-only store symlink: changes made from inside Claude (/model,
       # /config, plugin toggles) don't persist; edit them here instead.
       inherit settings;
