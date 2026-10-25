@@ -7,16 +7,19 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from core.geometry import map_box, scale_box, thumbnail_crop
+from core.geometry import map_box, scale_box, square_crop, thumbnail_crop
 from imaging import (
     BOX_COLOR,
     LABEL_COLOR,
     THUMB_SIZE,
+    TILE_LABEL_SHARE,
+    TILE_SIZE,
     ImageRenderError,
     image_size,
     render_crop,
     render_frame,
     render_full,
+    render_tile,
 )
 
 FRAME = (640, 360)
@@ -161,6 +164,29 @@ def test_thumbnail_draws_the_label_inside_a_tall_box():
     thumb = decode(render_crop(frame_with_object(box), crop, box, LABEL))
     x1, y1, _, _ = map_box(box, crop, THUMB_SIZE)
     assert has_label(thumb, (x1 + 6, y1 + 6, x1 + 2 * THUMB_TEXT, y1 + THUMB_TEXT))
+
+
+@pytest.mark.parametrize("decoded", [False, True], ids=["jpeg", "decoded"])
+def test_tile_is_a_labelled_square_around_the_object(decoded):
+    box = (200, 160, 260, 220)
+    jpeg = frame_with_object(box)
+    frame = decode(jpeg) if decoded else jpeg
+    crop = square_crop(box, FRAME)
+    tile = decode(render_tile(frame, crop, box, LABEL))
+    assert tile.size == TILE_SIZE
+    w, h = TILE_SIZE
+    assert close(tile.getpixel((w // 2, h // 2)), GREEN)
+    x1, y1, _, _ = map_box(box, crop, TILE_SIZE)
+    text = round(h * TILE_LABEL_SHARE)
+    assert has_label(tile, (x1, y1 - text, x1 + 2 * text, y1))
+
+
+def test_tile_leaves_a_decoded_frame_as_is():
+    box = (200, 160, 260, 220)
+    frame = decode(frame_with_object(box))
+    before = frame.copy()
+    render_tile(frame, square_crop(box, FRAME), box, LABEL)
+    assert list(frame.get_flattened_data()) == list(before.get_flattened_data())
 
 
 def test_empty_crop_raises():

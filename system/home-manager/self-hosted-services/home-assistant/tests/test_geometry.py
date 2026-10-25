@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from core.geometry import map_box, scale_box, thumbnail_crop
+from core.geometry import map_box, scale_box, square_crop, thumbnail_crop
 
 FRAME = (640, 360)
 OUT = (1024, 512)
@@ -59,6 +59,18 @@ def test_crop_is_two_to_one_and_centred(box):
     assert (x2 - x1) == pytest.approx(2 * (y2 - y1))
     assert (x1 + x2) / 2 == pytest.approx((box[0] + box[2]) / 2)
     assert (y1 + y2) / 2 == pytest.approx((box[1] + box[3]) / 2)
+
+
+@pytest.mark.parametrize("box", list(boxes()))
+def test_square_crop_is_the_thumbnails_centre_and_holds_the_box(box):
+    x1, y1, x2, y2 = square_crop(box, FRAME)
+    tx1, ty1, tx2, ty2 = thumbnail_crop(box, FRAME)
+    assert x2 - x1 == pytest.approx(y2 - y1)
+    assert (y1, y2) == (ty1, ty2)
+    assert (x1 + x2) / 2 == pytest.approx((tx1 + tx2) / 2)
+    cx, cy, radius = (x1 + x2) / 2, (y1 + y2) / 2, (y2 - y1) / 2
+    for x, y in corners(box):
+        assert math.hypot(x - cx, y - cy) <= radius + EPS
 
 
 def test_small_box_gets_a_quarter_of_the_frame_height():

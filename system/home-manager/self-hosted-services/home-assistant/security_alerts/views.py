@@ -7,7 +7,7 @@ import logging
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 
-from .const import AUDIO, FULL, THUMB
+from .const import AUDIO, CROP, FULL, THUMB
 from .pipeline import AudioClipError, SecurityAlerts
 from .store import AlertLogError
 
@@ -16,18 +16,20 @@ _LOGGER = logging.getLogger(__name__)
 CACHE = {
     THUMB: "private, max-age=86400",
     FULL: "private, max-age=600",
+    # A tile cut from the detect snapshot is replaced once the review image renders.
+    CROP: "private, max-age=600",
     AUDIO: "private, max-age=86400",
 }
 
 
 class ImageView(HomeAssistantView):
-    """`/api/security_alerts/image/<alert_id>/thumb.jpg` and `.../full.jpg`.
+    """`/api/security_alerts/image/<alert_id>/thumb.jpg`, `.../full.jpg` and `.../crop.jpg`.
 
     The companion app sends its token for these relative URLs; the review page
     gets them signed over the logged-in websocket.
     """
 
-    url = "/api/security_alerts/image/{alert_id:[0-9a-f]{32}}/{variant:(thumb|full)}.jpg"
+    url = "/api/security_alerts/image/{alert_id:[0-9a-f]{32}}/{variant:(thumb|full|crop)}.jpg"
     name = "api:security_alerts:image"
     requires_auth = True
 
@@ -40,6 +42,8 @@ class ImageView(HomeAssistantView):
                 image = await self._alerts.hass.async_add_executor_job(
                     self._alerts.log.read_media, alert_id, THUMB
                 )
+            elif variant == CROP:
+                image = await self._alerts.async_crop_image(alert_id)
             else:
                 image = await self._alerts.async_full_image(alert_id)
         except AlertLogError:

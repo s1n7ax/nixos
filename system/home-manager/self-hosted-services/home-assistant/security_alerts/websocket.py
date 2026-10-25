@@ -21,6 +21,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import (
     AUDIO_URL,
     CONF_LOG_DAYS,
+    CROP,
     DOMAIN,
     FULL,
     IMAGE_URL,
@@ -84,6 +85,7 @@ def _item(
     item["clip"] = clip
     if row.kind == DETECTION:
         item["image"] = sign(IMAGE_URL.format(alert_id=row.id, variant=FULL))
+        item["crop"] = sign(IMAGE_URL.format(alert_id=row.id, variant=CROP))
     else:
         # A sound shows no picture: it plays its audio, cut from the same clip.
         item["audio"] = {

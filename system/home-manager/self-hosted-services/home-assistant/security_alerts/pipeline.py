@@ -64,6 +64,7 @@ from .const import (
     CONF_SLEEP_THRESHOLD,
     CONF_SOUND,
     CONF_TOP_FLOORS,
+    CROP,
     FFMPEG_TIMEOUT_SECONDS,
     FRAME_TIME_TOLERANCE,
     FULL,
@@ -78,7 +79,7 @@ from .const import (
 )
 from .core.burst import BurstWindow
 from .core.decide import Decision, decide
-from .core.geometry import Box, Size, scale_box, thumbnail_crop
+from .core.geometry import Box, Size, scale_box, square_crop, thumbnail_crop
 from .core.policy import (
     DETECTION,
     DOOR,
@@ -759,9 +760,15 @@ class SecurityAlerts:
                 # A match on a recording that is not saved yet could miss the frame and
                 # stick, so a fallback shows, uncached, until it is.
                 return await self._async_full_fallback(row, snapshot)
-            image = await self._async_render_full(row, snapshot)
-            if image is not None:
+            rendered = await self._async_render_full(row, snapshot)
+            if rendered is not None:
+                image, tile = rendered
                 await self.hass.async_add_executor_job(self.log.write_media, alert_id, FULL, image)
+                # The matched frame's tile is sharper than the detect snapshot's.
+                async with self._media_lock(alert_id, CROP):
+                    await self.hass.async_add_executor_job(
+                        self.log.write_media, alert_id, CROP, tile
+                    )
                 return image
             image = await self._async_full_fallback(row, snapshot)
             if image is not None and time.time() - row.time > FULL_FALLBACK_CACHE_AFTER_SECONDS:
@@ -782,8 +789,11 @@ class SecurityAlerts:
             _LOGGER.debug("No event snapshot for %s: %s", row.id, err)
             return None
 
-    async def _async_render_full(self, row: AlertRow, snapshot: _Snapshot | None) -> bytes | None:
-        """The recording frame the snapshot shows, at full resolution, with box and label."""
+    async def _async_render_full(
+        self, row: AlertRow, snapshot: _Snapshot | None
+    ) -> tuple[bytes, bytes] | None:
+        """The recording frame the snapshot shows, at full resolution, with box and label,
+        and the review tile cut from it."""
         if snapshot is None:
             return None
         label = type_name(row.type)
@@ -800,7 +810,7 @@ class SecurityAlerts:
                 _LOGGER.debug("No recording clip for %s: %s", row.id, err)
                 return None
 
-            def render() -> bytes | None:
+            def render() -> tuple[bytes, bytes] | None:
                 found = matching.best_frame(
                     clip, matching.FrameMatcher(snapshot.frame, snapshot.box)
                 )
@@ -808,16 +818,18 @@ class SecurityAlerts:
                     return None
                 frame, _ = found
                 box = scale_box(snapshot.box, snapshot.size, frame.size)
-                return imaging.render_frame(frame, box, label)
+                # The tile first: the review image draws on the frame.
+                tile = imaging.render_tile(frame, square_crop(box, frame.size), box, label)
+                return imaging.render_frame(frame, box, label), tile
 
             try:
-                image = await self.hass.async_add_executor_job(render)
+                rendered = await self.hass.async_add_executor_job(render)
             except matching.MatchError as err:
                 _LOGGER.debug("Could not match the recording of %s: %s", row.id, err)
                 return None
-        if image is None:
+        if rendered is None:
             _LOGGER.debug("No recording frame of %s matches its snapshot", row.id)
-        return image
+        return rendered
 
     async def _async_full_fallback(self, row: AlertRow, snapshot: _Snapshot | None) -> bytes | None:
         """The detect snapshot with its box, else Frigate's boxed snapshot, else the thumbnail."""
@@ -834,6 +846,44 @@ class SecurityAlerts:
             except FrigateError as err:
                 _LOGGER.debug("No Frigate snapshot for %s: %s", row.id, err)
         return await self.hass.async_add_executor_job(self.log.read_media, row.id, THUMB)
+
+    async def async_crop_image(self, alert_id: str) -> bytes | None:
+        """A review tile: the square crop around the box, with its label, cached.
+
+        Cut from the detect snapshot on the first request, so a grid of tiles fills
+        without matching recordings; the review image's render replaces it with a
+        crop of the matched recording frame. Without a paired snapshot (a simulated
+        alert, or Frigate not answering) the notification image shows, uncached.
+
+        Raises:
+            AlertLogError: the log or the image directory failed.
+        """
+        cached = await self.hass.async_add_executor_job(self.log.read_media, alert_id, CROP)
+        if cached is not None:
+            return cached
+        row = await self.hass.async_add_executor_job(self.log.get, alert_id)
+        if row is None or row.kind != DETECTION:
+            return None
+        async with self._media_lock(alert_id, CROP):
+            # Another request may have rendered it while this one waited.
+            cached = await self.hass.async_add_executor_job(self.log.read_media, alert_id, CROP)
+            if cached is not None:
+                return cached
+            snapshot = await self._async_review_snapshot(row)
+            if snapshot is None:
+                return await self.hass.async_add_executor_job(self.log.read_media, alert_id, THUMB)
+
+            def render() -> bytes:
+                crop = square_crop(snapshot.box, snapshot.size)
+                return imaging.render_tile(snapshot.frame, crop, snapshot.box, type_name(row.type))
+
+            try:
+                image = await self.hass.async_add_executor_job(render)
+            except imaging.ImageRenderError as err:
+                _LOGGER.warning("Could not render the review tile of %s: %s", row.id, err)
+                return await self.hass.async_add_executor_job(self.log.read_media, alert_id, THUMB)
+            await self.hass.async_add_executor_job(self.log.write_media, alert_id, CROP, image)
+            return image
 
     # Audio
 
@@ -942,7 +992,7 @@ class SecurityAlerts:
         self, event_id: str, end_time: float | None, snapshot: tuple[float, Box] | None
     ) -> None:
         """Fill a detection's clip end and final snapshot (a newer box drops the cached
-        review image), and render its review image once the recording is saved."""
+        review image and tile), and render its review image once the recording is saved."""
         try:
             row = await self.hass.async_add_executor_job(self.log.by_event_id, event_id)
             if row is None:
@@ -956,6 +1006,7 @@ class SecurityAlerts:
                     self.log.update_snapshot, row.id, snapshot[0], snapshot[1]
                 )
                 await self.hass.async_add_executor_job(self.log.delete_media, row.id, FULL)
+                await self.hass.async_add_executor_job(self.log.delete_media, row.id, CROP)
         except AlertLogError:
             return  # Already logged; the 30-minute fallback still gives a clip.
         if end_time is not None:
