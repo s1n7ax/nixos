@@ -110,6 +110,9 @@ _LOGGER = logging.getLogger(__name__)
 
 PRUNE_INTERVAL = timedelta(days=1)
 REVIEW_PAGE_SIZE = 100
+# What the review list shows. Sounds stay out; their notification's Play clip
+# still opens one in the review.
+REVIEW_KINDS = (DETECTION, DOOR, MOTION)
 CLIP_END_CHECK_INTERVAL = timedelta(minutes=5)
 # A review image rendered from Frigate's snapshot instead of the matched
 # recording frame is cached only once the recording should exist, so an early
@@ -1055,7 +1058,7 @@ class SecurityAlerts:
     ) -> tuple[list[AlertRow], bool]:
         """One page of a review window, newest first, and whether more follow."""
         return await self.hass.async_add_executor_job(
-            self.log.window, start, end, REVIEW_PAGE_SIZE, after
+            self.log.window, start, end, REVIEW_PAGE_SIZE, after, REVIEW_KINDS
         )
 
     async def async_get(self, alert_id: str) -> AlertRow | None:

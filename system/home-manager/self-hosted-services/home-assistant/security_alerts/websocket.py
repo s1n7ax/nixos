@@ -31,7 +31,7 @@ from .core.icons import icon_for
 from .core.policy import DETECTION, HOME, SENSOR_KINDS, SOUND
 from .core.quiet import QUIET_KINDS, changed_kinds
 from .notify import local_clock, local_day, type_name
-from .pipeline import SecurityAlerts
+from .pipeline import REVIEW_KINDS, SecurityAlerts
 from .services import QUIET_FIELDS
 from .store import AlertRow
 
@@ -148,11 +148,13 @@ async def ws_review_get(
 def ws_review_subscribe(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Send each alert as it is logged, as an item of the review list."""
+    """Send each alert the review list shows as it is logged, as an item of the list."""
     alerts = _alerts(hass)
 
     @callback
     def logged(row: AlertRow) -> None:
+        if row.kind not in REVIEW_KINDS:
+            return
         # Runs in the alert's own task, which does not know this command's user.
         item = _item(hass, alerts, row, time.time(), connection.refresh_token_id)
         connection.send_message(websocket_api.event_message(msg["id"], item))
