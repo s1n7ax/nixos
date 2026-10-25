@@ -461,8 +461,7 @@ class ReviewList extends HTMLElement {
     this._poll = null;
     this._liveCard = null;
     this._clipRequest = 0;
-    this._ids = new Set();
-    // The listed alerts by id, for the viewer's swipes.
+    // The listed alerts by id: each is listed once, and the viewer's swipes open them.
     this._items = new Map();
     // The sentinel and last item of the page to load next, and that load while it runs.
     this._next = null;
@@ -470,7 +469,6 @@ class ReviewList extends HTMLElement {
     // The alert the viewer shows.
     this._current = null;
     this._level = storedLevel();
-    this._wheel = 0;
     this._lastDay = null;
     // The day that was today when the day headers were labelled.
     this._labelDay = null;
@@ -550,6 +548,7 @@ class ReviewList extends HTMLElement {
   // Pinch on a phone; Ctrl+scroll, or a trackpad pinch, on a computer.
   _listenZoom(el) {
     let pinch = null;
+    let wheel = 0;
     const fingers = (ev) => [...ev.touches].slice(0, 2).map((t) => ({ x: t.clientX, y: t.clientY }));
     el.addEventListener(
       "touchstart",
@@ -582,10 +581,10 @@ class ReviewList extends HTMLElement {
       (ev) => {
         if (!ev.ctrlKey) return;
         ev.preventDefault();
-        this._wheel += ev.deltaY;
-        if (Math.abs(this._wheel) < WHEEL_STEP) return;
-        const step = Math.sign(this._wheel);
-        this._wheel = 0;
+        wheel += ev.deltaY;
+        if (Math.abs(wheel) < WHEEL_STEP) return;
+        const step = Math.sign(wheel);
+        wheel = 0;
         this._setLevel(this._level + step, { x: ev.clientX, y: ev.clientY });
       },
       { passive: false },
@@ -637,7 +636,6 @@ class ReviewList extends HTMLElement {
   _renderWindow(result) {
     this._window = result;
     this._count = 0;
-    this._ids = new Set();
     this._items = new Map();
     this._next = null;
     this._loading = null;
@@ -690,7 +688,6 @@ class ReviewList extends HTMLElement {
     for (const item of page.items) {
       if (this._dayHeaders && item.day !== this._lastDay) elements.push(this._dayHeader(item));
       this._lastDay = item.day;
-      this._ids.add(item.id);
       this._items.set(item.id, item);
       elements.push(this._renderItem(item));
     }
@@ -757,8 +754,7 @@ class ReviewList extends HTMLElement {
 
   // An alert logged while the list is open goes on top, under its day's header.
   _prepend(item) {
-    if (this._ids.has(item.id)) return;
-    this._ids.add(item.id);
+    if (this._items.has(item.id)) return;
     this._items.set(item.id, item);
     const element = this._renderItem(item);
     const first = this._list.firstElementChild;
