@@ -72,7 +72,7 @@ with lib;
               {
                 mountPoint = "/nix/.rw-store";
                 image = "/var/lib/microvms/dev-vm/nix-store.img";
-                size = 20480;
+                size = 40960;
                 fsType = "ext4";
                 autoCreate = true;
                 mkfsExtraArgs = [
