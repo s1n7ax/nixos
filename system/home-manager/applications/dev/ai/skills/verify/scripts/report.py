@@ -121,7 +121,10 @@ ol { margin: 0; padding-left: 22px; }
 
 def fail(errors):
     """Print every problem with the JSON and exit 1."""
-    print("report.py: the report JSON has problems:", file=sys.stderr)
+    print(
+        f"{os.path.basename(sys.argv[0])}: the report JSON has problems:",
+        file=sys.stderr,
+    )
     for error in errors:
         print(f"  - {error}", file=sys.stderr)
     sys.exit(1)

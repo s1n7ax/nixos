@@ -94,10 +94,6 @@ If the gap unravels the requirement itself rather than a corner of it, do not pa
 
 Yes → decide it yourself, without asking. No → it must fit one of the three types to be asked. If it fits none, decide it yourself. Record the decisions a reviewer would otherwise question.
 
-#### When `/ship` runs this step in a subagent
-
-You cannot reach the user. Never guess an answer that belongs to them, and never write code with a question open. Stop and reply with every question you have at this point, each already shaped by the `questions` skill — the question, its options with the recommendation first, and what it blocks — plus what you found that `/ship` needs to ask it well. `/ship` asks them and resumes you with the answers; carry on from there.
-
 #### The decisions file
 
 The decisions file lives next to the requirement: `.goals/<goal>/decisions/decisions.md` for a local requirement, added to the ticket for a ticket. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
@@ -140,7 +136,7 @@ Work on a `<goal>` branch created from the project's base branch, or with approa
 
 Build the requirement the way the decisions file says, across every project it touches. When a change in one project depends on a change in another, build them in that order. Commit per logical change. Stage files by path.
 
-When the code surprises you mid-build with a decision that fits one of the three question types, stop that line of work and ask it — through `/ship` when it drives, as Decide says. Commits already made stay; do not roll them back unless the user asks. Anything else you decide yourself and record.
+When the code surprises you mid-build with a decision that fits one of the three question types, stop that line of work and ask it, as Decide says. Commits already made stay; do not roll them back unless the user asks. Anything else you decide yourself and record.
 
 ### 6. Validate
 
@@ -189,7 +185,7 @@ After all fixes, rerun the Validation step. A fix that breaks a check is not a f
 
 ### 9. Simplify
 
-Run `/simplify` as a **subagent**, for the same reason as the review. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool), otherwise a general-purpose agent (Claude Code's Agent tool) — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and decisions. If the environment has no subagent capability, run it in this session and say so.
+Run `/simplify` as a **subagent**, for the same reason as the review. Simplify edits files, so dispatch an agent that can write — the `worker` agent where the environment names one (pi's `subagent` tool, Claude Code's Agent tool), otherwise a general-purpose agent — telling it to read `~/.agents/skills/simplify/SKILL.md` and follow it on this goal's changes, naming the goal so it finds the requirement and decisions. If the environment has no subagent capability, run it in this session and say so.
 
 Review the subagent's changes, then rerun Validation. Simplify is quality-only; its changes need no entries in the review file.
 

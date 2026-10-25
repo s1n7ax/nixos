@@ -171,6 +171,12 @@
     # needs it on PATH. No nixpkgs follows: its bun node_modules FOD hash is
     # pinned against its own lock.
     qmd.url = "github:tobi/qmd";
+    # Sinhala Singlish keymap (si-ouc) for fcitx5-m17n; see
+    # system/home-manager/applications/sinhala.nix.
+    open-unicode-converter-m17n = {
+      url = "github:s1n7ax/open-unicode-converter-m17n";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";

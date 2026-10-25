@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Ship
 
-This skill is the conductor. It runs `/requirement` and `/implement` back to back, adds independent checks after them, tests the result as its end user would with `/verify`, and opens the PR only after the final validation and `/verify` pass. `/implement` runs in subagents, so its code, diffs and command output stay out of this session's context; the questions it raises come back here to ask. The user is pulled in only for decisions that are theirs: requirement questions, `/implement`'s questions, and failures that retries could not fix.
+This skill is the conductor. It runs `/requirement` and `/implement` back to back, adds independent checks after them, tests the result as its end user would with `/verify`, and opens the PR only after the final validation and `/verify` pass. `/implement` runs in this session, so its questions go straight to the user and each fix is made where the code was read; its review and simplify passes, and every check after it, run in fresh subagents. The user is pulled in only for decisions that are theirs: requirement questions, `/implement`'s questions, and failures that retries could not fix.
 
 Usage: `/ship [--critical] [<fuzzy requirement> | <goal>]`
 
@@ -21,9 +21,8 @@ Four rules hold the whole skill up. Everything below is detail.
 
 ```
 1. requirement      main session, with the user
-2. implement        subagents: build, review, fix, simplify
-   ↳ questions      main session, whenever build returns them
-   ↳ gate           main session, after every code-changing subagent
+2. implement        main session; review and simplify in subagents
+   ↳ gate           main session, after every code change
 3. impl check       [--critical] subagent
 4. final validation always, subagent
 5. verify           always, subagent
@@ -37,7 +36,7 @@ The stage skills are user-invocable only, so do not call them through a skill to
 Overrides while `/ship` drives:
 
 - **Skip every "Handing off to the next step" section.** Do not tell the user to run the next command or copy it to the clipboard; move straight to the next stage.
-- **`/implement` runs as a chain of subagents** (see stage 2 below) and stops after its Simplify step. Its Finish step (PRs and the report) is replaced by stages 3–6 here.
+- **`/implement` runs in this session** (see stage 2 below) and stops after its Simplify step. Its Finish step (PRs and the report) is replaced by stages 3–6 here.
 - **`/verify` runs in a subagent** (see stage 5 below) and skips its Finish handoff. It cannot reach the user, so it returns its questions to this session instead of asking.
 
 ### Resuming
@@ -45,23 +44,21 @@ Overrides while `/ship` drives:
 When the argument names an existing goal (a directory under `.goals/`, or a ticket), start at the first stage that is not finished:
 
 - No requirement → stage 1.
-- No commits on the goal's branch yet → stage 2, from the build. A new build reads the decisions file and does not re-ask what it records.
-- Commits but no simplify pass yet → stage 2, dispatching the subagent for `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
+- No commits on the goal's branch yet → stage 2, from the build. The decisions file records what was already decided; do not re-ask it.
+- Commits but no simplify pass yet → stage 2, from `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
 - Otherwise → the first check without a PASS report newer than the latest commit: in `verification/` for stages 3–4, in `verify/` for stage 5 (a report with no FAIL counts as a PASS).
 
 Never redo a finished stage unless a check sends work back to it.
 
 ## Subagents
 
-Dispatch each check with whatever the environment offers: pi's `subagent` tool with the named agent, or Claude Code's Agent tool with a general-purpose agent, given the rules from the `verifier` agent (`~/.pi/agent/agents/verifier.md`, or restated in the prompt when that file is absent) and the brief below. Every brief names the goal, where the requirement and the decisions file live (paths or ticket), the branch, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
+Dispatch each subagent as its named agent: pi's `subagent` tool, or Claude Code's Agent tool, with the agent's name. Where the environment does not have that agent, use a general-purpose agent given its rules (`~/.pi/agent/agents/<agent>.md`, or restated in the brief when that file is absent). Every check's brief names the goal, where the requirement and the decisions file live (paths or ticket), the branch, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
 
-Stage 2's subagents (build, fix, simplify) are dispatched the same way with the `worker` agent, or a general-purpose agent in Claude Code; code review uses `code-reviewer`. If the environment has no subagent capability, run stage 2 in this session and say so.
+Stage 2's review and simplify subagents are dispatched as `/implement` says.
 
-| Subagent         | pi agent            | Writes files?               |
+| Subagent         | Agent               | Writes files?               |
 | ---------------- | ------------------- | --------------------------- |
-| build            | `worker`            | yes                         |
 | code review      | `code-reviewer`     | no                          |
-| fix              | `worker`            | yes                         |
 | simplify         | `worker`            | yes                         |
 | impl check       | `verifier`          | report only                 |
 | final validation | `verifier`          | report only                 |
@@ -92,55 +89,40 @@ Every check writes its report to `.goals/<goal>/verification/<n>-<check>.md` (`<
 
 The verdict is FAIL when any row fails or any problem is listed.
 
-### 2. Implement — in subagents
+### 2. Implement — in this session
 
-Run `/implement` as the chain below, one subagent at a time, each dispatched from this session. Every brief names the goal, where the requirement and the decisions file live, the branch, the path to `/implement`'s skill file (`~/.agents/skills/implement/SKILL.md`), and the steps of it to follow — and tells the subagent not to dispatch subagents of its own. This session reads each subagent's report, not the diff.
+Follow `/implement` steps 1–9 here: load the goal, analyze, decide, set up the workspace, implement, validate, review, fix, simplify. Its review (step 7) and simplify (step 9) run in subagents, as `/implement` says; the rest runs in this session.
 
-1. **Build** (`worker`): `/implement` steps 1–6 — load the goal, analyze, decide, set up the workspace, implement, validate. It returns either questions (see Questions below) or its report: the branch, the commits, the validation results, and the project's mechanical check commands (formatter in check mode, linters, type checks, unit tests, build) for the gate.
-2. **Review** (`code-reviewer`): `/implement` step 7 on the goal's diff. This session writes the findings to the review file, as step 7 describes.
-3. **Fix** (`worker`): `/implement` step 8 on that review file — fix each finding, update its entry, rerun Validate. Skip when the review found nothing.
-4. **Simplify** (`worker`): `/simplify` on the goal's changes, as in `/implement` step 9, then rerun Validate.
+Ask `/implement`'s questions as its Decide step says, one at a time, following the `questions` skill. An answer that follows from what the user said in the requirement conversation needs no question. A question that unravels the requirement goes back through `/requirement` here instead. Question rounds do not count as retries.
 
-A subagent that reports failing validation gets a fix `worker` with its report, under the Retries rules below.
+#### Gate — after every code change
 
-#### Questions — whenever the build returns them
-
-The build stops and returns its questions instead of guessing — before it writes code, or mid-build when the code surprises it. Handle each round here:
-
-1. **Answer what the user already settled.** This session holds the requirement conversation; an answer that follows from what the user said needs no question.
-2. **Ask the rest one at a time**, following the `questions` skill. The build already shaped each question; print its context as regular output and keep the ask-question tool's text short. A question that unravels the requirement goes back through `/requirement` here instead.
-3. **Resume the same build subagent with the answers**, so it keeps what it already read: pi's `subagent` tool with `action: "resume"`, its run id and the answers as the message; Claude Code's SendMessage to the agent's id. When the environment cannot resume it, or the resume is rejected, dispatch a new build with the answers in its brief.
-
-The build writes the answers to the decisions file (and Type 3 answers and Type 2 opt-outs to the requirement). Question rounds do not count as retries.
-
-#### Gate — after every code-changing subagent
-
-A worker's "validation passed" is a claim, not proof. After every build, fix and simplify subagent — in stage 2 and in every fix round of stages 3–5 — run the gate in this session before dispatching anything else:
+Run `/implement`'s Validate step as the gate every time `/implement` says to run or rerun it, and after every fix in stages 3–5, before dispatching anything else:
 
 - `git status --porcelain` is empty on the goal's branch.
-- Every mechanical check command from the build report passes. Run each with its output appended to `.goals/<goal>/verification/gate.log` and read only exit codes here, so the output stays out of this session's context.
+- Every mechanical check passes: the formatter in check mode, linters, type checks, unit tests and the build, found as Validate says. Run each with its output appended to `.goals/<goal>/verification/gate.log` and read its exit code; read the log only for a command that failed, so passing output stays out of this session's context.
 
-On a failure, dispatch a fix `worker` with the failing commands and the log path, then run the gate again. Gate rounds count against the Retries limit of the stage that triggered them. No check (stages 3–5) is dispatched while the gate is red: formatting, lint and unit failures are fixed here, not discovered by the final validation.
+On a failure, fix it here and run the gate again. Gate rounds count against the Retries limit of the stage that triggered them. No check (stages 3–5) is dispatched while the gate is red: formatting, lint and unit failures are fixed here, not discovered by the final validation.
 
 ### 3. Implementation check — `--critical` only
 
 Brief: read the requirement, the decisions file, and the full diff from the base branch. For every item under Requirements, Acceptance criteria and Constraints, point to the code that delivers it. Flag items that are missing or only partly done, behavior that contradicts an item or a recorded decision, and changes that serve no item or touch anything under Out of scope. Read the code; running it is the final validation's job.
 
-On FAIL: dispatch a fix `worker` with the report to fix the problems and rerun `/implement`'s Validate step, then run the check again.
+On FAIL: fix the problems here and run the gate, then run the check again.
 
 ### 4. Final validation — always
 
 Brief: prove the change works by running it, not by reading it. On the goal's branch, run every acceptance criterion in the requirement as an observable check, plus the project's formatter, linters, type checks, tests and builds. Record each command and the part of its output that proves the result. Anything that cannot be run here (needs hardware, a reboot, a deploy, a credential) is reported as NOT RUN with the reason; it is never assumed to pass.
 
-On FAIL: dispatch a fix `worker` with the report to fix the problems and rerun `/implement`'s Validate step, then run the check again. NOT RUN items do not block the PR, but they are listed in it.
+On FAIL: fix the problems here and run the gate, then run the check again. NOT RUN items do not block the PR, but they are listed in it.
 
 ### 5. Verify — always
 
-Run `/verify` in a fresh subagent: pi's `acceptance-tester` agent, or in Claude Code a general-purpose agent given that agent's rules (`~/.pi/agent/agents/acceptance-tester.md`, or restated in the prompt when that file is absent). It drives a browser and a terminal, which the `verifier` agent's tools do not allow. Brief: the goal, where the requirement and the decisions file live, the branch, the path to `/verify`'s skill file (`~/.agents/skills/verify/SKILL.md`), and every answer the user has given for this goal so far. It follows the skill in full and writes its report and screenshots under `.goals/<goal>/verify/`, not `verification/`.
+Run `/verify` in a fresh subagent as the `acceptance-tester` agent. It drives a browser and a terminal, which the `verifier` agent's tools do not allow. Brief: the goal, where the requirement and the decisions file live, the branch, the path to `/verify`'s skill file (`~/.agents/skills/verify/SKILL.md`), and every answer the user has given for this goal so far. It follows the skill in full and writes its report and screenshots under `.goals/<goal>/verify/`, not `verification/`.
 
 The subagent cannot reach the user. When it needs something only the user can answer (how to run the app, credentials, what correct looks like), it stops and returns the questions instead of guessing. Ask them here, following the `questions` skill, save each answer as `/verify`'s Remembering section says, then dispatch a new verify subagent with the answers in its brief. Hand credentials over as environment variables in the brief, never in a file. Question rounds do not count as retries.
 
-On FAIL: dispatch a fix `worker` with the report, run the gate, run the final validation again (its PASS predates the fix), then run `/verify` again. NOT RUN tests do not block the PR, but they are listed in it.
+On FAIL: fix the problems here, run the gate, run the final validation again (its PASS predates the fix), then run `/verify` again. NOT RUN tests do not block the PR, but they are listed in it.
 
 ## Retries
 
@@ -148,16 +130,15 @@ Each check gets at most 2 fix-and-recheck rounds. Still failing after that → s
 
 ## 6. PR
 
-Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement, lists the decisions the user made, lists the checks that ran with their verdicts, includes `/verify`'s result line and test table, and lists every NOT RUN item. The screenshots stay local under `.goals/`.
+Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement, lists the decisions the user made, lists the checks that ran with their verdicts, and lists every NOT RUN item of the final validation. `/verify`'s results stay out of the description, which would go stale the next time `/verify` runs: once each PR exists, post its branch's final `/verify` report on it with `publish.py --pr <url>`, as `/verify`'s "Post it on the PR" step describes. That comment carries the tests, the screenshots and the NOT RUN tests, and replaces the comment of any earlier run.
 
-Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
+Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path and its PR comment URL, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
 
 ## Never
 
 - Never run unless the user explicitly invoked this skill.
 - Never skip the final validation or `/verify`, with or without `--critical`.
-- Never answer a subagent's question for the user unless it follows from what they already said.
-- Never dispatch a check while the gate is red, or trust a worker's validation claim in place of the gate.
+- Never dispatch a check while the gate is red.
 - Never let a checker fix what it checks, or see the conversation that produced the work.
 - Never open a PR while a check is failing.
 - Never claim a check passed that did not run.
