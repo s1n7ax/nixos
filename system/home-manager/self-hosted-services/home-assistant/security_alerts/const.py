@@ -64,7 +64,7 @@ MATCH_WINDOW_SECONDS = 3
 # Clip fetches and decodes for that match running at once, across the integration.
 MATCH_CONCURRENCY = 1
 # Bumped when cached review images must be rendered again; older ones are deleted.
-FULL_IMAGE_VERSION = 2
+FULL_IMAGE_VERSION = 3
 
 SIGNED_URL_HOURS = 24
 FRIGATE_CONFIG_REFRESH_SECONDS = 3600
