@@ -5,4 +5,3 @@ system/home-manager/applications/hyprland/.luarc.json
 keys/
 nixos.qcow2
 $XDG_CONFIG_HOME/
-__pycache__/
