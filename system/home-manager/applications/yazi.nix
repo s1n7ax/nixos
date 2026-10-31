@@ -53,7 +53,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "s"
           ];
           for = "unix";
-          run = ''shell 'kc-share "$@"' --confirm'';
+          run = "shell -- kc-share %s";
           desc = "Share selected files via KDEConnect";
         }
         {
@@ -132,7 +132,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "r"
           ];
           for = "unix";
-          run = ''shell 'img-rotate "$@"' --block --confirm'';
+          run = "shell --block -- img-rotate %s";
           desc = "Rotate selected images 90 degrees clockwise";
         }
         {
@@ -141,7 +141,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "c"
           ];
           for = "unix";
-          run = ''shell 'img-crop "$@"' --confirm'';
+          run = "shell -- img-crop %s";
           desc = "Crop selected images to a four-point page selection";
         }
         {
@@ -150,7 +150,7 @@ lib.mkIf config.features.cli.yazi.enable {
             "p"
           ];
           for = "unix";
-          run = ''shell 'img-to-pdf "$@" && ya emit escape --select' --block --confirm'';
+          run = "shell --block -- img-to-pdf %s && ya emit escape --select";
           desc = "Create output.pdf from selected images";
         }
         {
