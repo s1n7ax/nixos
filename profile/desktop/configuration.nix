@@ -1,10 +1,27 @@
-{ ... }:
+{ config, ... }:
 {
   imports = [
     ../common/configuration.nix
     ./hardware-configuration.nix
     ./options.nix
   ];
+
+  # Operator key for the riya-mandiya staging droplet (Syntxio/riya-mandiya,
+  # infra/keys/s1n7ax.pub holds the public half). Decrypted from nix-secrets
+  # into /run/secrets on every activation and linked into ~/.ssh, so the
+  # private half never sits on disk unencrypted.
+  sops.secrets = {
+    "ssh/do/riyamandiya_staging/private" = {
+      owner = config.settings.username;
+      mode = "0400";
+      path = "/home/${config.settings.username}/.ssh/riyamandiya-staging";
+    };
+    "ssh/do/riyamandiya_staging/public" = {
+      owner = config.settings.username;
+      mode = "0444";
+      path = "/home/${config.settings.username}/.ssh/riyamandiya-staging.pub";
+    };
+  };
 
   programs = {
     ssh = {
