@@ -22,7 +22,7 @@
         enable = true;
         cursor.enable = true;
         opencode.enable = false;
-        claude.enable = false;
+        claude.enable = true;
         # pi's Cursor provider reuses the Cursor login already on this machine.
         pi = {
           enable = true;

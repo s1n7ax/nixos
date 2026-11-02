@@ -201,13 +201,14 @@ lib.mkIf config.features.cli.scripts.enable {
             exit 1
           fi
 
-          SHARE_PATH=$(echo "$1" | sed 's/\\ / /g')
-
           function find_files {
-            if [ -d "$SHARE_PATH" ]; then
-              find "$SHARE_PATH" -type f
+            local share_path
+            share_path=$(echo "$1" | sed 's/\\ / /g')
+
+            if [ -d "$share_path" ]; then
+              find "$share_path" -type f
             else
-              echo "$SHARE_PATH"
+              echo "$share_path"
             fi
           }
 
@@ -216,7 +217,7 @@ lib.mkIf config.features.cli.scripts.enable {
           }
 
           function get_device_count {
-            echo "$(get_device_names)" | wc -l
+            get_device_names | grep -c .
           }
 
           # when the computer boots for the first time, device cannot connect.
@@ -249,7 +250,7 @@ lib.mkIf config.features.cli.scripts.enable {
           fi
 
           for path in "$@"; do
-            find_files "$path" | xargs -I{} kdeconnect-cli --name="$PICKED_DEVICE" --share="{}"
+            find_files "$path" | xargs -d '\n' -I{} kdeconnect-cli --name="$PICKED_DEVICE" --share="{}"
           done
         '')
         (writeShellScriptBin "wofiw" ''
