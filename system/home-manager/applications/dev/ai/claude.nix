@@ -60,19 +60,35 @@ let
     inherit (config.home) username;
   };
 
+  wrapperArgs =
+    lib.optionals headroom.enable [
+      "--set"
+      "ANTHROPIC_BASE_URL"
+      "http://127.0.0.1:${toString headroom.port}"
+    ]
+    /**
+      nixpkgs defaults CLAUDE_CODE_CERT_STORE to "system", which drops the
+      bundled roots. macOS's system store alone fails TLS with
+      UNABLE_TO_GET_ISSUER_CERT_LOCALLY, so restore upstream's default there.
+    */
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+      "--set-default"
+      "CLAUDE_CODE_CERT_STORE"
+      "bundled,system"
+    ];
+
   claudeCode =
-    if headroom.enable then
+    if wrapperArgs == [ ] then
+      pkgs-unstable.claude-code
+    else
       pkgs.symlinkJoin {
-        name = "claude-code-headroom";
+        name = "claude-code-wrapped";
         paths = [ pkgs-unstable.claude-code ];
         nativeBuildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
-          wrapProgram $out/bin/claude \
-            --set ANTHROPIC_BASE_URL "http://127.0.0.1:${toString headroom.port}"
+          wrapProgram $out/bin/claude ${lib.escapeShellArgs wrapperArgs}
         '';
-      }
-    else
-      pkgs-unstable.claude-code;
+      };
 
   # Both scripts were written without strict mode (an empty `read` or a
   # missing rate-limit block is normal), so bashOptions stays empty.
