@@ -225,6 +225,10 @@ with lib;
         enable = mkEnableOption "Google Coral drivers for PCIe";
       };
 
+      zsa = {
+        enable = mkEnableOption "udev rules for flashing ZSA keyboards (Moonlander) from Oryx or Keymapp";
+      };
+
       firmware = {
         enable = mkEnableOption "Hardware firmware support";
       };
