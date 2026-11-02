@@ -12,6 +12,7 @@
     ./fish.nix
     ./aerospace.nix
     ./hyprland.nix
+    ./fievel
     ./sinhala.nix
     ./bluetui.nix
     ./zellij.nix

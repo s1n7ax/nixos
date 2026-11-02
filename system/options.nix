@@ -160,6 +160,10 @@ with lib;
         enable = mkEnableOption "hyprwhspr-rs speech-to-text dictation";
       };
 
+      fievel = {
+        enable = mkEnableOption "fievel keyboard-driven mouse control";
+      };
+
       sinhala = {
         enable = mkEnableOption "Sinhala input method (fcitx5 + m17n Singlish transliteration)";
       };

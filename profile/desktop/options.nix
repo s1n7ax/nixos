@@ -15,6 +15,7 @@
       dconf.enable = true;
       hyprland.enable = true;
       hyprwhspr.enable = true;
+      fievel.enable = true;
       sinhala.enable = true;
       xdg.enable = true;
       kdeconnect.enable = true;
