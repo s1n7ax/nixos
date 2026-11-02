@@ -38,6 +38,7 @@
       openrgb.enable = false;
       audio.enable = true;
       coral.enable = false;
+      zsa.enable = true;
       firmware.enable = true;
       power-profile = {
         enable = true;
