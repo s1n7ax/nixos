@@ -5,6 +5,7 @@
     ./nvidia.nix
     ./openrgb.nix
     ./coral.nix
+    ./zsa.nix
     ./power-profile.nix
   ];
 }
