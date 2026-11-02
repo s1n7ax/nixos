@@ -27,6 +27,14 @@
         IdentityFile = "~/.ssh/digitalocean";
       };
 
+      # riya-mandiya staging droplet. The key is rendered by sops-nix, see
+      # profile/desktop/configuration.nix.
+      "staging.riyamandiya.com" = {
+        User = "s1n7ax";
+        HostName = "staging.riyamandiya.com";
+        IdentityFile = "~/.ssh/riyamandiya-staging";
+      };
+
       # dev microvm (QEMU user-net forward, bound to 127.0.0.1 on desktop).
       # Reachable only from desktop itself.
       "dev" = {
