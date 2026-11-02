@@ -21,6 +21,11 @@
             tags = [ "IRD" ];
             url = "https://eservices.ird.gov.lk/Dashboard/ShowDashboard";
           }
+          {
+            name = "Dygma";
+            tags = [ "keyboard" ];
+            url = "https://dygma.com";
+          }
         ];
       }
     ];
