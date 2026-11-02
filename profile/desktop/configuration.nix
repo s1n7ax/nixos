@@ -45,6 +45,14 @@
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHAsksMYthB3wMx9p1PQU/WNtVdfVt3dNXIE/CXUKB45";
         };
 
+        # Pre-generated in Syntxio/riya-mandiya (infra/keys/staging_host_ed25519.pub)
+        # and installed on the droplet by nixos-anywhere, so it survives a
+        # destroy-and-recreate. Name only: the IP changes with every droplet.
+        "staging.riyamandiya.com ssh-ed25519" = {
+          hostNames = [ "staging.riyamandiya.com" ];
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGn7fcJcvg5/ZJpd/p6CVDmz2eG8LAAKODSydkOd7oej";
+        };
+
       };
     };
 
