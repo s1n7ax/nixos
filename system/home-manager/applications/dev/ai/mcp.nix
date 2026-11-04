@@ -151,10 +151,18 @@ in
         to a copy of the shared file. The link is read-only: toggling a server
         globally in Pi's `/mcp` fails; "Disable in this project" writes
         .pi/mcp.json.
+
+        Pi's default `codemode` exposure keeps a server's tools out of the
+        model's tool list, so models that only check that list report Jira as
+        unavailable. Jira is exposed `direct` so its tools are declared like
+        built-ins, which is also what the Atlassian server instructions assume.
       */
       (lib.mkIf ai.pi.enable {
         home.file.".pi/agent/mcp.json".source = mkMcpJson "pi-mcp.json" (
-          lib.optionalAttrs cfg.slack.enable {
+          lib.optionalAttrs cfg.jira.enable {
+            jira.exposure = "direct";
+          }
+          // lib.optionalAttrs cfg.slack.enable {
             slack.oauth = {
               clientId = slackCursorClientId;
               callbackUrl = "http://localhost:8787/callback";
