@@ -134,8 +134,6 @@ let
   settings = {
     env.CLAUDE_CODE_WALNUT_SPIRE = "1";
     model = "opus";
-    effortLevel = "xhigh";
-    modelSettings.claude-opus-5-5.effortLevel = "xhigh";
     theme = "dark";
     tui = "fullscreen";
     autoCompactEnabled = true;
