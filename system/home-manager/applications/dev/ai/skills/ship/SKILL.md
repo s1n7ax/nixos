@@ -67,7 +67,7 @@ Each goal is built in its own git worktree at `<goals>/<goal>/worktree`. This re
 
 An issue is where a goal starts, never where its documents live: the requirement and decisions go under `<goals>/<goal>/`, as for any goal.
 
-- Name the goal a short kebab-case description of what the issue achieves (e.g. `validate-requests`). When creating the goal's directory, write the issue's number to `<goals>/<goal>/issue`, so the listing and the claims treat the goal as the issue.
+- The issue's goal is the directory under `<goals>/` whose `issue` file holds its number. When there is none yet, name the goal a short kebab-case description of what the issue achieves (e.g. `validate-requests`), and when creating its directory, write the issue's number to `<goals>/<goal>/issue`, so the listing and the claims treat the goal as the issue.
 - When the body follows `/requirement`'s template (it has an `## Acceptance criteria` section), save it unchanged as the goal's requirement and start at stage 2. Otherwise it is the fuzzy requirement stage 1 starts from.
 - Never edit the issue's body.
 - Every PR's description says `Closes #<n>`, so the issue drops off the list as soon as a PR is open, and closes when it merges.
@@ -86,7 +86,7 @@ Overrides while `/ship` drives:
 
 When the task is an existing goal (a directory under `<goals>/`, or an issue), start at the first stage that is not finished:
 
-- No requirement under `<goals>/<goal>/` → stage 1 (for an issue whose body follows the template, save it first, as Issues says).
+- No requirement under `<goals>/<goal>/` → stage 1, unless the task is an issue whose body follows the template: save it as Issues says, then go on with the next rule.
 - No commits on the goal's branch yet → stage 2, from the build. The decisions file records what was already decided; do not re-ask it.
 - Commits but no simplify pass yet → stage 2, from `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
 - Otherwise → the first check without a PASS report newer than the latest commit: in `verification/` for stages 3–4, in `verify/` for stage 5 (a report with no FAIL counts as a PASS).
@@ -173,7 +173,7 @@ Each check gets at most 2 fix-and-recheck rounds. Still failing after that → s
 
 ## 6. PR
 
-Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement (for an issue, with `Closes #<n>`), lists the decisions the user made, lists the checks that ran with their verdicts, and lists every NOT RUN item of the final validation. `/verify`'s results stay out of the description, which would go stale the next time `/verify` runs: once each PR exists, post its branch's final `/verify` report on it with `publish.py --pr <url>`, as `/verify`'s "Post it on the PR" step describes. That comment carries the tests, the screenshots and the NOT RUN tests, and replaces the comment of any earlier run.
+Follow `/implement`'s Finish rules for how many PRs to open. Each PR description carries the requirement's Goal and Acceptance criteria, since the requirement file is local and reviewers cannot open it (for an issue, it also says `Closes #<n>`), lists the decisions the user made, lists the checks that ran with their verdicts, and lists every NOT RUN item of the final validation. `/verify`'s results stay out of the description, which would go stale the next time `/verify` runs: once each PR exists, post its branch's final `/verify` report on it with `publish.py --pr <url>`, as `/verify`'s "Post it on the PR" step describes. That comment carries the tests, the screenshots and the NOT RUN tests, and replaces the comment of any earlier run.
 
 Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path and its PR comment URL, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
 
