@@ -34,7 +34,7 @@ Five rules hold the whole skill up. Everything below is detail.
 
 When the argument holds no requirement, goal or issue (`--critical` alone counts as none), offer the work that is waiting and let the user pick one:
 
-1. Run `~/.agents/skills/ship/scripts/tasks.py list` (Claude Code: `~/.claude/skills/ship/scripts/tasks.py`). It prints, numbered, the unfinished goals under `.goals/` (no open or merged PR from the goal's branch yet) and the open GitHub issues labelled `agent:ship` (no open or merged PR closes them yet), each with how far it got. Then it prints the tasks other agents hold, and any source it could not read.
+1. Run `~/.agents/skills/ship/scripts/tasks.py list` (Claude Code: `~/.claude/skills/ship/scripts/tasks.py`). It prints, numbered, the unfinished goals under `.ship/` (no open or merged PR from the goal's branch yet) and the open GitHub issues labelled `agent:ship` (no open or merged PR closes them yet), each with how far it got. Then it prints the tasks other agents hold, and any source it could not read.
 2. Show the list as printed, then ask which task to work on, following the `questions` skill: with up to 3 tasks, one option per task in the ask-question tool; with more, in plain text, answered with the task's number. Ask even when only one task is listed: which work starts is the user's call. With none, say there is nothing to ship, and stop.
 3. Claim the pick (see below). When another agent claimed it while the user was choosing, say so, list again, and ask again.
 
@@ -52,24 +52,24 @@ Release it with `tasks.py release <task>` once the PRs are open (stage 6), or wh
 
 ## Where the work happens
 
-`<main>` is the repository's main checkout: the first path `git worktree list --porcelain` prints. `<goals>` is `<main>/.goals`. Every `.goals/` path in this skill and in the stage skills means `<goals>/`, written out as an absolute path, so the goal's files and the claims are the same from every worktree.
+`<main>` is the repository's main checkout: the first path `git worktree list --porcelain` prints. `<goals>` is `<main>/.ship`. Every `.ship/` path in this skill and in the stage skills means `<goals>/`, written out as an absolute path, so the goal's files and the claims are the same from every worktree.
 
 Each goal is built in its own git worktree at `<goals>/<goal>/worktree`. This replaces `/implement`'s "Set up the workspace" step:
 
 - Create it before the build: `git -C <main> worktree add -b <goal> <path> <base branch>`, or without `-b <goal>` and with `<goal>` in place of the base branch when the branch already exists. Reuse the worktree when it is already there.
 - With approaches, switch between their branches inside this one worktree.
-- A goal that touches other projects gets a worktree in each, at `<that project's main checkout>/.goals/<goal>/worktree`.
+- A goal that touches other projects gets a worktree in each, at `<that project's main checkout>/.ship/<goal>/worktree`.
 - `cd` into the worktree. The build, the gate and every fix run there, and every subagent's brief names the worktree as the place to read and run the code.
 - When git refuses because the goal's branch is checked out in another worktree, tell the user where, and stop: switching that checkout's branch would disturb whatever is open there.
 - Once the PRs are open (stage 6), remove it: `git -C <main> worktree remove <path>`. The branch stays.
 
 ## Issues
 
-An issue is the goal's ticket.
+An issue is where a goal starts, never where its documents live: the requirement and decisions go under `<goals>/<goal>/`, as for any goal.
 
-- Its body is the requirement when it follows `/requirement`'s template (it has an `## Acceptance criteria` section). Otherwise it is the fuzzy requirement stage 1 starts from.
-- Name the goal a short kebab-case description, as `/implement` does for a ticket. When creating the goal's directory, write the issue's number to `<goals>/<goal>/issue`, so the listing and the claims treat the goal as the issue.
-- Stage 1 already knows where the requirement lives, so do not ask: rewrite the issue's body as the requirement document, with the original text kept at the end in a `<details><summary>Original request</summary>` block.
+- Name the goal a short kebab-case description of what the issue achieves (e.g. `validate-requests`). When creating the goal's directory, write the issue's number to `<goals>/<goal>/issue`, so the listing and the claims treat the goal as the issue.
+- When the body follows `/requirement`'s template (it has an `## Acceptance criteria` section), save it unchanged as the goal's requirement and start at stage 2. Otherwise it is the fuzzy requirement stage 1 starts from.
+- Never edit the issue's body.
 - Every PR's description says `Closes #<n>`, so the issue drops off the list as soon as a PR is open, and closes when it merges.
 
 ## Running a stage
@@ -86,7 +86,7 @@ Overrides while `/ship` drives:
 
 When the task is an existing goal (a directory under `<goals>/`, or an issue), start at the first stage that is not finished:
 
-- No requirement (for an issue, a body that is not yet one) → stage 1.
+- No requirement under `<goals>/<goal>/` → stage 1 (for an issue whose body follows the template, save it first, as Issues says).
 - No commits on the goal's branch yet → stage 2, from the build. The decisions file records what was already decided; do not re-ask it.
 - Commits but no simplify pass yet → stage 2, from `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
 - Otherwise → the first check without a PASS report newer than the latest commit: in `verification/` for stages 3–4, in `verify/` for stage 5 (a report with no FAIL counts as a PASS).
@@ -95,7 +95,7 @@ Never redo a finished stage unless a check sends work back to it.
 
 ## Subagents
 
-Dispatch each subagent as its named agent: pi's `subagent` tool, or Claude Code's Agent tool, with the agent's name. Where the environment does not have that agent, use a general-purpose agent given its rules (`~/.pi/agent/agents/<agent>.md`, or restated in the brief when that file is absent). Every check's brief names the goal, where the requirement and the decisions file live (paths or ticket), the branch and its worktree, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
+Dispatch each subagent as its named agent: pi's `subagent` tool, or Claude Code's Agent tool, with the agent's name. Where the environment does not have that agent, use a general-purpose agent given its rules (`~/.pi/agent/agents/<agent>.md`, or restated in the brief when that file is absent). Every check's brief names the goal, where the requirement and the decisions file live, the branch and its worktree, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
 
 Stage 2's review and simplify subagents are dispatched as `/implement` says.
 
@@ -107,7 +107,7 @@ Stage 2's review and simplify subagents are dispatched as `/implement` says.
 | final validation | `verifier`          | report only                 |
 | verify           | `acceptance-tester` | report and screenshots only |
 
-Every check writes its report to `.goals/<goal>/verification/<n>-<check>.md` (`<check>` is `impl-check` or `final-validation`), where `<n>` is one higher than the highest number already in that directory. Each run gets its own file; earlier files are never edited. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
+Every check writes its report to `.ship/<goal>/verification/<n>-<check>.md` (`<check>` is `impl-check` or `final-validation`), where `<n>` is one higher than the highest number already in that directory. Each run gets its own file; earlier files are never edited. `.ship/` is local working state, never committed: before writing anything under it, create `.ship/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # <Check> <n> — <goal>
@@ -143,7 +143,7 @@ Ask `/implement`'s questions as its Decide step says, one at a time, following t
 Run `/implement`'s Validate step as the gate every time `/implement` says to run or rerun it, and after every fix in stages 3–5, before dispatching anything else:
 
 - `git status --porcelain` is empty on the goal's branch.
-- Every mechanical check passes: the formatter in check mode, linters, type checks, unit tests and the build, found as Validate says. Run each with its output appended to `.goals/<goal>/verification/gate.log` and read its exit code; read the log only for a command that failed, so passing output stays out of this session's context.
+- Every mechanical check passes: the formatter in check mode, linters, type checks, unit tests and the build, found as Validate says. Run each with its output appended to `.ship/<goal>/verification/gate.log` and read its exit code; read the log only for a command that failed, so passing output stays out of this session's context.
 
 On a failure, fix it here and run the gate again. Gate rounds count against the Retries limit of the stage that triggered them. No check (stages 3–5) is dispatched while the gate is red: formatting, lint and unit failures are fixed here, not discovered by the final validation.
 
@@ -161,7 +161,7 @@ On FAIL: fix the problems here and run the gate, then run the check again. NOT R
 
 ### 5. Verify — always
 
-Run `/verify` in a fresh subagent as the `acceptance-tester` agent. It drives a browser and a terminal, which the `verifier` agent's tools do not allow. Brief: the goal, where the requirement and the decisions file live, the branch, the path to `/verify`'s skill file (`~/.agents/skills/verify/SKILL.md`), and every answer the user has given for this goal so far. It follows the skill in full and writes its report and screenshots under `.goals/<goal>/verify/`, not `verification/`.
+Run `/verify` in a fresh subagent as the `acceptance-tester` agent. It drives a browser and a terminal, which the `verifier` agent's tools do not allow. Brief: the goal, where the requirement and the decisions file live, the branch, the path to `/verify`'s skill file (`~/.agents/skills/verify/SKILL.md`), and every answer the user has given for this goal so far. It follows the skill in full and writes its report and screenshots under `.ship/<goal>/verify/`, not `verification/`.
 
 The subagent cannot reach the user. When it needs something only the user can answer (how to run the app, credentials, what correct looks like), it stops and returns the questions instead of guessing. Ask them here, following the `questions` skill, save each answer as `/verify`'s Remembering section says, then dispatch a new verify subagent with the answers in its brief. Hand credentials over as environment variables in the brief, never in a file. Question rounds do not count as retries.
 
