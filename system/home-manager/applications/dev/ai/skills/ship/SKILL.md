@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drive the whole workflow — /requirement, /implement, independent verification, /verify's end-user tests, and the PR — in one session, stopping for the user only where their decision is needed. Pass --critical to add a requirement-vs-implementation check. Only use when the user explicitly runs the /ship command; never trigger on your own.
+description: Drive the whole workflow — /requirement, /implement, independent verification, /verify's end-user tests, and the PR — in one session, stopping for the user only where their decision is needed. Run with no argument to pick one of the unfinished local goals or open agent:ship GitHub issues; parallel runs never take the same task. Pass --critical to add a requirement-vs-implementation check. Only use when the user explicitly runs the /ship command; never trigger on your own.
 disable-model-invocation: true
 ---
 
@@ -8,14 +8,15 @@ disable-model-invocation: true
 
 This skill is the conductor. It runs `/requirement` and `/implement` back to back, adds independent checks after them, tests the result as its end user would with `/verify`, and opens the PR only after the final validation and `/verify` pass. `/implement` runs in this session, so its questions go straight to the user and each fix is made where the code was read; its review and simplify passes, and every check after it, run in fresh subagents. The user is pulled in only for decisions that are theirs: requirement questions, `/implement`'s questions, and failures that retries could not fix.
 
-Usage: `/ship [--critical] [<fuzzy requirement> | <goal>]`
+Usage: `/ship [--critical] [<fuzzy requirement> | <goal> | #<issue>]`
 
-Four rules hold the whole skill up. Everything below is detail.
+Five rules hold the whole skill up. Everything below is detail.
 
 1. **The stage skills do the work.** `/ship` never re-implements a stage. Each stage — or the subagent running it — reads its skill file and follows it in full, except where this skill overrides the handoff.
 2. **Checks run in fresh subagents.** A checker never saw how the work was done. Its only inputs are the documents and the code, and the requirement is its source of truth. It reports; it never fixes.
 3. **Only this session spawns subagents and talks to the user.** Subagents cannot reliably start their own, and cannot reach the user, so every dispatch and every question runs here, in the main session.
 4. **No PR before the final validation and `/verify` pass.**
+5. **One task per run, in its own worktree.** Several `/ship` runs may share a repository, so each claims its task before touching it and builds it in the goal's own git worktree. Two runs never work on one task, and never switch branches under each other.
 
 ## The pipeline
 
@@ -29,6 +30,48 @@ Four rules hold the whole skill up. Everything below is detail.
 6. PR               main session
 ```
 
+## Picking a task
+
+When the argument holds no requirement, goal or issue (`--critical` alone counts as none), offer the work that is waiting and let the user pick one:
+
+1. Run `~/.agents/skills/ship/scripts/tasks.py list` (Claude Code: `~/.claude/skills/ship/scripts/tasks.py`). It prints, numbered, the unfinished goals under `.goals/` (no open or merged PR from the goal's branch yet) and the open GitHub issues labelled `agent:ship` (no open or merged PR closes them yet), each with how far it got. Then it prints the tasks other agents hold, and any source it could not read.
+2. Show the list as printed, then ask which task to work on, following the `questions` skill: with up to 3 tasks, one option per task in the ask-question tool; with more, in plain text, answered with the task's number. Ask even when only one task is listed: which work starts is the user's call. With none, say there is nothing to ship, and stop.
+3. Claim the pick (see below). When another agent claimed it while the user was choosing, say so, list again, and ask again.
+
+Never offer a task listed as taken. When the user asks for one anyway, say which agent holds it, and claim it with `--force` only once they confirm.
+
+## Claiming the task
+
+Every run claims its task with `tasks.py claim <task>` before working on it, and holds the claim until the run ends. `<task>` is `goal:<goal>` or `issue:<n>`. The claim is atomic: of two agents claiming one task at once, exactly one wins, and the other exits with code 2 and the holder's name. It belongs to this agent's process and frees itself when that process exits, so a crashed run never blocks a task for good. Claiming an issue also labels it `agent:shipping`, so agents on other machines skip it.
+
+- **Picked from the list** — claim it right after the pick.
+- **Named in the argument** (a goal, `#<n>`, or an issue URL) — claim it before anything else. Exit 2 → tell the user which agent holds it, and stop.
+- **A new fuzzy requirement** — claim `goal:<goal>` as soon as the goal's name is chosen, before writing anything under `<goals>/<goal>/`. Exit 2 → choose another name.
+
+Release it with `tasks.py release <task>` once the PRs are open (stage 6), or when the user stops the run.
+
+## Where the work happens
+
+`<main>` is the repository's main checkout: the first path `git worktree list --porcelain` prints. `<goals>` is `<main>/.goals`. Every `.goals/` path in this skill and in the stage skills means `<goals>/`, written out as an absolute path, so the goal's files and the claims are the same from every worktree.
+
+Each goal is built in its own git worktree at `<goals>/<goal>/worktree`. This replaces `/implement`'s "Set up the workspace" step:
+
+- Create it before the build: `git -C <main> worktree add -b <goal> <path> <base branch>`, or without `-b <goal>` and with `<goal>` in place of the base branch when the branch already exists. Reuse the worktree when it is already there.
+- With approaches, switch between their branches inside this one worktree.
+- A goal that touches other projects gets a worktree in each, at `<that project's main checkout>/.goals/<goal>/worktree`.
+- `cd` into the worktree. The build, the gate and every fix run there, and every subagent's brief names the worktree as the place to read and run the code.
+- When git refuses because the goal's branch is checked out in another worktree, tell the user where, and stop: switching that checkout's branch would disturb whatever is open there.
+- Once the PRs are open (stage 6), remove it: `git -C <main> worktree remove <path>`. The branch stays.
+
+## Issues
+
+An issue is the goal's ticket.
+
+- Its body is the requirement when it follows `/requirement`'s template (it has an `## Acceptance criteria` section). Otherwise it is the fuzzy requirement stage 1 starts from.
+- Name the goal a short kebab-case description, as `/implement` does for a ticket. When creating the goal's directory, write the issue's number to `<goals>/<goal>/issue`, so the listing and the claims treat the goal as the issue.
+- Stage 1 already knows where the requirement lives, so do not ask: rewrite the issue's body as the requirement document, with the original text kept at the end in a `<details><summary>Original request</summary>` block.
+- Every PR's description says `Closes #<n>`, so the issue drops off the list as soon as a PR is open, and closes when it merges.
+
 ## Running a stage
 
 The stage skills are user-invocable only, so do not call them through a skill tool. Read the skill file and follow it: `~/.agents/skills/<name>/SKILL.md` (Claude Code: `~/.claude/skills/<name>/SKILL.md`).
@@ -36,14 +79,14 @@ The stage skills are user-invocable only, so do not call them through a skill to
 Overrides while `/ship` drives:
 
 - **Skip every "Handing off to the next step" section.** Do not tell the user to run the next command or copy it to the clipboard; move straight to the next stage.
-- **`/implement` runs in this session** (see stage 2 below) and stops after its Simplify step. Its Finish step (PRs and the report) is replaced by stages 3–6 here.
+- **`/implement` runs in this session** (see stage 2 below) and stops after its Simplify step. Its "Set up the workspace" step is replaced by the goal's worktree (see Where the work happens), and its Finish step (PRs and the report) by stages 3–6 here.
 - **`/verify` runs in a subagent** (see stage 5 below) and skips its Finish handoff. It cannot reach the user, so it returns its questions to this session instead of asking.
 
 ### Resuming
 
-When the argument names an existing goal (a directory under `.goals/`, or a ticket), start at the first stage that is not finished:
+When the task is an existing goal (a directory under `<goals>/`, or an issue), start at the first stage that is not finished:
 
-- No requirement → stage 1.
+- No requirement (for an issue, a body that is not yet one) → stage 1.
 - No commits on the goal's branch yet → stage 2, from the build. The decisions file records what was already decided; do not re-ask it.
 - Commits but no simplify pass yet → stage 2, from `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
 - Otherwise → the first check without a PASS report newer than the latest commit: in `verification/` for stages 3–4, in `verify/` for stage 5 (a report with no FAIL counts as a PASS).
@@ -52,7 +95,7 @@ Never redo a finished stage unless a check sends work back to it.
 
 ## Subagents
 
-Dispatch each subagent as its named agent: pi's `subagent` tool, or Claude Code's Agent tool, with the agent's name. Where the environment does not have that agent, use a general-purpose agent given its rules (`~/.pi/agent/agents/<agent>.md`, or restated in the brief when that file is absent). Every check's brief names the goal, where the requirement and the decisions file live (paths or ticket), the branch, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
+Dispatch each subagent as its named agent: pi's `subagent` tool, or Claude Code's Agent tool, with the agent's name. Where the environment does not have that agent, use a general-purpose agent given its rules (`~/.pi/agent/agents/<agent>.md`, or restated in the brief when that file is absent). Every check's brief names the goal, where the requirement and the decisions file live (paths or ticket), the branch and its worktree, and where to write the report. If the environment has no subagent capability, run the check in this session, say so in the report, and tell the user the check was not independent.
 
 Stage 2's review and simplify subagents are dispatched as `/implement` says.
 
@@ -130,13 +173,17 @@ Each check gets at most 2 fix-and-recheck rounds. Still failing after that → s
 
 ## 6. PR
 
-Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement, lists the decisions the user made, lists the checks that ran with their verdicts, and lists every NOT RUN item of the final validation. `/verify`'s results stay out of the description, which would go stale the next time `/verify` runs: once each PR exists, post its branch's final `/verify` report on it with `publish.py --pr <url>`, as `/verify`'s "Post it on the PR" step describes. That comment carries the tests, the screenshots and the NOT RUN tests, and replaces the comment of any earlier run.
+Follow `/implement`'s Finish rules for how many PRs to open. Each PR description links the requirement (for an issue, with `Closes #<n>`), lists the decisions the user made, lists the checks that ran with their verdicts, and lists every NOT RUN item of the final validation. `/verify`'s results stay out of the description, which would go stale the next time `/verify` runs: once each PR exists, post its branch's final `/verify` report on it with `publish.py --pr <url>`, as `/verify`'s "Post it on the PR" step describes. That comment carries the tests, the screenshots and the NOT RUN tests, and replaces the comment of any earlier run.
 
 Report to the user: what was built, the verdict of every check and how many rounds each took, review findings fixed vs skipped, what simplify changed, NOT RUN items, the `/verify` report path and its PR comment URL, then the PRs as a list — one bullet per PR with its title and URL. Then open the final `/verify` report in the browser by running `~/.agents/skills/verify/scripts/report.py` on its `<n>-report.json`.
+
+Finally, release the claim and remove the goal's worktree (see Claiming the task and Where the work happens).
 
 ## Never
 
 - Never run unless the user explicitly invoked this skill.
+- Never work on a task without holding its claim, or take one another live agent holds unless the user confirms it.
+- Never build in `<main>`'s working tree; build in the goal's worktree.
 - Never skip the final validation or `/verify`, with or without `--critical`.
 - Never dispatch a check while the gate is red.
 - Never let a checker fix what it checks, or see the conversation that produced the work.
