@@ -1,7 +1,9 @@
 """Pillow rendering of notification thumbnails and review images.
 
-Takes JPEG bytes and rectangles already worked out by `core.geometry`, so it
-has no imports from the integration and runs in an executor thread.
+Each box is drawn with its label (the type name, such as "Person") in a filled
+tab on its top-left corner. Takes JPEG bytes or a decoded frame and rectangles
+already worked out by `core.geometry`, so it has no imports from the
+integration and runs in an executor thread.
 """
 
 from __future__ import annotations
@@ -9,7 +11,7 @@ from __future__ import annotations
 import math
 from io import BytesIO
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 Box = tuple[float, float, float, float]
 Size = tuple[int, int]
@@ -18,6 +20,11 @@ THUMB_SIZE: Size = (1024, 512)
 THUMB_QUALITY = 90
 FULL_QUALITY = 92
 BOX_COLOR = (255, 40, 40)
+LABEL_COLOR = (255, 255, 255)
+# Label text size, as a share of the image height.
+FULL_LABEL_SHARE = 1 / 30
+FULL_LABEL_MIN = 14
+THUMB_LABEL_SHARE = 1 / 20
 # What Pillow raises for bytes it cannot read as an image.
 _READ_ERRORS = (OSError, ValueError, Image.DecompressionBombError)
 
@@ -62,6 +69,25 @@ def _draw_box(image: Image.Image, box: Box) -> None:
     )
 
 
+def _draw_label(image: Image.Image, box: Box, label: str, text_size: int) -> None:
+    """Draw `label` in a tab joined to the box's top-left corner.
+
+    The tab sits above the box when it fits inside the image, otherwise inside
+    the box along its top edge, and moves left rather than leave the image.
+    """
+    # Pillow's built-in scalable font, so no font file is needed.
+    font = ImageFont.load_default(size=text_size)
+    pad = max(2, round(text_size / 4))
+    width = math.ceil(font.getlength(label)) + 2 * pad
+    height = text_size + pad
+    x1, y1 = round(box[0]), round(box[1])
+    left = max(0, min(x1, image.width - width))
+    top = y1 - height if y1 >= height else y1
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([left, top, left + width - 1, top + height - 1], fill=BOX_COLOR)
+    draw.text((left + pad, top + height / 2), label, fill=LABEL_COLOR, font=font, anchor="lm")
+
+
 def _encode(image: Image.Image, quality: int) -> bytes:
     out = BytesIO()
     image.save(out, format="JPEG", quality=quality, optimize=True)
@@ -72,10 +98,11 @@ def render_crop(
     jpeg: bytes,
     crop: Box,
     box: Box,
+    label: str,
     out_size: Size = THUMB_SIZE,
     quality: int = THUMB_QUALITY,
 ) -> bytes:
-    """Crop `crop` (black where it leaves the frame), resize it and draw `box`.
+    """Crop `crop` (black where it leaves the frame), resize it and draw `box` and `label`.
 
     Raises:
         ImageRenderError: the frame cannot be read, or the crop is empty.
@@ -90,20 +117,25 @@ def render_crop(
     image = cropped.resize(out_size, Image.Resampling.LANCZOS)
     sx = out_size[0] / (x2 - x1)
     sy = out_size[1] / (y2 - y1)
-    _draw_box(
-        image, ((box[0] - x1) * sx, (box[1] - y1) * sy, (box[2] - x1) * sx, (box[3] - y1) * sy)
-    )
+    mapped = ((box[0] - x1) * sx, (box[1] - y1) * sy, (box[2] - x1) * sx, (box[3] - y1) * sy)
+    _draw_box(image, mapped)
+    _draw_label(image, mapped, label, round(out_size[1] * THUMB_LABEL_SHARE))
     return _encode(image, quality)
 
 
-def render_full(jpeg: bytes, box: Box | None, quality: int = FULL_QUALITY) -> bytes:
-    """Draw `box` on the whole frame; with no box the frame is returned as is.
+def render_frame(image: Image.Image, box: Box, label: str, quality: int = FULL_QUALITY) -> bytes:
+    """Draw `box` and `label` on a decoded RGB frame, in place, and encode it."""
+    _draw_box(image, box)
+    _draw_label(image, box, label, max(FULL_LABEL_MIN, round(image.height * FULL_LABEL_SHARE)))
+    return _encode(image, quality)
+
+
+def render_full(jpeg: bytes, box: Box | None, label: str, quality: int = FULL_QUALITY) -> bytes:
+    """Draw `box` and `label` on the whole frame; with no box the frame is returned as is.
 
     Raises:
         ImageRenderError: the frame cannot be read.
     """
     if box is None:
         return jpeg
-    image = _open(jpeg)
-    _draw_box(image, box)
-    return _encode(image, quality)
+    return render_frame(_open(jpeg), box, label, quality)

@@ -34,7 +34,11 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.util.json import json_loads
 
-from .const import FRIGATE_CONFIG_REFRESH_SECONDS, FRIGATE_CONFIG_RETRY_SECONDS
+from .const import (
+    FRAME_TIME_TOLERANCE,
+    FRIGATE_CONFIG_REFRESH_SECONDS,
+    FRIGATE_CONFIG_RETRY_SECONDS,
+)
 from .core.geometry import Box
 from .core.policy import DOOR, MOTION
 from .frigate import FrigateError
@@ -51,8 +55,6 @@ EXCLUDED_PLATFORMS = {"frigate", "group"}
 # Forget a finished Frigate event's boxes a little after its end, in case its
 # alert is still waiting for one.
 FORGET_AFTER_SECONDS = 60
-# Matching Frigate's X-Frame-Time header to an MQTT snapshot frame time.
-FRAME_TIME_TOLERANCE = 1e-3
 # Events with no message for this long are forgotten even if their end never came
 # (Frigate restarted mid-event, or the end message was lost).
 STALE_EVENT_SECONDS = 3600
