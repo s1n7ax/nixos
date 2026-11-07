@@ -2,6 +2,7 @@
   imports = [
     ./applications.nix
     ./hyprwhspr.nix
+    ./fievel.nix
     ./read-aloud.nix
     ./docker.nix
     ./podman.nix
