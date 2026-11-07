@@ -19,14 +19,12 @@ Identify the code to review:
 - Include uncommitted changes when present.
 - If no changes are available, ask for a target or identify a reasonable scope from the current context.
 
-Locate the relevant goal documentation under `.goals/<goal>/`:
+Locate the relevant goal documentation under `.ship/<goal>/`:
 
-- Requirement: `.goals/<goal>/requirement/requirement.md`
-- Decisions: `.goals/<goal>/decisions/decisions.md` (absent when nothing needed recording)
+- Requirement: `.ship/<goal>/requirement/requirement.md`
+- Decisions: `.ship/<goal>/decisions/decisions.md` (absent when nothing needed recording)
 
 Determine the applicable goal from the target, changed files, branch context, or surrounding discussion. If multiple goals are plausible, ask for clarification rather than guessing — following the `questions` skill. When running as a subagent that cannot ask, stop and report the ambiguity instead.
-
-When the goal was documented in a project ticket instead, read the requirement and decisions from the ticket.
 
 Read both documents before making changes. If the requirement is missing, or either document is ambiguous, identify the limitation and avoid assuming undocumented requirements or architectural decisions.
 
