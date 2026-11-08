@@ -26,6 +26,16 @@ echo 123 >"$svc/app.pid"
 echo 123 >"$svc/keep/deep/other.pid"
 echo nested >"$svc/keep/deep/nested.txt"
 
+# A source two folders below the shared parent, like /opt/adguard/conf; each
+# folder above it has its own mode (all keep u=rwx: fakeroot adds it anyway).
+conf=$t/data/opt/adguard/conf
+mkdir -p "$conf"
+echo 'dns: {}' >"$conf/AdGuardHome.yaml"
+chmod 0751 "$t/data"
+chmod 0711 "$t/data/opt"
+chmod 0755 "$t/data/opt/adguard"
+chmod 0700 "$conf"
+
 # A WAL database whose committed rows are still only in the -wal file, held
 # open by a "service" with an uncommitted write, next to a unix socket.
 python3 - "$svc" <<'EOF'
@@ -66,6 +76,7 @@ cat >"$t/spec.json" <<EOF
       "databases": ["app.db", "absent.db"],
       "exclude": ["logs", "MediaCover", "*.pid"]
     },
+    { "name": "conf", "path": "$conf", "databases": [], "exclude": [] },
     { "name": "gone", "path": "$t/data/gone", "databases": [], "exclude": [] }
   ]
 }
@@ -109,7 +120,7 @@ pass "switch uploads one backup and cleans up"
 
 age -d -i "$t/desktop.key" "$t/remote/$first" | tar --zstd -t >"$t/list"
 rel=${svc#/}
-for want in "$rel" "$rel/config.xml" "$rel/keep/deep/nested.txt" "$rel/app.db" homelab-backup.json; do
+for want in "$rel" "$rel/config.xml" "$rel/keep/deep/nested.txt" "$rel/app.db" "${conf#/}/AdGuardHome.yaml" homelab-backup.json; do
   grep -qxF "$want" "$t/list" || grep -qxF "$want/" "$t/list" || fail "$want is not in the backup"
 done
 for unwanted in logs MediaCover app.pid keep/deep/other.pid app.db-wal app.db-shm ipc-socket; do
@@ -129,12 +140,18 @@ db=$t/restore/$rel/app.db
 rows=$(sqlite3 "$db" 'SELECT group_concat(x) FROM (SELECT x FROM t ORDER BY rowid)')
 [ "$rows" = one,two,three ] || fail "the restored database has rows '$rows', expected one,two,three"
 [ "$(cat "$t/restore/$rel/config.xml")" = setting ] || fail "config.xml was not restored"
-jq -e --arg missing "$svc/absent.db" '
+jq -e --arg missing "$svc/absent.db" --arg data "$t/data" --argjson uid "$(id -u)" '
   .action == "switch"
   and .incoming_system == "/nix/store/new-system"
   and .created == "20260101T000000Z"
   and (.missing | index($missing) != null)
-  and (.sources | length == 2)
+  and (.sources | length == 3)
+  and .parents[$data].uid == $uid
+  and .parents[$data].mode == "751"
+  and .parents[$data + "/opt"].mode == "711"
+  and .parents[$data + "/opt/adguard"].mode == "755"
+  and (.parents | has($data + "/opt/adguard/conf") | not)
+  and (.parents | has("/") | not)
 ' "$t/restore/homelab-backup.json" >/dev/null || fail "the manifest is wrong: $(cat "$t/restore/homelab-backup.json")"
 pass "the snapshot opens with the committed rows only, and the manifest is right"
 
@@ -263,3 +280,4 @@ grep -q "is not a backup spec" "$t/log" || fail "no 'is not a backup spec' messa
 pass "a missing spec fails with a clear message"
 
 [ "$(backups | wc -l)" -eq 2 ] || fail "a failed run left a backup"
+

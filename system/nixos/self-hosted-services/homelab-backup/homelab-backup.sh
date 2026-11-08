@@ -11,9 +11,10 @@
 # Steps: decrypt the Dropbox token from sops and list the App folder (fails
 # fast when offline or the token is bad), snapshot each SQLite database with
 # VACUUM INTO, tar the sources with the snapshots in place of the live
-# databases, compress (zstd), encrypt (age), upload as a new
-# homelab-<UTC timestamp>.tar.zst.age. Nothing on Dropbox is ever deleted or
-# overwritten.
+# databases and a manifest (homelab-backup.json: the sources, the systems,
+# the owner and mode of the folders above each source), compress (zstd),
+# encrypt (age), upload as a new homelab-<UTC timestamp>.tar.zst.age. Nothing
+# on Dropbox is ever deleted or overwritten.
 #
 # Skip once: create the skip file (`sudo touch /run/skip-homelab-backup`); it
 # is removed when honoured.
@@ -131,6 +132,7 @@ export HOME=$work
 stage=$work/stage
 mkdir -p "$stage"
 : >"$work/missing"
+: >"$work/parents"
 
 timestamp=${HOMELAB_BACKUP_TIMESTAMP:-$(date -u +%Y%m%dT%H%M%SZ)}
 name="homelab-$timestamp.tar.zst.age"
@@ -201,6 +203,23 @@ snapshot() {
   touch --reference="$db" -- "$dest"
 }
 
+# Records the owner and mode of each folder above a source, up to /, for the
+# manifest's `parents`: the archive holds only the sources themselves, so a
+# restore onto a new homelab creates the missing parents from these.
+declare -A recorded_parents=()
+record_parents() {
+  local dir info mode uid gid
+  dir=$(dirname -- "$1")
+  while [ "$dir" != / ] && [ -z "${recorded_parents[$dir]:-}" ]; do
+    info=$(stat -L -c '%a %u %g' -- "$dir") || die "cannot read the owner and mode of $dir"
+    read -r mode uid gid <<<"$info"
+    jq -nc --arg dir "$dir" --arg mode "$mode" --argjson uid "$uid" --argjson gid "$gid" \
+      '{($dir): {uid: $uid, gid: $gid, mode: $mode}}' >>"$work/parents"
+    recorded_parents[$dir]=1
+    dir=$(dirname -- "$dir")
+  done
+}
+
 start=$SECONDS
 
 if [ -z "${HOMELAB_BACKUP_RCLONE_CONFIG:-}" ]; then
@@ -228,6 +247,7 @@ while IFS= read -r source; do
     continue
   fi
   paths+=("$rel")
+  record_parents "$path"
 
   while IFS= read -r pattern; do
     excludes+=("--exclude=$rel/$pattern")
@@ -258,6 +278,7 @@ jq -n \
   --arg current "$(readlink -f /run/current-system || true)" \
   --arg incoming "$incoming" \
   --rawfile missing "$work/missing" \
+  --slurpfile parents "$work/parents" \
   --slurpfile spec "$spec" \
   '{
     created: $created,
@@ -266,7 +287,8 @@ jq -n \
     current_system: $current,
     incoming_system: $incoming,
     missing: ($missing | split("\n") | map(select(. != ""))),
-    sources: $spec[0].sources
+    sources: $spec[0].sources,
+    parents: ($parents | add // {})
   }' >"$stage/homelab-backup.json"
 
 # Stage entries (snapshots, manifest) are stored at their final names.
