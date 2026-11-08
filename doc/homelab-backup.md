@@ -135,13 +135,17 @@ Restore onto a running homelab, or onto a new one after its first rebuild
      while read -r db; do sudo rm -f "$db-wal" "$db-shm"; done
    ```
 
-5. Copy everything back with its owners (the containers' files belong to
-   rootless podman's sub-UIDs):
+5. Copy each backed-up folder back with its owners (the containers' files
+   belong to rootless podman's sub-UIDs). Only the backed-up folders are
+   copied, not their parents: the backup doesn't hold the parents, so
+   `~/.homelab`, `~/.homelab/sonarr` and the others keep their owner and
+   mode:
 
    ```shell
-   sudo cp -a /var/tmp/restore/home/s1n7ax/.homelab/. /home/s1n7ax/.homelab/
-   sudo cp -a /var/tmp/restore/opt/adguard/conf/. /opt/adguard/conf/
-   sudo cp -a /var/tmp/restore/var/lib/dongle-m-reboot-monitor/. /var/lib/dongle-m-reboot-monitor/
+   nix run nixpkgs#jq -- -r '.sources[].path' /var/tmp/restore/homelab-backup.json |
+     while read -r dir; do
+       if [ -d "/var/tmp/restore$dir" ]; then sudo cp -a "/var/tmp/restore$dir/." "$dir/"; fi
+     done
    ```
 
 6. Reboot (or start the services again), then rebuild Paperless' search
