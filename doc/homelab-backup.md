@@ -28,7 +28,8 @@ sudo nixos-rebuild switch --flake .#server
 
 The rebuild removes the file, so the next one backs up again. (A reboot also
 clears it. `NIXOS_NO_CHECK=1` skips it as well, together with every other
-NixOS pre-switch check.)
+NixOS pre-switch check; inside `nixos-install` and `nixos-enter`, whose new
+`/run` hides the file, it is the only way.)
 
 ## One-Time Setup: the Homelab's Dropbox Token
 
@@ -159,12 +160,19 @@ auto-tagging model, and the Frigate config and z2m `configuration.yaml`
 
 ### On a New Homelab
 
-1. Install NixOS and this repo. The new machine has a new SSH host key: add
-   its age key (`nix run nixpkgs#ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub`) to
+1. Install NixOS with this repo: `sudo nixos-install --flake .#server`. The
+   install takes no backup: it runs outside a booted system and none of the
+   service folders exist yet, so it logs `nothing to back up yet` and goes
+   on. (If the new disk already holds service data, the install tries to
+   back up, and fails while the new host key can't read the token yet;
+   install with `sudo NIXOS_NO_CHECK=1 nixos-install --flake .#server`
+   then.)
+2. Boot it. The new machine has a new SSH host key: add its age key
+   (`nix run nixpkgs#ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub`) to
    nix-secrets' `.sops.yaml` as `server`, run `sops updatekeys secrets.yaml`
    on the desktop, push, and `nix flake update secrets` here.
-2. Skip the backup on the first rebuild (there is nothing to back up yet):
-   `sudo touch /run/skip-homelab-backup`, then
+3. Skip the backup on the first rebuild (the services hold nothing worth
+   keeping yet): `sudo touch /run/skip-homelab-backup`, then
    `sudo nixos-rebuild switch --flake .#server`.
-3. Copy the desktop's `~/.config/sops/age/keys.txt` to the same path on the
+4. Copy the desktop's `~/.config/sops/age/keys.txt` to the same path on the
    homelab, and restore as above.

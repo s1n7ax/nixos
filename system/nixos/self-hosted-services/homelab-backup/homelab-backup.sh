@@ -18,6 +18,12 @@
 # Skip once: create the skip file (`sudo touch /run/skip-homelab-backup`); it
 # is removed when honoured.
 #
+# Outside a booted system (nixos-install, nixos-enter: the new system runs in
+# a chroot where systemd never started), nothing is backed up when none of
+# the sources exist: a freshly installed homelab has nothing to back up yet.
+# On the booted homelab, or in a chroot of a homelab that has service data,
+# the backup is taken as always.
+#
 # Environment (set by the NixOS module; the flake check points it at a test
 # tree):
 #   HOMELAB_BACKUP_SPEC           JSON {"sources": [{name, path, databases, exclude}]}:
@@ -26,6 +32,8 @@
 #   HOMELAB_BACKUP_RECIPIENTS     age recipients, one per line
 #   HOMELAB_BACKUP_REMOTE         rclone remote to upload to, e.g. homelab:
 #   HOMELAB_BACKUP_SKIP_FILE      skip marker
+#   HOMELAB_BACKUP_BOOTED_MARKER  exists only on a system booted with systemd
+#                                 (/run/systemd/system, as sd_booted checks)
 #   HOMELAB_BACKUP_TMPDIR         where the archive is built (needs room for it
 #                                 and the database snapshots)
 #   HOMELAB_BACKUP_SOPS_FILE      sops file holding the Dropbox app and token
@@ -60,6 +68,7 @@ action=${3:-}
 spec=${HOMELAB_BACKUP_SPEC:?}
 remote=${HOMELAB_BACKUP_REMOTE:?}
 skip_file=${HOMELAB_BACKUP_SKIP_FILE:?}
+booted_marker=${HOMELAB_BACKUP_BOOTED_MARKER:?}
 tmp_root=${HOMELAB_BACKUP_TMPDIR:?}
 
 case $action in
@@ -83,6 +92,19 @@ done <<<"${HOMELAB_BACKUP_RECIPIENTS:-}"
 [ "${#recipient_args[@]}" -gt 0 ] || die "HOMELAB_BACKUP_RECIPIENTS lists no age recipient"
 jq -e '.sources | type == "array"' "$spec" >/dev/null || die "$spec is not a backup spec"
 
+any_source_exists() {
+  local path
+  while IFS= read -r path; do
+    [ ! -d "$path" ] || return 0
+  done < <(jq -r '.sources[].path' "$spec")
+  return 1
+}
+
+if [ ! -d "$booted_marker" ] && ! any_source_exists; then
+  log "not backing up: not a booted system (no $booted_marker, e.g. nixos-install) and none of the sources exist, so there is nothing to back up yet"
+  exit 0
+fi
+
 work=
 on_exit() {
   local status=$?
@@ -90,6 +112,9 @@ on_exit() {
   if [ "$status" -ne 0 ]; then
     log "backup FAILED, so the new configuration was NOT applied."
     log "To rebuild without a backup (e.g. while offline): sudo touch $skip_file, then rebuild again."
+    if [ ! -d "$booted_marker" ]; then
+      log "nixos-install and nixos-enter hide $skip_file (their /run is a new tmpfs): set NIXOS_NO_CHECK=1 instead, which skips every pre-switch check."
+    fi
   fi
   exit "$status"
 }

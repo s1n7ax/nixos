@@ -84,6 +84,8 @@ export HOMELAB_BACKUP_RECIPIENTS
 export HOMELAB_BACKUP_REMOTE=homelab:$t/remote
 export HOMELAB_BACKUP_RCLONE_CONFIG=$t/rclone.conf
 export HOMELAB_BACKUP_SKIP_FILE=$t/skip
+mkdir "$t/booted"
+export HOMELAB_BACKUP_BOOTED_MARKER=$t/booted
 export HOMELAB_BACKUP_TMPDIR=$t/tmp
 
 backups() {
@@ -197,11 +199,50 @@ fi
 cat "$t/log"
 grep -q "cannot list the homelab's Dropbox App folder" "$t/log" || fail "no 'cannot list' message"
 grep -q "sudo touch $t/skip" "$t/log" || fail "no skip hint"
+if grep -q NIXOS_NO_CHECK "$t/log"; then
+  fail "a booted system got the nixos-install hint"
+fi
 if grep -E "test-(client-secret|access|refresh)" "$t/log"; then
   fail "a secret leaked into the output"
 fi
 [ -z "$(ls -A "$t/tmp")" ] || fail "the work directory (with the token) was left behind"
 pass "an unreachable Dropbox fails with a clear message, the skip hint and no leaked secret"
+
+# --- nixos-install: no booted system, no service data ----------------------
+
+# nixos-install runs `switch-to-configuration boot` in a chroot of the new
+# system: systemd never started there, the host key is not a sops recipient
+# yet and none of the service folders exist.
+cat >"$t/new-homelab-spec.json" <<EOF
+{
+  "sources": [
+    { "name": "svc", "path": "$t/data/new/svc", "databases": ["app.db"], "exclude": [] },
+    { "name": "gone", "path": "$t/data/gone", "databases": [], "exclude": [] }
+  ]
+}
+EOF
+HOMELAB_BACKUP_SPEC=$t/new-homelab-spec.json HOMELAB_BACKUP_BOOTED_MARKER=$t/not-booted \
+  HOMELAB_BACKUP_SSH_KEYS=$t/absent-ssh-key \
+  homelab-backup pre-switch /nix/store/new-system boot 2>"$t/log" ||
+  fail "nixos-install of a new homelab failed: $(cat "$t/log")"
+grep -q "nothing to back up yet" "$t/log" || fail "no 'nothing to back up yet' message: $(cat "$t/log")"
+pass "nixos-install of a new homelab backs up nothing and does not fail"
+
+if HOMELAB_BACKUP_SPEC=$t/new-homelab-spec.json \
+  HOMELAB_BACKUP_RCLONE_CONFIG=$t/rclone.conf HOMELAB_BACKUP_REMOTE=homelab:$t/remote \
+  homelab-backup pre-switch /nix/store/new-system switch 2>"$t/log"; then
+  fail "a booted homelab without any service data rebuilt without a backup"
+fi
+grep -q "none of the sources in $t/new-homelab-spec.json exist" "$t/log" || fail "no 'none of the sources' message: $(cat "$t/log")"
+grep -q "NOT applied" "$t/log" || fail "no 'NOT applied' message"
+pass "a booted homelab without any service data still fails instead of skipping"
+
+if HOMELAB_BACKUP_BOOTED_MARKER=$t/not-booted homelab-backup pre-switch /nix/store/new-system boot 2>"$t/log"; then
+  fail "a chroot of a homelab with service data rebuilt without a backup"
+fi
+grep -q "cannot list the homelab's Dropbox App folder" "$t/log" || fail "the chroot did not try to back up: $(cat "$t/log")"
+grep -q "set NIXOS_NO_CHECK=1 instead" "$t/log" || fail "no NIXOS_NO_CHECK hint in the chroot: $(cat "$t/log")"
+pass "a chroot of a homelab with service data still backs up, and says how to skip there"
 
 if HOMELAB_BACKUP_SOPS_KEY=rclone/dropbox-other homelab-backup pre-switch /nix/store/new-system switch 2>"$t/log"; then
   fail "a backup without the token secret succeeded"

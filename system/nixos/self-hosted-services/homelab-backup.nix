@@ -11,6 +11,7 @@
 # deleted or overwritten on Dropbox; old backups are pruned by hand.
 #
 # Skip once (e.g. offline): `sudo touch /run/skip-homelab-backup`.
+# nixos-install of a new homelab backs up nothing (there is nothing yet).
 # Setup (Dropbox app, token) and restore: doc/homelab-backup.md.
 let
   hl = config.features.homelab;
@@ -206,6 +207,9 @@ let
     HOMELAB_BACKUP_RECIPIENTS = lib.concatStringsSep "\n" recipients;
     HOMELAB_BACKUP_REMOTE = "homelab:";
     HOMELAB_BACKUP_SKIP_FILE = "/run/skip-homelab-backup";
+    # Missing in nixos-install's chroot, where a new homelab has nothing to
+    # back up yet.
+    HOMELAB_BACKUP_BOOTED_MARKER = "/run/systemd/system";
     HOMELAB_BACKUP_TMPDIR = "/var/tmp";
     # The Dropbox app (client_id, client_secret) and its token, read from the
     # incoming configuration's sops file with the keys sops-nix uses.
