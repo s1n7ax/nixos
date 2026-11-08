@@ -11,6 +11,14 @@ with lib;
     #   "d %h/.homelab/adguard/conf 0700 - - -"
     # ];
 
+    # The container's bind-mount sources: podman refuses to start it while
+    # they are missing, as on a new homelab (a restore puts conf back).
+    systemd.tmpfiles.rules = [
+      "d /opt/adguard 0755 root root -"
+      "d /opt/adguard/conf 0755 root root -"
+      "d /opt/adguard/work 0755 root root -"
+    ];
+
     virtualisation.quadlet = {
       # services.podman.networks.adguard-network = {
       #   autoStart = true;

@@ -21,3 +21,11 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Check the security_alerts integration
         run: nix build -L .#checks.x86_64-linux.security-alerts
+
+  homelab-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check the homelab Dropbox backup
+        run: nix build -L .#checks.x86_64-linux.homelab-backup
