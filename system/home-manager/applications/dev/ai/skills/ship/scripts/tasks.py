@@ -6,10 +6,10 @@ Usage:
   tasks.py claim [--force] <task>
   tasks.py release [--force] <task>
 
-A task is goal:<name>, a goal directory under .goals/, or issue:<n>, an open
+A task is goal:<name>, a goal directory under .ship/, or issue:<n>, an open
 GitHub issue labelled agent:ship. Run it anywhere in the repository or in
 one of its worktrees: goals and claims always live in the main checkout's
-.goals/, so every worktree sees the same ones. A goal whose directory holds
+.ship/, so every worktree sees the same ones. A goal whose directory holds
 an `issue` file (the issue's number) is that issue's work, and goes by
 issue:<n>.
 
@@ -104,9 +104,9 @@ def parse(task):
 
 
 def goals_dir():
-    """The main checkout's .goals/, shared by all of its worktrees."""
+    """The main checkout's .ship/, shared by all of its worktrees."""
     first = git("worktree", "list", "--porcelain").splitlines()[0]
-    return os.path.join(first.removeprefix("worktree "), ".goals")
+    return os.path.join(first.removeprefix("worktree "), ".ship")
 
 
 def canonical(goals, kind, key):
@@ -360,11 +360,14 @@ def list_tasks():
     known = {pr["number"]: pr["state"] for pr in prs}
 
     base = base_branch()
+    issue_goals = {}
     names = sorted(os.listdir(goals)) if os.path.isdir(goals) else []
     for name in names:
         if name.startswith(".") or not os.path.isdir(os.path.join(goals, name)):
             continue
-        if canonical(goals, "goal", name)[0] == "issue":
+        kind, key = canonical(goals, "goal", name)
+        if kind == "issue":
+            issue_goals[key] = name
             continue
         heads = (pr["headRefName"] for pr in live)
         if any(head == name or head.startswith(f"{name}_approach_") for head in heads):
@@ -381,7 +384,7 @@ def list_tasks():
         "--limit",
         "200",
         "--json",
-        "number,title,body,labels,closedByPullRequestsReferences",
+        "number,title,labels,closedByPullRequestsReferences",
     )
     if err:
         missing.append(f"issues (gh issue list failed: {err})")
@@ -392,8 +395,8 @@ def list_tasks():
         # the PR list reaches) counts as live: better hidden than done twice.
         if any(known.get(pr["number"], "OPEN") in ("OPEN", "MERGED") for pr in linked):
             continue
-        written = re.search(r"^## Acceptance criteria", issue["body"] or "", re.M)
-        progress = "requirement" if written else "no requirement yet"
+        name = issue_goals.get(str(issue["number"]))
+        progress = goal_entry(goals, name, base)[1] if name else "no requirement yet"
         labelled = CLAIM_LABEL in {label["name"] for label in issue["labels"]}
         add(f"issue:{issue['number']}", issue["title"], progress, labelled)
 

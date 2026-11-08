@@ -125,6 +125,7 @@
               (pkgs.python3.withPackages (ps: [
                 ps.pytest
                 ps.pillow
+                ps.av
               ]))
               pkgs.ruff
               pkgs.nodejs

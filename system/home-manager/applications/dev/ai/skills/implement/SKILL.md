@@ -22,12 +22,12 @@ Four rules hold the whole skill up. Everything below is detail.
 Resolve the `<goal>`:
 
 - The user gave a goal name or path → use it.
-- The current branch name starts with a goal directory name under `.goals/` → use that goal.
-- Exactly one goal under `.goals/` has a requirement → use it.
+- The current branch name starts with a goal directory name under `.ship/` → use that goal.
+- Exactly one goal under `.ship/` has a requirement → use it.
 - Several candidates → ask which one, following the `questions` skill, and wait.
 - None → tell the user to run `/requirement` first, and stop.
 
-Read the requirement — `.goals/<goal>/requirement/requirement.md`, or the ticket when `/requirement` wrote it to a project ticket — and the decisions file if one exists (`.goals/<goal>/decisions/decisions.md`, or the ticket). A decision already recorded is settled; never ask it again. For a ticket, `<goal>` is a short kebab-case description of what the requirement achieves (e.g. `validate-requests`).
+Read the requirement, `.ship/<goal>/requirement/requirement.md`, and the decisions file if one exists, `.ship/<goal>/decisions/decisions.md`. A decision already recorded is settled; never ask it again.
 
 ### 2. Analyze
 
@@ -96,12 +96,12 @@ Yes → decide it yourself, without asking. No → it must fit one of the three 
 
 #### The decisions file
 
-The decisions file lives next to the requirement: `.goals/<goal>/decisions/decisions.md` for a local requirement, added to the ticket for a ticket. `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
+The decisions file lives next to the requirement: `.ship/<goal>/decisions/decisions.md`, never in a ticket. `.ship/` is local working state, never committed: before writing anything under it, create `.ship/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # Decisions — <goal>
 
-Implements: <path or link to the requirement>
+Implements: <path to the requirement>
 
 - **<decision>** — <why>. Decided by: user | agent. Rejected: <alternatives> (<why rejected>).
 
@@ -152,7 +152,7 @@ Fix failures and rerun until green. Never move to review with failing checks, an
 
 Run the review as a **subagent**: a fresh context does not defend the code it wrote. Where the environment provides named subagents (pi's `subagent` tool, Claude Code's Agent tool), dispatch the `code-reviewer` agent with the changes as the target, defaulting to `medium` effort unless the user asked for another level. The subagent reviews; it never fixes. If the environment has no subagent capability, run the review in this session and say so, per the code-review skill's own fallback rule.
 
-Write the findings to `.goals/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds.
+Write the findings to `.ship/<goal>/code-review/<n>-review.md`, where `<n>` is one higher than the highest existing review number (`1-review.md` for the first). Each review round gets its own file; earlier files are never edited by later rounds.
 
 ```markdown
 # Review <n> — <goal>

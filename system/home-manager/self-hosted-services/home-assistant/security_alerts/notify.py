@@ -56,6 +56,12 @@ def local_clock(timestamp: float) -> str:
     return clock(dt_util.as_local(dt_util.utc_from_timestamp(timestamp)))
 
 
+def local_day(timestamp: float) -> tuple[str, str]:
+    """The local date, as ('2026-10-22', 'Thursday 22 October')."""
+    when = dt_util.as_local(dt_util.utc_from_timestamp(timestamp))
+    return when.date().isoformat(), f"{when:%A} {when.day} {when:%B}"
+
+
 def alert_text(
     kind: str, event_type: str, name: str, action: str | None, timestamp: float
 ) -> tuple[str, str]:

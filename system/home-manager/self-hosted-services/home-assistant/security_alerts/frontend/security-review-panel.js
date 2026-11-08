@@ -1,10 +1,19 @@
-// Security review: every alert since the last review, newest first.
+// Security review: the review panel and the Review tab's card, one list of alerts, newest first,
+// with Trigger siren and Snooze above it.
 //
-// Opened at /security-review by tapping a security notification. With no query it records a
-// review (security_alerts/review/start) and rewrites the URL to ?from=&to=, so a reload shows
-// the same window without recording another. ?clip=<alert id> (the Play clip button) opens that
-// alert over the window since the last review, without recording one: a sound plays its audio,
-// a detection its video.
+// The panel (security-review-panel) lists every alert since the last review. Opened at
+// /security-review by tapping a security notification. With no query it records a review
+// (security_alerts/review/start) and rewrites the URL to ?from=&to=, so a reload shows the same
+// window without recording another. ?clip=<alert id> (the Play clip button) opens that alert over
+// the window since the last review, without recording one: a sound plays its audio, a detection
+// its video.
+//
+// The card (type: custom:security-review-card, loaded as a dashboard resource) is the Review tab:
+// every alert in the log, under day headers, older ones loading as it scrolls. It never records a
+// review, and alerts logged while it is open appear at the top. It reloads from now each time it
+// is shown again, and when its signed URLs may have expired (see SIGNED_URL_REFRESH_MS). Left
+// open past midnight, it renames its day headers ("Today" becomes "Yesterday").
+//
 // Sounds show no picture: their row plays the audio in place, and Video opens the clip.
 // Images, audio and clips come as URLs signed for the logged-in user; this file holds no data.
 
@@ -18,10 +27,18 @@ const TYPES_RETRY_MS = 30000;
 // The popup plays a sound's audio or an alert's video.
 const SOUND_MODE = "sound";
 const VIDEO_MODE = "video";
+// How often the Review tab checks whether a new day has begun, to rename its day headers.
+const DAY_CHECK_MS = 60 * 1000;
+// URLs are signed for 24 h (SIGNED_URL_HOURS on the server), and the Review tab can stay open
+// longer. Once its first ones are this old, it reloads from now when it is shown again or when a
+// list image or sound fails, and a clip asks for its alert anew.
+const SIGNED_URL_REFRESH_MS = 23 * 60 * 60 * 1000;
 
 // Read at module load too: the frontend may rewrite the URL before the first panel starts.
-// Only that first panel may use it; later ones would replay a stale clip or window.
-let initialSearch = typeof window !== "undefined" ? window.location.search : "";
+// Only that first panel may use it; later ones would replay a stale clip or window. Loaded by a
+// dashboard instead, the query is not the panel's, so it is never kept.
+let initialSearch =
+  typeof window !== "undefined" && window.location.pathname.startsWith(PANEL_PATH) ? window.location.search : "";
 
 function h(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
@@ -54,6 +71,41 @@ function mediaUrl(item, mode) {
   return media && media.ready && media.url ? media.url : null;
 }
 
+// A date as YYYY-MM-DD in a time zone: Home Assistant's, so it matches the server's days.
+function isoDate(date, timeZone) {
+  const options = { year: "numeric", month: "2-digit", day: "2-digit" };
+  let parts;
+  try {
+    parts = new Intl.DateTimeFormat("en-CA", { ...options, timeZone }).formatToParts(date);
+  } catch (_err) {
+    // An unknown time zone: the browser's own.
+    parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
+  }
+  const part = (type) => parts.find((p) => p.type === type).value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+// "Today", "Yesterday", else the server's name for the day, like "Thursday 22 October".
+function dayLabel(day, dayName, today) {
+  if (day === today) return "Today";
+  const yesterday = new Date(`${today}T12:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  if (day === yesterday.toISOString().slice(0, 10)) return "Yesterday";
+  return dayName;
+}
+
+function endText(logDays) {
+  const text = "That's everything in the log.";
+  return logDays ? `${text} It keeps ${logDays} day${logDays === 1 ? "" : "s"}.` : text;
+}
+
+// Ends a subscription; the connection may already be gone.
+function unsubscribeQuietly(unsubscribe) {
+  Promise.resolve()
+    .then(unsubscribe)
+    .catch(() => {});
+}
+
 // Pauses and unloads every player in `root`, so nothing keeps playing or downloading.
 function stopMedia(root) {
   for (const media of root.querySelectorAll("audio, video")) {
@@ -63,12 +115,19 @@ function stopMedia(root) {
   }
 }
 
-const STYLE = `
+// The panel scrolls on its own under a toolbar; the card grows with the dashboard page.
+const PANEL_STYLE = `
   :host { display: block; height: 100%; overflow-y: auto; background: var(--primary-background-color);
     color: var(--primary-text-color); font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif); }
   .toolbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px; height: 56px;
     padding: 0 12px; background: var(--app-header-background-color, var(--primary-color));
     color: var(--app-header-text-color, #fff); font-size: 20px; }
+`;
+const CARD_STYLE = `
+  :host { display: block; color: var(--primary-text-color);
+    font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif); }
+`;
+const STYLE = `
   .content { max-width: 900px; margin: 0 auto; padding: 12px 12px 48px; }
   .controls { display: grid; gap: 12px; margin-bottom: 16px; }
   .siren { font: inherit; font-size: 1.05em; font-weight: 600; padding: 14px; border: 0; border-radius: 12px;
@@ -99,6 +158,7 @@ const STYLE = `
   .shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
   .no-image { display: flex; align-items: center; justify-content: center; height: 100%; color: #aaa; }
   .more { padding: 16px; text-align: center; color: var(--secondary-text-color); }
+  .day { margin: 8px 2px -4px; font-weight: 600; color: var(--secondary-text-color); }
   .row { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--card-background-color);
     border-radius: 12px; border: 1px solid var(--divider-color); }
   .row .type { font-size: 0.95em; }
@@ -118,10 +178,11 @@ const STYLE = `
   .clip-body audio { display: block; width: 100%; margin-bottom: 10px; }
 `;
 
-class SecurityReviewPanel extends HTMLElement {
+// The list, its paging and lazy images, the top controls and the clip popup, shared by the
+// panel and the card. Subclasses build it with _shell() and fill it with _renderWindow().
+class ReviewList extends HTMLElement {
   constructor() {
     super();
-    this._search = null;
     this._types = null;
     this._snoozeTypes = new Set();
     this._snoozeHours = null;
@@ -131,38 +192,23 @@ class SecurityReviewPanel extends HTMLElement {
     this._poll = null;
     this._liveCard = null;
     this._clipRequest = 0;
+    this._ids = new Set();
+    this._lastDay = null;
+    // The day that was today when the day headers were labelled.
+    this._labelDay = null;
+    this._end = null;
+    // Set by subclasses: day headers, the end-of-log note, and the text of an empty window.
+    this._dayHeaders = false;
+    this._endNote = false;
+    this._emptyText = "Nothing happened in this time.";
   }
 
-  set hass(hass) {
-    this._hass = hass;
-    if (this._menu) this._menu.hass = hass;
-    if (this._liveCard) this._liveCard.hass = hass;
-    // The frontend may keep a hidden panel; only follow the URL while it is ours.
-    if (!window.location.pathname.startsWith(PANEL_PATH)) return;
-    const search = this._currentSearch();
-    if (search !== this._search) {
-      this._search = search;
-      this._start(search);
-    }
-  }
-
-  set narrow(narrow) {
-    this._narrow = narrow;
-    if (this._menu) this._menu.narrow = narrow;
-  }
-
-  disconnectedCallback() {
+  // Everything that runs on its own: observers, the types retry, the clip poll.
+  _stop() {
     if (this._observer) this._observer.disconnect();
     if (this._moreObserver) this._moreObserver.disconnect();
     clearTimeout(this._typesRetry);
     this._stopPoll();
-  }
-
-  _currentSearch() {
-    const fallback = initialSearch;
-    initialSearch = "";
-    if (this._search === null && !window.location.search && fallback) return fallback;
-    return window.location.search;
   }
 
   _toast(message) {
@@ -171,18 +217,19 @@ class SecurityReviewPanel extends HTMLElement {
     );
   }
 
+  // The host's own styles, and what goes above the content.
+  _hostStyle() {
+    return "";
+  }
+
+  _header() {
+    return null;
+  }
+
   _shell() {
     if (this._root) return;
     this._root = this.attachShadow({ mode: "open" });
-    this._root.append(h("style", { text: STYLE }));
-    const toolbar = h("div", { class: "toolbar" });
-    if (customElements.get("ha-menu-button")) {
-      this._menu = document.createElement("ha-menu-button");
-      this._menu.hass = this._hass;
-      this._menu.narrow = this._narrow;
-      toolbar.append(this._menu);
-    }
-    toolbar.append(h("span", { text: "Security review" }));
+    this._root.append(h("style", { text: this._hostStyle() + STYLE }));
     this._siren = h("button", { class: "siren", onclick: () => this._triggerSiren() }, "Trigger siren");
     this._snooze = h("div", { class: "snooze" });
     this._windowText = h("div", { class: "window" });
@@ -193,8 +240,9 @@ class SecurityReviewPanel extends HTMLElement {
       },
       onclose: () => this._closeClip(),
     });
+    const header = this._header();
+    if (header) this._root.append(header);
     this._root.append(
-      toolbar,
       h("div", { class: "content" }, [
         h("div", { class: "controls" }, [this._siren, this._snooze]),
         this._windowText,
@@ -202,33 +250,6 @@ class SecurityReviewPanel extends HTMLElement {
       ]),
       this._dialog,
     );
-  }
-
-  async _start(search) {
-    this._shell();
-    this._loadTypes();
-    const params = new URLSearchParams(search || "");
-    const clip = params.get("clip");
-    const from = params.get("from");
-    const to = params.get("to");
-    this._list.replaceChildren(h("div", { class: "empty", text: "Loading…" }));
-    try {
-      let result;
-      if (clip) {
-        result = await this._hass.callWS({ type: "security_alerts/review/get" });
-      } else if (from && to) {
-        result = await this._hass.callWS({ type: "security_alerts/review/get", from: Number(from), to: Number(to) });
-      } else {
-        result = await this._hass.callWS({ type: "security_alerts/review/start" });
-        const url = `${window.location.pathname}?from=${result.from}&to=${result.to}`;
-        window.history.replaceState(window.history.state, "", url);
-        this._search = window.location.search;
-      }
-      this._renderWindow(result);
-      if (clip) this._openClip(clip);
-    } catch (err) {
-      this._list.replaceChildren(h("div", { class: "error", text: `Could not load alerts: ${err.message || err}` }));
-    }
   }
 
   // Top controls
@@ -253,6 +274,7 @@ class SecurityReviewPanel extends HTMLElement {
       this._types = await this._hass.callWS({ type: "security_alerts/types" });
       if (this._snoozeHours === null) this._snoozeHours = this._types.durations[0];
       this._renderSnooze();
+      this._updateEnd();
     } catch (err) {
       if (!this._types) {
         this._snooze.replaceChildren(h("div", { class: "error", text: `Snooze is unavailable: ${err.message || err}` }));
@@ -324,31 +346,71 @@ class SecurityReviewPanel extends HTMLElement {
   _renderWindow(result) {
     this._window = result;
     this._count = 0;
+    this._ids = new Set();
+    this._lastDay = null;
+    this._end = null;
     if (this._observer) this._observer.disconnect();
     if (this._moreObserver) this._moreObserver.disconnect();
-    if (!result.items.length) {
+    if (!result.items.length && this._emptyText) {
       this._showCount(false);
-      this._list.replaceChildren(h("div", { class: "empty", text: "Nothing happened in this time." }));
+      this._list.replaceChildren(h("div", { class: "empty", text: this._emptyText }));
       return;
     }
     this._list.replaceChildren();
     this._appendPage(result);
   }
 
-  _showCount(more) {
-    const w = this._window;
-    const n = `${this._count}${more ? "+" : ""}`;
-    this._windowText.textContent = `${w.from_clock} to ${w.to_clock} · ${n} alert${n === "1" ? "" : "s"}`;
+  // The line above the list.
+  _showCount(_more) {}
+
+  _dayHeader(item) {
+    const today = this._relabelDays();
+    return h("div", {
+      class: "day",
+      "data-day": item.day,
+      "data-day-name": item.day_name,
+      text: dayLabel(item.day, item.day_name, today),
+    });
+  }
+
+  // Renames the day headers once a new day has begun since they were labelled, so the list left
+  // open past midnight has one "Today". Returns today, in Home Assistant's time zone.
+  _relabelDays() {
+    const timeZone = this._hass && this._hass.config ? this._hass.config.time_zone : undefined;
+    const today = isoDate(new Date(), timeZone);
+    if (today === this._labelDay) return today;
+    this._labelDay = today;
+    for (const header of this._list.querySelectorAll(".day")) {
+      header.textContent = dayLabel(header.dataset.day, header.dataset.dayName, today);
+    }
+    return today;
+  }
+
+  _updateEnd() {
+    if (this._end) this._end.textContent = endText(this._types && this._types.log_days);
   }
 
   // Appends one page; a sentinel at the end fetches the next page when it nears the screen.
   _appendPage(page) {
-    const items = page.items.map((item) => this._renderItem(item));
-    this._list.append(...items);
+    const elements = [];
+    for (const item of page.items) {
+      if (this._dayHeaders && item.day !== this._lastDay) elements.push(this._dayHeader(item));
+      this._lastDay = item.day;
+      this._ids.add(item.id);
+      elements.push(this._renderItem(item));
+    }
+    this._list.append(...elements);
     this._count += page.items.length;
     this._showCount(page.more);
-    this._loadImages(items);
-    if (!page.more) return;
+    this._loadImages(elements);
+    if (!page.more) {
+      if (this._endNote) {
+        this._end = h("div", { class: "more" });
+        this._updateEnd();
+        this._list.append(this._end);
+      }
+      return;
+    }
     const last = page.items[page.items.length - 1];
     const sentinel = h("div", { class: "more", text: "Loading more…" });
     this._list.append(sentinel);
@@ -375,6 +437,18 @@ class SecurityReviewPanel extends HTMLElement {
     this._moreObserver.observe(sentinel);
   }
 
+  // An alert logged while the list is open goes on top, under its day's header.
+  _prepend(item) {
+    if (this._ids.has(item.id)) return;
+    this._ids.add(item.id);
+    const element = this._renderItem(item);
+    const first = this._list.firstElementChild;
+    if (!this._dayHeaders) this._list.prepend(element);
+    else if (first && first.dataset.day === item.day) first.after(element);
+    else this._list.prepend(this._dayHeader(item), element);
+    this._loadImages([element]);
+  }
+
   _badge(item) {
     const text = BADGES[item.delivery];
     return text ? h("span", { class: "badge", text }) : null;
@@ -398,7 +472,9 @@ class SecurityReviewPanel extends HTMLElement {
     }
     if (item.kind === "sound") return this._renderSound(item);
     const img = h("img", { "data-src": item.image, alt: `${item.type_name} at ${item.name}`, decoding: "async" });
-    img.addEventListener("error", () => img.replaceWith(h("div", { class: "no-image", text: "No image" })));
+    img.addEventListener("error", () =>
+      this._mediaFailed(() => img.replaceWith(h("div", { class: "no-image", text: "No image" }))),
+    );
     return h("article", { class: "card" }, [
       this._cardHeader(item),
       h("button", { class: "shot", "aria-label": `Play the ${item.type_name} clip`, onclick: () => this._openClip(item.id, item) }, img),
@@ -410,7 +486,13 @@ class SecurityReviewPanel extends HTMLElement {
   _renderSound(item) {
     const url = mediaUrl(item, SOUND_MODE);
     const player = url
-      ? h("audio", { controls: true, preload: "none", src: url, "aria-label": `${item.type_name} at ${item.name}` })
+      ? h("audio", {
+          controls: true,
+          preload: "none",
+          src: url,
+          "aria-label": `${item.type_name} at ${item.name}`,
+          onerror: () => this._mediaFailed(),
+        })
       : h("button", { class: "go", text: "Play sound", onclick: () => this._openClip(item.id, item, SOUND_MODE) });
     return h("article", { class: "card" }, [
       this._cardHeader(item),
@@ -419,6 +501,11 @@ class SecurityReviewPanel extends HTMLElement {
         h("button", { class: "ghost", text: "Video", onclick: () => this._openClip(item.id, item, VIDEO_MODE) }),
       ]),
     ]);
+  }
+
+  // A signed URL in the list did not load; `fallback` shows it. The card may reload instead.
+  _mediaFailed(fallback) {
+    if (fallback) fallback();
   }
 
   // Images on the first screen load at once with high priority; the rest when scrolled near.
@@ -592,6 +679,230 @@ class SecurityReviewPanel extends HTMLElement {
   }
 }
 
+class SecurityReviewPanel extends ReviewList {
+  constructor() {
+    super();
+    this._search = null;
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (this._menu) this._menu.hass = hass;
+    if (this._liveCard) this._liveCard.hass = hass;
+    // The frontend may keep a hidden panel; only follow the URL while it is ours.
+    if (!window.location.pathname.startsWith(PANEL_PATH)) return;
+    const search = this._currentSearch();
+    if (search !== this._search) {
+      this._search = search;
+      this._start(search);
+    }
+  }
+
+  set narrow(narrow) {
+    this._narrow = narrow;
+    if (this._menu) this._menu.narrow = narrow;
+  }
+
+  disconnectedCallback() {
+    this._stop();
+  }
+
+  _currentSearch() {
+    const fallback = initialSearch;
+    initialSearch = "";
+    if (this._search === null && !window.location.search && fallback) return fallback;
+    return window.location.search;
+  }
+
+  _hostStyle() {
+    return PANEL_STYLE;
+  }
+
+  _header() {
+    const toolbar = h("div", { class: "toolbar" });
+    if (customElements.get("ha-menu-button")) {
+      this._menu = document.createElement("ha-menu-button");
+      this._menu.hass = this._hass;
+      this._menu.narrow = this._narrow;
+      toolbar.append(this._menu);
+    }
+    toolbar.append(h("span", { text: "Security review" }));
+    return toolbar;
+  }
+
+  async _start(search) {
+    this._shell();
+    this._loadTypes();
+    const params = new URLSearchParams(search || "");
+    const clip = params.get("clip");
+    const from = params.get("from");
+    const to = params.get("to");
+    this._list.replaceChildren(h("div", { class: "empty", text: "Loading…" }));
+    try {
+      let result;
+      if (clip) {
+        result = await this._hass.callWS({ type: "security_alerts/review/get" });
+      } else if (from && to) {
+        result = await this._hass.callWS({ type: "security_alerts/review/get", from: Number(from), to: Number(to) });
+      } else {
+        result = await this._hass.callWS({ type: "security_alerts/review/start" });
+        const url = `${window.location.pathname}?from=${result.from}&to=${result.to}`;
+        window.history.replaceState(window.history.state, "", url);
+        this._search = window.location.search;
+      }
+      this._renderWindow(result);
+      if (clip) this._openClip(clip);
+    } catch (err) {
+      this._list.replaceChildren(h("div", { class: "error", text: `Could not load alerts: ${err.message || err}` }));
+    }
+  }
+
+  _showCount(more) {
+    const w = this._window;
+    const n = `${this._count}${more ? "+" : ""}`;
+    this._windowText.textContent = `${w.from_clock} to ${w.to_clock} · ${n} alert${n === "1" ? "" : "s"}`;
+  }
+}
+
+// The Review tab: every alert in the log from now back, under day headers. Opening it records no
+// review and clears no notification.
+class SecurityReviewCard extends ReviewList {
+  constructor() {
+    super();
+    this._dayHeaders = true;
+    this._endNote = true;
+    this._emptyText = null;
+    // Bumped on each start and stop, so answers for an earlier start are dropped.
+    this._run = 0;
+    this._running = false;
+    this._unsubscribe = null;
+    // Alerts pushed before the first page is shown.
+    this._pending = null;
+    this._dayCheck = null;
+    // When the first page was asked for: its URLs are the oldest in the list.
+    this._startedAt = null;
+    this._onVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      if (this._expired()) this._restart();
+      else this._relabelDays();
+    };
+  }
+
+  static getStubConfig() {
+    return {};
+  }
+
+  // Dashboards require it; the card has no options.
+  setConfig(_config) {}
+
+  getCardSize() {
+    return 12;
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (this._liveCard) this._liveCard.hass = hass;
+    if (this.isConnected && !this._running) this._start();
+  }
+
+  connectedCallback() {
+    if (this._hass && !this._running) this._start();
+  }
+
+  disconnectedCallback() {
+    this._stop();
+  }
+
+  _stop() {
+    super._stop();
+    this._run += 1;
+    this._running = false;
+    this._pending = null;
+    if (this._unsubscribe) unsubscribeQuietly(this._unsubscribe);
+    this._unsubscribe = null;
+    clearInterval(this._dayCheck);
+    this._dayCheck = null;
+    document.removeEventListener("visibilitychange", this._onVisibility);
+    if (this._dialog && this._dialog.open) this._dialog.close();
+  }
+
+  _hostStyle() {
+    return CARD_STYLE;
+  }
+
+  // Whether the list's signed URLs may have expired.
+  _expired() {
+    return this._running && Date.now() - this._startedAt >= SIGNED_URL_REFRESH_MS;
+  }
+
+  _restart() {
+    this._stop();
+    this._start();
+  }
+
+  _mediaFailed(fallback) {
+    if (this._expired()) this._restart();
+    else super._mediaFailed(fallback);
+  }
+
+  // A clip from an old list asks for its alert again, for freshly signed URLs.
+  _openClip(alertId, item, mode) {
+    return super._openClip(alertId, this._expired() ? null : item, mode);
+  }
+
+  // Subscribes before anything else, so nothing logged while the first page loads is missed;
+  // an alert both pushed and on that page is shown once.
+  async _start() {
+    this._running = true;
+    this._startedAt = Date.now();
+    const run = ++this._run;
+    this._shell();
+    this._windowText.textContent = "All alerts · newest first";
+    this._list.replaceChildren(h("div", { class: "empty", text: "Loading…" }));
+    this._pending = [];
+    this._dayCheck = setInterval(() => this._relabelDays(), DAY_CHECK_MS);
+    document.addEventListener("visibilitychange", this._onVisibility);
+    try {
+      const subscribed = this._hass.connection.subscribeMessage((item) => this._pushed(run, item), {
+        type: "security_alerts/review/subscribe",
+      });
+      this._loadTypes();
+      const unsubscribe = await subscribed;
+      if (run !== this._run) {
+        unsubscribeQuietly(unsubscribe);
+        return;
+      }
+      this._unsubscribe = unsubscribe;
+      const result = await this._hass.callWS({ type: "security_alerts/review/get", from: 0 });
+      if (run !== this._run) return;
+      this._renderWindow(result);
+      const pending = this._pending;
+      this._pending = null;
+      for (const item of pending) this._prepend(item);
+    } catch (err) {
+      if (run !== this._run) return;
+      this._list.replaceChildren(h("div", { class: "error", text: `Could not load alerts: ${err.message || err}` }));
+    }
+  }
+
+  _pushed(run, item) {
+    if (run !== this._run) return;
+    if (this._pending) this._pending.push(item);
+    else this._prepend(item);
+  }
+}
+
 if (!customElements.get("security-review-panel")) {
   customElements.define("security-review-panel", SecurityReviewPanel);
+}
+if (!customElements.get("security-review-card")) {
+  customElements.define("security-review-card", SecurityReviewCard);
+}
+window.customCards = window.customCards || [];
+if (!window.customCards.some((c) => c.type === "security-review-card")) {
+  window.customCards.push({
+    type: "security-review-card",
+    name: "Security review",
+    description: "Every security alert, newest first, with Trigger siren and Snooze: the Review tab.",
+  });
 }
