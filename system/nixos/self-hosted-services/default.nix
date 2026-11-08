@@ -5,5 +5,6 @@
     ./adguard.nix
     ./storage.nix
     ./dongle-m-serial-log.nix
+    ./homelab-backup.nix
   ];
 }

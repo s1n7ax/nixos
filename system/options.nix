@@ -539,6 +539,10 @@ with lib;
         enable = mkEnableOption "the SONOFF Dongle-M reboot monitor (records every coordinator reboot and sends a Home Assistant notification for each)";
       };
 
+      backup = {
+        enable = mkEnableOption "an encrypted backup of the homelab services' settings and data to the homelab's Dropbox App folder before every switch, test and boot (doc/homelab-backup.md)";
+      };
+
       entertainment = {
         enable = mkEnableOption "Entertainment services";
 
