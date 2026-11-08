@@ -15,6 +15,8 @@ fails, the rebuild stops before anything is applied.
 - The homelab never deletes or overwrites a backup. Delete old ones by hand in
   the Dropbox web UI or the desktop mount.
 
+The commands below are bash (from fish, run `bash` first).
+
 ## Skip the Backup Once
 
 For example while offline:
@@ -53,7 +55,7 @@ The token can only reach its own App folder, and only list and add files.
    curl -s https://api.dropboxapi.com/oauth2/token \
      -d grant_type=authorization_code -d code=<code> \
      -u '<App key>:<App secret>' |
-     jq -c '{access_token, token_type, refresh_token, expiry: ((now | floor) + .expires_in | todate)}'
+     nix run nixpkgs#jq -- -c '{access_token, token_type, refresh_token, expiry: ((now | floor) + .expires_in | todate)}'
    ```
 
    It prints one line of JSON with a `refresh_token`. (`rclone authorize`
@@ -128,7 +130,7 @@ Restore onto a running homelab, or onto a new one after its first rebuild
    databases and would corrupt the restored ones:
 
    ```shell
-   jq -r '.sources[] | .path + "/" + .databases[]' /var/tmp/restore/homelab-backup.json |
+   nix run nixpkgs#jq -- -r '.sources[] | .path + "/" + .databases[]' /var/tmp/restore/homelab-backup.json |
      while read -r db; do sudo rm -f "$db-wal" "$db-shm"; done
    ```
 
@@ -158,7 +160,7 @@ auto-tagging model, and the Frigate config and z2m `configuration.yaml`
 ### On a New Homelab
 
 1. Install NixOS and this repo. The new machine has a new SSH host key: add
-   its age key (`ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub`) to
+   its age key (`nix run nixpkgs#ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub`) to
    nix-secrets' `.sops.yaml` as `server`, run `sops updatekeys secrets.yaml`
    on the desktop, push, and `nix flake update secrets` here.
 2. Skip the backup on the first rebuild (there is nothing to back up yet):
