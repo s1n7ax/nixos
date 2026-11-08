@@ -81,6 +81,7 @@ while IFS= read -r recipient; do
   [ -n "$recipient" ] && recipient_args+=(-r "$recipient")
 done <<<"${HOMELAB_BACKUP_RECIPIENTS:-}"
 [ "${#recipient_args[@]}" -gt 0 ] || die "HOMELAB_BACKUP_RECIPIENTS lists no age recipient"
+jq -e '.sources | type == "array"' "$spec" >/dev/null || die "$spec is not a backup spec"
 
 work=
 on_exit() {

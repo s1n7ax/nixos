@@ -215,4 +215,10 @@ fi
 grep -q "no key to decrypt" "$t/log" || fail "no 'no key to decrypt' message: $(cat "$t/log")"
 pass "a missing host key fails with a clear message"
 
+if HOMELAB_BACKUP_SPEC=$t/absent-spec.json homelab-backup pre-switch /nix/store/new-system switch 2>"$t/log"; then
+  fail "a backup without a spec succeeded"
+fi
+grep -q "is not a backup spec" "$t/log" || fail "no 'is not a backup spec' message: $(cat "$t/log")"
+pass "a missing spec fails with a clear message"
+
 [ "$(backups | wc -l)" -eq 2 ] || fail "a failed run left a backup"
