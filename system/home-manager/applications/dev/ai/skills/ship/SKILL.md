@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drive the whole workflow — /requirement, /implement, independent verification, /verify's end-user tests, and the PR — in one session, stopping for the user only where their decision is needed. Run with no argument to pick one of the unfinished local goals or open agent:ship GitHub issues; parallel runs never take the same task. Pass --critical to add a requirement-vs-implementation check. Only use when the user explicitly runs the /ship command; never trigger on your own.
+description: Drive the whole workflow — /requirement, /implement, independent verification, /verify's end-user tests, and the PR — in one session, stopping for the user only where their decision is needed. Run with no argument to pick one of the unfinished local goals or open agent:ship GitHub issues; parallel runs never take the same task. Pass --critical to add a requirement-vs-implementation check. Asking for prototypes means: build a few, the user picks one, and the pick ships. Only use when the user explicitly runs the /ship command; never trigger on your own.
 disable-model-invocation: true
 ---
 
@@ -9,6 +9,8 @@ disable-model-invocation: true
 This skill is the conductor. It runs `/requirement` and `/implement` back to back, adds independent checks after them, tests the result as its end user would with `/verify`, and opens the PR only after the final validation and `/verify` pass. `/implement` runs in this session, so its questions go straight to the user and each fix is made where the code was read; its review and simplify passes, and every check after it, run in fresh subagents. The user is pulled in only for decisions that are theirs: requirement questions, `/implement`'s questions, and failures that retries could not fix.
 
 Usage: `/ship [--critical] [<fuzzy requirement> | <goal> | #<issue>]`
+
+When the user asks for prototypes — in the argument or at any point in the run — see Prototypes below.
 
 Five rules hold the whole skill up. Everything below is detail.
 
@@ -23,6 +25,7 @@ Five rules hold the whole skill up. Everything below is detail.
 ```
 1. requirement      main session, with the user
 2. implement        main session; review and simplify in subagents
+   ↳ prototypes     only when asked, after Decide; the user picks one
    ↳ gate           main session, after every code change
 3. impl check       [--critical] subagent
 4. final validation always, subagent
@@ -87,6 +90,7 @@ Overrides while `/ship` drives:
 When the task is an existing goal (a directory under `<goals>/`, or an issue), start at the first stage that is not finished:
 
 - No requirement (for an issue, a body that is not yet one) → stage 1.
+- Prototypes asked for, and `<goal>_prototype_*` branches but no pick in the decisions file → Prototypes, step 3.
 - No commits on the goal's branch yet → stage 2, from the build. The decisions file records what was already decided; do not re-ask it.
 - Commits but no simplify pass yet → stage 2, from `/implement`'s first unfinished step (the `code-review/` files show whether review and fixes are done).
 - Otherwise → the first check without a PASS report newer than the latest commit: in `verification/` for stages 3–4, in `verify/` for stage 5 (a report with no FAIL counts as a PASS).
@@ -131,6 +135,19 @@ Every check writes its report to `.goals/<goal>/verification/<n>-<check>.md` (`<
 ```
 
 The verdict is FAIL when any row fails or any problem is listed.
+
+### Prototypes — only when the user asks for them
+
+"Prototype" in a `/ship` run always means: show me a few, I pick the best, and the pick is what we ship. It is never a request to build prototypes and stop. Do not ask whether to stop after the prototypes or ship the pick — the pick ships, through every remaining stage.
+
+Run this inside stage 2, after `/implement`'s Analyze and Decide steps and before its Implement step. In Decide, do not ask the Type 1 forks you will make the prototypes differ on; the pick settles them. Ask every other question as usual.
+
+1. **Build 2–3 prototypes**, or as many as the user named, never more than 3. Each one takes a genuinely different direction: a different approach at a fork, or a different design for UI work. Pick the directions yourself from the analysis; ask only if the requirement leaves no basis to choose.
+2. **Each prototype runs.** It is a working, unpolished build of the requirement's core, enough to judge the direction — not the final code. Build each on its own `<goal>_prototype_<name>` branch in the goal's worktree (`<name>` short kebab-case), committed. Prototypes skip review, simplify and the checks; they never get pushed or a PR.
+3. **Show them.** For each: its name, what sets it apart in one line, and the evidence to judge it — screenshots for anything visual, a command and its output for a CLI or service, the key part of the diff otherwise. Send screenshots to the user where the environment allows (Claude Code: SendUserFile).
+4. **Ask which one ships**, following the `questions` skill: one option per prototype in the ask-question tool. This is the only question prototypes add. A pick that combines prototypes ("A, with B's layout") is a valid answer.
+5. **Make the pick the goal.** Record it in the decisions file under `## Prototypes` (each prototype in one line, and the pick with the user's reason if they gave one). Then `git checkout -B <goal> <goal>_prototype_<pick>` in the worktree, and delete the other prototype branches.
+6. **Carry on with stage 2 from its Implement step**, finishing the picked prototype to production standard, then every check and the PR as usual.
 
 ### 2. Implement — in this session
 
@@ -185,6 +202,7 @@ Finally, release the claim and remove the goal's worktree (see Claiming the task
 - Never work on a task without holding its claim, or take one another live agent holds unless the user confirms it.
 - Never build in `<main>`'s working tree; build in the goal's worktree.
 - Never skip the final validation or `/verify`, with or without `--critical`.
+- Never ask whether to stop after prototypes; the user's pick ships.
 - Never dispatch a check while the gate is red.
 - Never let a checker fix what it checks, or see the conversation that produced the work.
 - Never open a PR while a check is failing.
