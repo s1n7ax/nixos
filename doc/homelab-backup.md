@@ -108,47 +108,43 @@ Restore onto a running homelab, or onto a new one after its first rebuild
 1. Get the backup file from the App folder (Dropbox web UI, or
    `~/Drives/Dropbox/Apps/<app name>/` on the desktop) and copy it to the
    homelab.
-2. Unpack it with a sops age key (`~/.config/sops/age/keys.txt`; on a new
-   homelab, a copy of the desktop's):
-
-   ```shell
-   sudo mkdir /var/tmp/restore
-   age -d -i ~/.config/sops/age/keys.txt homelab-<time>.tar.zst.age |
-     sudo tar --zstd -x -p --numeric-owner -C /var/tmp/restore
-   ```
-
-   `/var/tmp/restore/homelab-backup.json` lists the sources, the databases
-   and the systems the backup was taken between. The rest mirrors `/`.
-
-3. Stop the services:
+2. Stop the services:
 
    ```shell
    systemctl --user stop 'podman-*.service'
    sudo systemctl stop adguard.service dongle-m-reboot-monitor.service
    ```
 
-4. Delete the live databases' `-wal`/`-shm` files. They belong to the old
-   databases and would corrupt the restored ones:
+3. Restore it with a sops age key (`~/.config/sops/age/keys.txt`; on a new
+   homelab, a copy of the desktop's):
 
    ```shell
-   nix run nixpkgs#jq -- -r '.sources[] | .path + "/" + .databases[]' /var/tmp/restore/homelab-backup.json |
-     while read -r db; do sudo rm -f "$db-wal" "$db-shm"; done
+   sudo homelab-restore -i ~/.config/sops/age/keys.txt homelab-<time>.tar.zst.age
    ```
 
-5. Copy each backed-up folder back with its owners (the containers' files
-   belong to rootless podman's sub-UIDs). Only the backed-up folders are
-   copied, not their parents: the backup doesn't hold the parents, so
-   `~/.homelab`, `~/.homelab/sonarr` and the others keep their owner and
-   mode:
+   It decrypts and unpacks the backup into a temporary folder in `/var/tmp`
+   (removed afterwards). Then, for each folder the backup holds (its
+   `homelab-backup.json` lists them, with their databases and the systems
+   the backup was taken between), it:
 
-   ```shell
-   nix run nixpkgs#jq -- -r '.sources[].path' /var/tmp/restore/homelab-backup.json |
-     while read -r dir; do
-       if [ -d "/var/tmp/restore$dir" ]; then sudo cp -a "/var/tmp/restore$dir/." "$dir/"; fi
-     done
-   ```
+   - creates the folder's missing parents (on a new homelab, e.g.
+     `/opt/adguard`) with the owner and mode they had on the old homelab;
+     parents that exist, such as `~/.homelab` and `~/.homelab/sonarr`, keep
+     their owner and mode
+   - deletes the live databases' `-wal`/`-shm`/`-journal` files, which
+     belong to the old databases and would corrupt the restored ones
+   - copies the folder back with its owners (the containers' files belong
+     to rootless podman's sub-UIDs)
 
-6. Reboot (or start the services again), then rebuild Paperless' search
+   It ends with `restored <n> of <m> folders`. Any problem (wrong key, not
+   a homelab backup, a folder it can't create or copy) stops it with an
+   `error:` line and a non-zero exit. A folder the backup doesn't hold (it
+   was missing when the backup was taken) is a `warning:` and left as it is.
+
+   To look inside a backup without restoring it:
+   `age -d -i ~/.config/sops/age/keys.txt homelab-<time>.tar.zst.age | tar --zstd -t`.
+
+4. Reboot (or start the services again), then rebuild Paperless' search
    index, which is not backed up:
 
    ```shell

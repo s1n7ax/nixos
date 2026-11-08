@@ -14,7 +14,8 @@
 # databases and a manifest (homelab-backup.json: the sources, the systems,
 # the owner and mode of the folders above each source), compress (zstd),
 # encrypt (age), upload as a new homelab-<UTC timestamp>.tar.zst.age. Nothing
-# on Dropbox is ever deleted or overwritten.
+# on Dropbox is ever deleted or overwritten. homelab-restore puts a backup
+# back.
 #
 # Skip once: create the skip file (`sudo touch /run/skip-homelab-backup`); it
 # is removed when honoured.

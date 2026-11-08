@@ -281,3 +281,87 @@ pass "a missing spec fails with a clear message"
 
 [ "$(backups | wc -l)" -eq 2 ] || fail "a failed run left a backup"
 
+# --- Restore ----------------------------------------------------------------
+
+# The service stops; its -wal/-shm stay behind, as after a crash.
+kill "$holder"
+wait "$holder" 2>/dev/null || true
+[ -e "$svc/app.db-wal" ] || fail "the stopped service left no -wal behind"
+
+export HOMELAB_RESTORE_TMPDIR=$t/restore-tmp
+# homelab-restore needs root to give the files their owners; fakeroot stands
+# in for sudo.
+restore() {
+  fakeroot homelab-restore -i "$t/desktop.key" "$@"
+}
+rows() {
+  sqlite3 "$svc/app.db" 'SELECT group_concat(x) FROM (SELECT x FROM t ORDER BY rowid)'
+}
+
+if homelab-restore -i "$t/desktop.key" "$t/remote/$first" 2>"$t/log"; then
+  fail "a restore without root succeeded"
+fi
+grep -q "run it as root" "$t/log" || fail "no 'run it as root' message: $(cat "$t/log")"
+pass "a restore without root fails and says to use sudo"
+
+# Onto the homelab the backup came from.
+echo changed >"$svc/config.xml"
+chmod 0700 "$t/data"
+restore "$t/remote/$first" 2>"$t/log" || fail "the restore failed: $(cat "$t/log")"
+cat "$t/log"
+[ "$(cat "$svc/config.xml")" = setting ] || fail "config.xml was not restored"
+for journal in app.db-wal app.db-shm; do
+  [ ! -e "$svc/$journal" ] || fail "the live $journal was left next to the restored database"
+done
+[ "$(rows)" = one,two,three ] || fail "the restored database has rows '$(rows)', expected one,two,three"
+[ "$(stat -c %a "$t/data")" = 700 ] || fail "the restore changed the mode of an existing parent to $(stat -c %a "$t/data")"
+[ -z "$(ls -A "$t/restore-tmp")" ] || fail "the restore left its work folder behind"
+pass "a restore brings back settings and databases, drops the live -wal/-shm and leaves existing parents alone"
+
+# Onto a new homelab: none of the folders exist.
+rm -rf "$t/data"
+restore "$t/remote/$first" 2>"$t/log" || fail "the restore onto a new homelab failed: $(cat "$t/log")"
+cat "$t/log"
+[ "$(cat "$svc/config.xml")" = setting ] || fail "config.xml was not restored onto a new homelab"
+[ "$(cat "$svc/keep/deep/nested.txt")" = nested ] || fail "keep/deep/nested.txt was not restored onto a new homelab"
+[ "$(cat "$conf/AdGuardHome.yaml")" = 'dns: {}' ] || fail "the source below missing parents was not restored"
+[ "$(rows)" = one,two,three ] || fail "the database restored onto a new homelab has rows '$(rows)'"
+for want in "$t/data 751" "$t/data/opt 711" "$t/data/opt/adguard 755" "$conf 700"; do
+  read -r dir mode <<<"$want"
+  [ "$(stat -c %a "$dir")" = "$mode" ] || fail "$dir has mode $(stat -c %a "$dir"), expected $mode"
+done
+[ ! -e "$t/data/gone" ] || fail "the restore created a folder the backup does not hold"
+grep -q "warning: the backup does not hold $t/data/gone" "$t/log" || fail "no warning for the folder the backup does not hold"
+pass "a restore onto a new homelab creates the missing parents with their recorded owner and mode"
+
+# Backups it cannot read fail loudly and restore nothing.
+echo changed >"$svc/config.xml"
+age-keygen -o "$t/other.key" 2>/dev/null
+if fakeroot homelab-restore -i "$t/other.key" "$t/remote/$first" 2>"$t/log"; then
+  fail "a restore with a key that is not a recipient succeeded"
+fi
+grep -q "cannot decrypt" "$t/log" || fail "no 'cannot decrypt' message: $(cat "$t/log")"
+grep -q "nothing was restored" "$t/log" || fail "no 'nothing was restored' message: $(cat "$t/log")"
+
+bad_backup() {
+  local dir=$t/bad-$1
+  mkdir -p "$dir/$rel"
+  echo bad >"$dir/$rel/config.xml"
+  if [ -n "$2" ]; then
+    printf '%s' "$2" >"$dir/homelab-backup.json"
+  fi
+  tar --zstd -c -C "$dir" . | age -r "$(age-keygen -y "$t/desktop.key")" >"$dir.tar.zst.age"
+}
+bad_backup none ""
+bad_backup broken '{"sources": ['
+bad_backup empty '{"sources": []}'
+for bad in none:"holds no homelab-backup.json" broken:"cannot read the list" empty:"cannot read the list"; do
+  if restore "$t/bad-${bad%%:*}.tar.zst.age" 2>"$t/log"; then
+    fail "a restore of a backup with manifest '${bad%%:*}' succeeded"
+  fi
+  grep -q "${bad#*:}" "$t/log" || fail "no '${bad#*:}' message for manifest '${bad%%:*}': $(cat "$t/log")"
+  grep -q "nothing was restored" "$t/log" || fail "no 'nothing was restored' message: $(cat "$t/log")"
+done
+[ "$(cat "$svc/config.xml")" = changed ] || fail "a failed restore changed config.xml"
+[ -z "$(ls -A "$t/restore-tmp")" ] || fail "a failed restore left its work folder behind"
+pass "a backup without a readable manifest, or with the wrong key, fails loudly and restores nothing"

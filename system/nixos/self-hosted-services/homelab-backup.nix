@@ -12,6 +12,7 @@
 #
 # Skip once (e.g. offline): `sudo touch /run/skip-homelab-backup`.
 # nixos-install of a new homelab backs up nothing (there is nothing yet).
+# Restore: `sudo homelab-restore -i <age key> <backup>`.
 # Setup (Dropbox app, token) and restore: doc/homelab-backup.md.
 let
   hl = config.features.homelab;
@@ -234,5 +235,8 @@ in
       + ''
         ${lib.getExe backup} pre-switch "$@"
       '';
+
+    # `sudo homelab-restore -i <age key> <backup>` puts a backup back.
+    environment.systemPackages = [ (pkgs.callPackage ./homelab-backup/restore-package.nix { }) ];
   };
 }
