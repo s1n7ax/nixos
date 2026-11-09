@@ -346,10 +346,10 @@
     "secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1793605336,
-        "narHash": "sha256-jw8VuidrZYGUy8stwJ0I0SpbuaCs8oePTaJFln6Yzgs=",
+        "lastModified": 1794153529,
+        "narHash": "sha256-JMemfY21BZDrMEgVqUq5546sjEkwMKku0P6Uktz/Xk0=",
         "ref": "main",
-        "rev": "e0b2a10e84851293969328463f04f1cf81c53d45",
+        "rev": "522986055f0d957166362a9f4df1b53c449890f2",
         "shallow": true,
         "type": "git",
         "url": "ssh://git@github.com/s1n7ax/nix-secrets.git"
