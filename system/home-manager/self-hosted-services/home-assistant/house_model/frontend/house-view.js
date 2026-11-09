@@ -1,0 +1,302 @@
+// The 3D house: floors, walls and room slabs built from a plan, with an HTML marker per device
+// projected over the canvas each frame. Markers are plain elements so they stay crisp and
+// easy to tap on a phone. The look comes from a theme; state comes from update(hass).
+
+import * as THREE from "./vendor/three.module.min.js";
+import { OrbitControls } from "./vendor/OrbitControls.js";
+
+const WALL_T = 0.12;
+const SLAB_T = 0.12;
+// Closest two marker centres may sit, in CSS pixels: a 30px tap target each.
+const MARKER_GAP = 30;
+// Where a covered marker may move: rings around its true spot, eight directions each.
+const SPOTS = [[0, 0]];
+for (const r of [MARKER_GAP, MARKER_GAP * 1.5, MARKER_GAP * 2, MARKER_GAP * 3]) {
+  for (let k = 0; k < 8; k++) SPOTS.push([r * Math.sin((k * Math.PI) / 4), r * Math.cos((k * Math.PI) / 4)]);
+}
+
+// The nearest spot to (x, y) at least MARKER_GAP from every placed marker; the true spot
+// when all rings are taken.
+function freeSpot(x, y, placed) {
+  for (const [dx, dy] of SPOTS) {
+    const px = x + dx;
+    const py = y + dy;
+    if (placed.every((p) => Math.hypot(px - p.x, py - p.y) >= MARKER_GAP)) return [px, py];
+  }
+  return [x, y];
+}
+const VEHICLES = ["car", "bike"];
+// Block models of the parked vehicles, as [width, height, length, lift, offset] boxes.
+const VEHICLE_SHAPES = {
+  car: [
+    [1.8, 0.6, 4.2, 0.45, 0],
+    [1.6, 0.5, 2.2, 1, -0.2],
+  ],
+  bike: [
+    [0.35, 0.55, 1.9, 0.5, 0],
+    [0.45, 0.3, 0.7, 0.9, -0.2],
+  ],
+};
+
+export const isOn = (state) => ["on", "open", "heat", "cool", "dry", "fan_only", "auto", "heat_cool"].includes(state);
+
+export function deviceActive(device, stateObj) {
+  if (!stateObj) return false;
+  if (VEHICLES.includes(device.kind)) return Number(stateObj.state) > 0;
+  if (device.kind === "camera") return stateObj.state !== "unavailable";
+  return isOn(stateObj.state);
+}
+
+export class HouseView {
+  constructor(container, plan, theme, { onTap, markerContent }) {
+    this.plan = plan;
+    this.theme = theme;
+    this.onTap = onTap;
+    this.markerContent = markerContent;
+    this.visibleFloor = "all";
+    this.floorOrder = plan.floors.map((f) => f.id);
+    this.container = container;
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(this.renderer.domElement);
+
+    this.overlay = document.createElement("div");
+    this.overlay.className = "markers";
+    container.appendChild(this.overlay);
+
+    this.scene = new THREE.Scene();
+    const cx = 5;
+    const cy = 4.5;
+    const [vx, vy, vz] = theme.view;
+    this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
+    this.camera.position.set(cx + vx, vy, cy + vz);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.target.set(cx, 1.5, cy);
+    this.controls.enableDamping = true;
+    this.controls.maxPolarAngle = Math.PI * 0.45;
+    this.controls.minDistance = 8;
+    this.controls.maxDistance = 60;
+    this.controls.enablePan = false;
+
+    this.scene.add(new THREE.HemisphereLight(theme.sky, theme.groundLight, theme.ambient));
+    const sun = new THREE.DirectionalLight(0xffffff, theme.sun);
+    sun.position.set(-8, 20, 12);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15 });
+    this.scene.add(sun);
+
+    this.floorGroups = {};
+    this.roomGlow = {};
+    this.roomLights = {};
+    this.markers = [];
+    this.build();
+    // Vehicles show as models, not markers, so they take no tap target.
+    const tappable = this.markers.filter((m) => !VEHICLES.includes(m.device.kind));
+    this.markersByPriority = [
+      ...tappable.filter((m) => m.device.kind === "light"),
+      ...tappable.filter((m) => m.device.kind !== "light"),
+    ];
+
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(container);
+    this.resize();
+    // Draw only when something changed: update() is true while the camera moves,
+    // damping included, and invalidate() covers state, floor and size changes.
+    this.dirty = true;
+    const loop = () => {
+      this.frame = requestAnimationFrame(loop);
+      if (this.controls.update() || this.dirty) {
+        this.dirty = false;
+        this.renderer.render(this.scene, this.camera);
+        this.placeMarkers();
+      }
+    };
+    loop();
+  }
+
+  invalidate() {
+    this.dirty = true;
+  }
+
+  build() {
+    const t = this.theme;
+    const slabMat = new THREE.MeshStandardMaterial({ color: t.slab, roughness: 0.95 });
+    const outdoorMat = new THREE.MeshStandardMaterial({ color: t.outdoor, roughness: 1 });
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: t.wall,
+      roughness: 0.9,
+      transparent: t.wallOpacity < 1,
+      opacity: t.wallOpacity,
+    });
+    const edgeMat = new THREE.LineBasicMaterial({ color: t.edge, transparent: true, opacity: t.edgeOpacity });
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: t.shadow }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
+    ground.receiveShadow = true;
+    this.scene.add(ground);
+
+    for (const floor of this.plan.floors) {
+      const group = new THREE.Group();
+      this.floorGroups[floor.id] = group;
+      this.scene.add(group);
+      for (const room of this.plan.rooms.filter((r) => r.floor === floor.id)) {
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(room.w, SLAB_T, room.h), room.outdoor ? outdoorMat : slabMat);
+        slab.position.set(room.x + room.w / 2, floor.elevation + SLAB_T / 2, room.y + room.h / 2);
+        slab.receiveShadow = true;
+        group.add(slab);
+        group.add(this.edges(slab, edgeMat));
+
+        // A flat warm patch on the floor that lights up with the room's lights.
+        const glowMat = new THREE.MeshBasicMaterial({ color: t.lightOn, transparent: true, opacity: 0, depthWrite: false });
+        const glow = new THREE.Mesh(new THREE.PlaneGeometry(room.w - 0.2, room.h - 0.2), glowMat);
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.set(room.x + room.w / 2, floor.elevation + SLAB_T + 0.01, room.y + room.h / 2);
+        group.add(glow);
+        this.roomGlow[room.id] = glow;
+
+        if (room.outdoor) continue;
+        const wh = floor.height * t.wallHeight;
+        const walls = [
+          [room.x + room.w / 2, room.y, room.w, WALL_T],
+          [room.x + room.w / 2, room.y + room.h, room.w, WALL_T],
+          [room.x, room.y + room.h / 2, WALL_T, room.h],
+          [room.x + room.w, room.y + room.h / 2, WALL_T, room.h],
+        ];
+        for (const [x, z, w, d] of walls) {
+          const wall = new THREE.Mesh(new THREE.BoxGeometry(w, wh, d), wallMat);
+          wall.position.set(x, floor.elevation + SLAB_T + wh / 2, z);
+          wall.castShadow = true;
+          wall.receiveShadow = true;
+          group.add(wall);
+          group.add(this.edges(wall, edgeMat));
+        }
+      }
+    }
+
+    for (const device of this.plan.devices) {
+      const room = this.plan.rooms.find((r) => r.id === device.room);
+      const floor = this.plan.floors.find((f) => f.id === room.floor);
+      const el = document.createElement("button");
+      el.className = `marker kind-${device.kind}`;
+      el.setAttribute("aria-label", device.name);
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this.onTap(device);
+      });
+      this.overlay.appendChild(el);
+      if (device.kind === "light") this.roomLights[room.id] = (this.roomLights[room.id] ?? 0) + 1;
+      const lift = device.kind === "light" ? 1.1 : 0.5;
+      const level = this.floorOrder.indexOf(room.floor);
+      this.markers.push({ device, el, level, pos: new THREE.Vector3(device.x, floor.elevation + lift, device.y) });
+    }
+
+    // Each parked vehicle is a simple block model in its spot, shown only while parked.
+    this.vehicleMeshes = {};
+    const vehicleMat = new THREE.MeshStandardMaterial({ color: t.car, roughness: 0.6 });
+    for (const device of this.plan.devices.filter((d) => VEHICLES.includes(d.kind))) {
+      const body = new THREE.Group();
+      for (const [w, h, l, y, z] of VEHICLE_SHAPES[device.kind]) {
+        const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), vehicleMat);
+        box.position.set(0, y, z);
+        box.castShadow = true;
+        body.add(box);
+        body.add(this.edges(box, edgeMat));
+      }
+      body.rotation.y = Math.PI / 2;
+      body.position.set(device.x, 0, device.y);
+      body.visible = false;
+      this.vehicleMeshes[device.entity] = body;
+      this.scene.add(body);
+    }
+  }
+
+  edges(mesh, mat) {
+    const lines = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), mat);
+    lines.position.copy(mesh.position);
+    lines.rotation.copy(mesh.rotation);
+    return lines;
+  }
+
+  setFloor(id) {
+    this.visibleFloor = id;
+    for (const [fid, group] of Object.entries(this.floorGroups)) {
+      group.visible = id === "all" || this.floorOrder.indexOf(fid) <= this.floorOrder.indexOf(id);
+    }
+    // Hide the markers now, not a frame later, so a tap cannot land on a hidden floor.
+    this.placeMarkers();
+    this.invalidate();
+  }
+
+  update(hass) {
+    const litRooms = {};
+    for (const m of this.markers) {
+      const st = hass.states[m.device.entity];
+      const active = deviceActive(m.device, st);
+      m.el.classList.toggle("on", active);
+      m.el.classList.toggle("unavailable", !st || st.state === "unavailable");
+      const html = this.markerContent(m.device, st, active);
+      if (m.html !== html) m.el.innerHTML = m.html = html;
+      if (m.device.kind === "light" && active) litRooms[m.device.room] = (litRooms[m.device.room] ?? 0) + 1;
+      if (this.vehicleMeshes[m.device.entity]) this.vehicleMeshes[m.device.entity].visible = active;
+    }
+    for (const [roomId, glow] of Object.entries(this.roomGlow)) {
+      const lit = litRooms[roomId] ?? 0;
+      glow.material.opacity = lit ? this.theme.glow * (0.5 + (0.5 * lit) / this.roomLights[roomId]) : 0;
+    }
+    this.invalidate();
+  }
+
+  placeMarkers() {
+    const rect = this.size;
+    if (!rect) return;
+    const visible = this.visibleFloor === "all" ? Infinity : this.floorOrder.indexOf(this.visibleFloor);
+    const v = new THREE.Vector3();
+    const placed = [];
+    // Lights first: they are tapped most, so they keep their spot and anything that would
+    // cover one moves to the nearest free spot, so each marker has its own tap target.
+    for (const m of this.markersByPriority) {
+      v.copy(m.pos).project(this.camera);
+      if (m.level > visible || v.z > 1) {
+        m.el.style.display = "none";
+        continue;
+      }
+      const [x, y] = freeSpot(((v.x + 1) / 2) * rect.width, ((1 - v.y) / 2) * rect.height, placed);
+      placed.push({ x, y });
+      m.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+      m.el.style.display = "";
+    }
+  }
+
+  resize() {
+    const { width, height } = this.container.getBoundingClientRect();
+    if (!width || !height) return;
+    this.size = { width, height };
+    this.renderer.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    // Keep the whole house in frame on narrow phones.
+    const portrait = height > width;
+    this.camera.zoom = portrait ? (width / height) * 1.15 : Math.min(1.25, width / height / 1.2);
+    this.camera.zoom *= this.theme.zoom;
+    this.camera.updateProjectionMatrix();
+    this.invalidate();
+  }
+
+  // Free the GL context now: OrbitControls listens on the card's shadow root, which
+  // outlives this view and would otherwise keep the renderer alive.
+  destroy() {
+    cancelAnimationFrame(this.frame);
+    this.resizeObserver.disconnect();
+    this.controls.dispose();
+    this.scene.traverse((obj) => {
+      obj.geometry?.dispose();
+      obj.material?.dispose();
+    });
+    this.renderer.dispose();
+    this.renderer.forceContextLoss();
+  }
+}
