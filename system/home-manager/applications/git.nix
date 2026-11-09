@@ -1,4 +1,9 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 {
   config = lib.mkIf config.features.development.git.enable {
     programs.git = {
@@ -21,7 +26,8 @@
         };
         core = {
           untrackedcache = true;
-          fsmonitor = true;
+          # Linux's inotify daemon cold-starts per repo slowly enough to time out prompt git calls.
+          fsmonitor = pkgs.stdenv.isDarwin;
           compression = 0;
         };
         init = {
