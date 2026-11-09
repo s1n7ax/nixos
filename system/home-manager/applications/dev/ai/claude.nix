@@ -13,6 +13,7 @@ let
   /**
     pi's tool names in ./agents frontmatter, as Claude Code names them. A name
     missing here fails evaluation rather than silently granting nothing.
+    ./cloud/setup.sh keeps the same table for cloud sessions.
   */
   claudeToolNames = {
     read = "Read";

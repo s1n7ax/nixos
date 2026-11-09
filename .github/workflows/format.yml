@@ -29,3 +29,11 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Check the homelab Dropbox backup
         run: nix build -L .#checks.x86_64-linux.homelab-backup
+
+  claude-cloud-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check the Claude Code cloud setup script
+        run: nix build -L .#checks.x86_64-linux.claude-cloud-setup

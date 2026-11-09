@@ -30,6 +30,7 @@ in
   # agent is enabled. On activation, home-manager moves a hand-installed skill
   # of the same name aside to <name>.hm-backup (backupFileExtension) in the
   # same directory, where agents still load it; delete it once reviewed.
+  # Claude Code cloud sessions get the same skills from ../cloud/setup.sh.
   config = lib.mkIf ai.enable (
     lib.mkMerge [
       { home.file = mountSkills ".agents/skills"; }
