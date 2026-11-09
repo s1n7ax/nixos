@@ -7,6 +7,24 @@ import { OrbitControls } from "./vendor/OrbitControls.js";
 
 const WALL_T = 0.12;
 const SLAB_T = 0.12;
+// Closest two marker centres may sit, in CSS pixels: a 30px tap target each.
+const MARKER_GAP = 30;
+// Where a covered marker may move: rings around its true spot, eight directions each.
+const SPOTS = [[0, 0]];
+for (const r of [MARKER_GAP, MARKER_GAP * 1.5, MARKER_GAP * 2, MARKER_GAP * 3]) {
+  for (let k = 0; k < 8; k++) SPOTS.push([r * Math.sin((k * Math.PI) / 4), r * Math.cos((k * Math.PI) / 4)]);
+}
+
+// The nearest spot to (x, y) at least MARKER_GAP from every placed marker; the true spot
+// when all rings are taken.
+function freeSpot(x, y, placed) {
+  for (const [dx, dy] of SPOTS) {
+    const px = x + dx;
+    const py = y + dy;
+    if (placed.every((p) => Math.hypot(px - p.x, py - p.y) >= MARKER_GAP)) return [px, py];
+  }
+  return [x, y];
+}
 const VEHICLES = ["car", "bike"];
 // Block models of the parked vehicles, as [width, height, length, lift, offset] boxes.
 const VEHICLE_SHAPES = {
@@ -76,6 +94,12 @@ export class HouseView {
     this.roomLights = {};
     this.markers = [];
     this.build();
+    // Vehicles show as models, not markers, so they take no tap target.
+    const tappable = this.markers.filter((m) => !VEHICLES.includes(m.device.kind));
+    this.markersByPriority = [
+      ...tappable.filter((m) => m.device.kind === "light"),
+      ...tappable.filter((m) => m.device.kind !== "light"),
+    ];
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
@@ -232,13 +256,19 @@ export class HouseView {
     if (!rect) return;
     const visible = this.visibleFloor === "all" ? Infinity : this.floorOrder.indexOf(this.visibleFloor);
     const v = new THREE.Vector3();
-    for (const m of this.markers) {
-      const hidden = m.level > visible;
+    const placed = [];
+    // Lights first: they are tapped most, so they keep their spot and anything that would
+    // cover one moves to the nearest free spot, so each marker has its own tap target.
+    for (const m of this.markersByPriority) {
       v.copy(m.pos).project(this.camera);
-      const x = ((v.x + 1) / 2) * rect.width;
-      const y = ((1 - v.y) / 2) * rect.height;
+      if (m.level > visible || v.z > 1) {
+        m.el.style.display = "none";
+        continue;
+      }
+      const [x, y] = freeSpot(((v.x + 1) / 2) * rect.width, ((1 - v.y) / 2) * rect.height, placed);
+      placed.push({ x, y });
       m.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
-      m.el.style.display = hidden || v.z > 1 ? "none" : "";
+      m.el.style.display = "";
     }
   }
 

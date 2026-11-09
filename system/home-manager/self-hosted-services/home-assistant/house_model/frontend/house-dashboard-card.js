@@ -91,7 +91,8 @@ class HouseDashboardCard extends HouseCardBase {
     .marker.unavailable { opacity: .3; }
     /* The fade lets taps through to the model; only the rows themselves take them. */
     .dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 0 18px; display: grid; gap: 10px; background: linear-gradient(transparent, rgba(13,15,17,.85) 30%); pointer-events: none; }
-    .dock > * { pointer-events: auto; }
+    /* min-width: 0 so each row scrolls inside the screen instead of widening the dock. */
+    .dock > * { pointer-events: auto; min-width: 0; }
     .shortcuts, .cameras, .security { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 20px; }
     .pill { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); color: var(--muted); }
     .pill i { font-size: 16px; font-style: normal; display: grid; }
