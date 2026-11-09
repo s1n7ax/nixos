@@ -2,12 +2,10 @@
 # Runs setup.sh the way a cloud session would, against a throwaway HOME and a
 # local repository holding this checkout's skills and agents, then checks
 # what a session sees: at setup, after a merge, and with GitHub unreachable.
-#
-# Usage: test.sh [<ai dir>]   (default: the directory above this script)
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-ai_src=$(cd "${1:-$here/..}" && pwd)
+ai_src=$(cd "$here/.." && pwd)
 ai=system/home-manager/applications/dev/ai
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT

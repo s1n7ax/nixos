@@ -15,9 +15,7 @@ runCommand "claude-cloud-setup-check"
     ];
   }
   ''
-    cp -r ${../.} ai
-    chmod -R u+w ai
-    shellcheck ai/cloud/setup.sh ai/cloud/test.sh
-    bash ai/cloud/test.sh "$PWD/ai"
+    shellcheck ${../.}/cloud/setup.sh ${../.}/cloud/test.sh
+    bash ${../.}/cloud/test.sh
     touch $out
   ''

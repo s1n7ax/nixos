@@ -24,7 +24,7 @@
 # failed setup script stops the session from starting.
 
 home=${HOME:-/root}
-state=${AI_SYNC_STATE:-$home/.local/share/ai-sync}
+state=$home/.local/share/ai-sync
 settings=$home/.claude/settings.json
 hook="bash $state/ai-sync.sh --hook"
 
@@ -39,7 +39,7 @@ repo=${AI_SYNC_REPO:-https://github.com/s1n7ax/nixos.git}
 branch=${AI_SYNC_BRANCH:-main}
 ai=system/home-manager/applications/dev/ai
 home=${HOME:-/root}
-state=${AI_SYNC_STATE:-$home/.local/share/ai-sync}
+state=$home/.local/share/ai-sync
 clone=$state/nixos
 src=$clone/$ai
 rendered=$state/claude-agents
@@ -74,13 +74,14 @@ fetch() {
 
 # Points $1 at $2, unless $1 is something ai-sync did not make.
 place() {
-  if [ -e "$1" ] && ! { [ -L "$1" ] && ours "$1"; }; then
+  if [ -e "$1" ] && ! ours "$1"; then
     warn "$1 already exists and is not ai-sync's; left as is"
     return
   fi
   ln -sfn "$2" "$1"
 }
 
+# Whether $1 is a link ai-sync made.
 ours() {
   case $(readlink "$1") in
   "$state"/*) return 0 ;;
@@ -91,8 +92,8 @@ ours() {
 # Removes ai-sync's links in $1 that no longer lead anywhere.
 prune() {
   local entry
-  for entry in "$1"/* "$1"/.[!.]*; do
-    if [ -L "$entry" ] && ours "$entry" && [ ! -e "$entry" ]; then
+  for entry in "$1"/*; do
+    if ours "$entry" && [ ! -e "$entry" ]; then
       rm -f "$entry"
     fi
   done
@@ -144,13 +145,12 @@ link_agents() {
   for file in "$src"/agents/*.md; do
     [ -f "$file" ] || continue
     name=${file##*/}
-    if to_claude "$file" >"$rendered/$name.tmp" 2>"$rendered/$name.err"; then
-      mv "$rendered/$name.tmp" "$rendered/$name"
+    if to_claude "$file" >"$rendered/$name" 2>"$state/agent.err"; then
       place "$dest/$name" "$rendered/$name"
     else
-      warn "skipped agent ${name%.md}: $(cat "$rendered/$name.err")"
+      rm -f "$rendered/$name"
+      warn "skipped agent ${name%.md}: $(cat "$state/agent.err")"
     fi
-    rm -f "$rendered/$name.tmp" "$rendered/$name.err"
   done
   prune "$dest"
 }
@@ -164,11 +164,11 @@ link_all() {
 }
 
 if ! fetch 2>"$state/fetch.err"; then
-  rm -rf "$clone.tmp"
+  failed="could not sync with $branch of $repo ($(tail -n1 "$state/fetch.err"))"
   if [ -d "$src/skills" ]; then
-    warn "could not sync with $branch of $repo ($(tail -n1 "$state/fetch.err")), so skills and agents are $branch as of $(git -C "$clone" log -1 --format=%cI)"
+    warn "$failed, so skills and agents are $branch as of $(git -C "$clone" log -1 --format=%cI)"
   else
-    warn "could not sync with $branch of $repo ($(tail -n1 "$state/fetch.err")), so this session has none of its skills or agents"
+    warn "$failed, so this session has none of its skills or agents"
   fi
 fi
 [ -d "$src/skills" ] && link_all
