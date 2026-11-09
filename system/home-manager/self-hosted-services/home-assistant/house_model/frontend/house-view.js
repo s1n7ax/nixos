@@ -77,13 +77,22 @@ export class HouseView {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
     this.resize();
+    // Draw only when something changed: update() is true while the camera moves,
+    // damping included, and invalidate() covers state, floor and size changes.
+    this.dirty = true;
     const loop = () => {
       this.frame = requestAnimationFrame(loop);
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-      this.placeMarkers();
+      if (this.controls.update() || this.dirty) {
+        this.dirty = false;
+        this.renderer.render(this.scene, this.camera);
+        this.placeMarkers();
+      }
     };
     loop();
+  }
+
+  invalidate() {
+    this.dirty = true;
   }
 
   build() {
@@ -191,6 +200,7 @@ export class HouseView {
       group.visible = id === "all" || order.indexOf(fid) <= order.indexOf(id);
     }
     this.placeMarkers();
+    this.invalidate();
   }
 
   update(hass) {
@@ -202,7 +212,8 @@ export class HouseView {
       m.active = active;
       m.el.classList.toggle("on", active);
       m.el.classList.toggle("unavailable", !st || st.state === "unavailable");
-      m.el.innerHTML = this.markerContent(m.device, st, active);
+      const html = this.markerContent(m.device, st, active);
+      if (m.html !== html) m.el.innerHTML = m.html = html;
       if (m.device.kind === "light" && active) litRooms[m.device.room] = (litRooms[m.device.room] ?? 0) + 1;
       if (this.vehicleMeshes[m.device.entity]) this.vehicleMeshes[m.device.entity].visible = active;
     }
@@ -211,10 +222,12 @@ export class HouseView {
       const lights = this.plan.devices.filter((d) => d.kind === "light" && d.room === roomId).length || 1;
       glow.material.opacity = lit ? (this.theme.glow ?? 0.35) * (0.5 + (0.5 * lit) / lights) : 0;
     }
+    this.invalidate();
   }
 
   placeMarkers() {
-    const rect = this.container.getBoundingClientRect();
+    const rect = this.size;
+    if (!rect) return;
     const order = this.plan.floors.map((f) => f.id);
     const v = new THREE.Vector3();
     for (const m of this.markers) {
@@ -230,6 +243,7 @@ export class HouseView {
   resize() {
     const { width, height } = this.container.getBoundingClientRect();
     if (!width || !height) return;
+    this.size = { width, height };
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     // Keep the whole house in frame on narrow phones.
@@ -237,11 +251,20 @@ export class HouseView {
     this.camera.zoom = portrait ? (width / height) * 1.15 : Math.min(1.25, width / height / 1.2);
     this.camera.zoom *= this.theme.zoom ?? 1;
     this.camera.updateProjectionMatrix();
+    this.invalidate();
   }
 
+  // Free the GL context now: OrbitControls listens on the card's shadow root, which
+  // outlives this view and would otherwise keep the renderer alive.
   destroy() {
     cancelAnimationFrame(this.frame);
     this.resizeObserver.disconnect();
+    this.controls.dispose();
+    this.scene.traverse((obj) => {
+      obj.geometry?.dispose();
+      obj.material?.dispose();
+    });
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
   }
 }

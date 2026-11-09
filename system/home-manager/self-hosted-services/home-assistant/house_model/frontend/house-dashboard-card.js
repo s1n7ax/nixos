@@ -18,11 +18,12 @@ class HouseDashboardCard extends HouseCardBase {
   summaryHtml(s) {
     const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     const stat = (v, l, on) => `<div class="stat ${on ? "on" : ""}"><b>${v}</b><span>${l}</span></div>`;
+    const temps = [s.outside != null && `${s.outside}° outside`, s.inside != null && `${s.inside}° office`].filter(Boolean);
     return `
-      <div class="time">${time}<span>${s.weather.attributes.temperature}° outside · ${Math.round(s.inside.state)}° office</span></div>
+      <div class="time">${time}<span>${temps.join(" · ")}</span></div>
       <div class="stats">
         ${stat(s.lightsOn, s.lightsOn === 1 ? "light" : "lights", s.lightsOn)}
-        ${stat(s.ac.state === "off" ? "—" : `${s.ac.attributes.temperature}°`, "AC", s.ac.state !== "off")}
+        ${stat(s.acOn ? (s.acTemp != null ? `${s.acTemp}°` : "On") : "—", "AC", s.acOn)}
         ${stat(s.home.length, "home", false)}
         ${stat(s.carHome ? "In" : "Out", "car", s.carHome)}
       </div>
@@ -38,7 +39,7 @@ class HouseDashboardCard extends HouseCardBase {
 
   cameraHtml(c, st) {
     return `<button class="cam" data-action="camera" data-entity="${c.entity}" data-name="${c.name}">
-      <img src="${st.attributes.entity_picture}" alt=""><span>${c.name}</span></button>`;
+      ${st?.attributes.entity_picture ? `<img src="${st.attributes.entity_picture}" alt="">` : ""}<span>${c.name}</span></button>`;
   }
 
   securityHtml(s, on) {
@@ -65,7 +66,8 @@ class HouseDashboardCard extends HouseCardBase {
     }
     * { box-sizing: border-box; }
     button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
-    .page { position: relative; height: 100vh; min-height: 640px; overflow: hidden; }
+    /* Fill what HA's panel view leaves under its toolbar, so the dock never falls below the fold. */
+    .page { position: relative; height: calc(100dvh - var(--header-height, 56px) - env(safe-area-inset-top, 0px)); min-height: 520px; overflow: hidden; }
     .model { position: absolute; inset: 0; touch-action: none; }
     .model canvas { width: 100%; height: 100%; display: block; }
     .top { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
@@ -91,7 +93,9 @@ class HouseDashboardCard extends HouseCardBase {
     .marker.kind-car, .marker.kind-bike { display: none; }
     .marker.kind-smoke.on, .marker.kind-leak.on { color: #ff6b5b; }
     .marker.unavailable { opacity: .3; }
-    .dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 0 18px; display: grid; gap: 10px; background: linear-gradient(transparent, rgba(13,15,17,.85) 30%); padding-top: 40px; }
+    /* The fade lets taps through to the model; only the rows themselves take them. */
+    .dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 0 18px; display: grid; gap: 10px; background: linear-gradient(transparent, rgba(13,15,17,.85) 30%); pointer-events: none; }
+    .dock > * { pointer-events: auto; }
     .shortcuts, .cameras, .security { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 20px; }
     .pill { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); color: var(--muted); }
     .pill i { font-size: 16px; font-style: normal; display: grid; }
@@ -110,6 +114,7 @@ class HouseDashboardCard extends HouseCardBase {
     .sheet { position: fixed; z-index: 11; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); background: #16191c; border: 1px solid var(--line); border-radius: 20px 20px 0 0; padding: 18px 20px 28px; }
     .sheet header { display: flex; justify-content: space-between; align-items: center; font-weight: 500; margin-bottom: 14px; }
     .sheet header button { font-size: 20px; color: var(--muted); }
+    .unavailable-note { color: var(--muted); margin: 8px 0 4px; }
     .feed { width: 100%; border-radius: 12px; display: block; overflow: hidden; aspect-ratio: 16/9; object-fit: cover; background: #000; }
     .thermo { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 20px; }
     .thermo button { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--line); font-size: 22px; display: grid; place-items: center; }
@@ -124,6 +129,7 @@ class HouseDashboardCard extends HouseCardBase {
       .time { font-size: 56px; }
       .dock { left: auto; top: 0; width: 360px; padding: 120px 0 32px; background: linear-gradient(90deg, transparent, rgba(13,15,17,.8) 25%); align-content: end; }
       .top { right: 380px; }
+      .model { right: 340px; }
       .shortcuts { flex-wrap: wrap; padding: 0 32px 0 20px; }
       .cameras { display: grid; grid-template-columns: 1fr 1fr; padding: 0 32px 0 20px; }
       .cam { width: auto; }

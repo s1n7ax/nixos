@@ -2,7 +2,7 @@
 // security toggles, and a one-line summary of the house.
 
 import { PLAN } from "./plan.js";
-import { deviceActive } from "./house-view.js";
+import { deviceActive, isOn } from "./house-view.js";
 
 // From 10 days of recorder history, most-tapped first. Groups toggle every switch together.
 export const SHORTCUTS = {
@@ -40,7 +40,7 @@ export function shortcutsFor(hass) {
 export function shortcutOn(hass, sc) {
   if (sc.kind === "room") return roomLights(sc.room).some((d) => hass.states[d.entity]?.state === "on");
   const st = hass.states[sc.entity];
-  return !!st && st.state !== "off" && st.state !== "unavailable";
+  return !!st && isOn(st.state);
 }
 
 export function toggleShortcut(hass, sc) {
@@ -66,9 +66,22 @@ export function summary(hass) {
   const motion = PLAN.devices.filter((d) => d.kind === "motion" && hass.states[d.entity]?.state === "on").map((d) => d.name);
   const alarm = PLAN.devices.filter((d) => (d.kind === "smoke" || d.kind === "leak") && hass.states[d.entity]?.state === "on");
   const away = SECURITY.find((s) => hass.states[s.entity]?.state === "on");
-  const weather = hass.states["weather.forecast_home"];
-  const inside = hass.states["sensor.t_office_tempeture_sensor_temperature"];
-  return { lightsOn, ac, carHome, home, motion, alarm, away, weather, inside };
+  const outside = Number(hass.states["weather.forecast_home"]?.attributes?.temperature);
+  const inside = Number(hass.states["sensor.t_office_tempeture_sensor_temperature"]?.state);
+  // The AC's setpoint, or null while it is off or unreachable.
+  const acTemp = ac && isOn(ac.state) ? (ac.attributes.temperature ?? null) : null;
+  return {
+    lightsOn,
+    acOn: !!ac && isOn(ac.state),
+    acTemp,
+    carHome,
+    home,
+    motion,
+    alarm,
+    away,
+    outside: Number.isFinite(outside) ? Math.round(outside) : null,
+    inside: Number.isFinite(inside) ? Math.round(inside) : null,
+  };
 }
 
 export function moreInfo(el, entityId) {

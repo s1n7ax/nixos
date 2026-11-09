@@ -29,6 +29,7 @@ export class HouseCardBase extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    if (!this.view && !this.isConnected) return;
     if (!this.view) this.mount();
     this.view.update(hass);
     this.refresh();
@@ -71,7 +72,9 @@ export class HouseCardBase extends HTMLElement {
 
   markerContent(device, st, active) {
     if (device.kind === "light") return "";
-    if (device.kind === "climate" && st && st.state !== "off") return `${ICONS.climate}<span>${st.attributes.temperature}°</span>`;
+    if (device.kind === "climate" && active && st.attributes.temperature != null) {
+      return `${ICONS.climate}<span>${st.attributes.temperature}°</span>`;
+    }
     return ICONS[device.kind] ?? "";
   }
 
@@ -156,14 +159,19 @@ export class HouseCardBase extends HTMLElement {
 
   shortcutState(sc, on) {
     const st = this._hass.states[sc.entity];
-    if (sc.kind === "climate") return on ? `${st.attributes.temperature}° · ${st.state.replace("_", " ")}` : "Off";
+    if (sc.kind === "climate") {
+      if (!on) return st?.state === "unavailable" ? "Unavailable" : "Off";
+      return [st.attributes.temperature != null && `${st.attributes.temperature}°`, st.state.replace("_", " ")].filter(Boolean).join(" · ");
+    }
     return on ? "On" : "Off";
   }
 
   sheetHtml(st) {
     const { kind, entity, name } = this.sheet;
     let body = "";
-    if (kind === "camera") {
+    if (!st || st.state === "unavailable") {
+      body = `<p class="unavailable-note">${name} is unavailable.</p>`;
+    } else if (kind === "camera") {
       body = customElements.get("ha-camera-stream")
         ? `<div class="feed feed-live"></div>`
         : `<img class="feed" src="${st.attributes.entity_picture}" alt="${name}">`;
