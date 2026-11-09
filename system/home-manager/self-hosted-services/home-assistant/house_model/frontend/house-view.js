@@ -224,6 +224,7 @@ export class HouseView {
     // Keep the whole house in frame on narrow phones.
     const portrait = height > width;
     this.camera.zoom = portrait ? (width / height) * 1.15 : Math.min(1.25, width / height / 1.2);
+    this.camera.zoom *= this.theme.zoom ?? 1;
     this.camera.updateProjectionMatrix();
   }
 
