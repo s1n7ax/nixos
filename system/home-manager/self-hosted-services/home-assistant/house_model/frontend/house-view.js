@@ -203,6 +203,8 @@ export class HouseView {
     for (const [fid, group] of Object.entries(this.floorGroups)) {
       group.visible = id === "all" || this.floorOrder.indexOf(fid) <= this.floorOrder.indexOf(id);
     }
+    // Hide the markers now, not a frame later, so a tap cannot land on a hidden floor.
+    this.placeMarkers();
     this.invalidate();
   }
 
