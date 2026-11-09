@@ -147,6 +147,10 @@
 
         # The homelab's pre-rebuild Dropbox backup, run against fake service data.
         homelab-backup = pkgs.callPackage ./system/nixos/self-hosted-services/homelab-backup/check.nix { };
+
+        # The setup script that gives Claude Code cloud sessions the skills
+        # and agents, run against a throwaway HOME.
+        claude-cloud-setup = pkgs.callPackage ./system/home-manager/applications/dev/ai/cloud/check.nix { };
       };
     };
 
