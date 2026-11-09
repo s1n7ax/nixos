@@ -12,7 +12,7 @@ import logging
 import sqlite3
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -221,15 +221,24 @@ class AlertLog:
         return _to_row(rows[0]) if rows else None
 
     def window(
-        self, start: float, end: float, limit: int, after: tuple[float, str] | None = None
+        self,
+        start: float,
+        end: float,
+        limit: int,
+        after: tuple[float, str] | None = None,
+        kinds: Collection[str] | None = None,
     ) -> tuple[list[AlertRow], bool]:
-        """One page of the alerts with start < time <= end, newest first.
+        """One page of the alerts with start < time <= end, newest first, only of
+        `kinds` when given.
 
         `after` is the (time, id) of the last row of the previous page. Returns
         the page and whether more rows follow it.
         """
         sql = f"{_SELECT} WHERE time > ? AND time <= ?"
         params: tuple[Any, ...] = (start, end)
+        if kinds is not None:
+            sql += f" AND kind IN ({', '.join('?' * len(kinds))})"
+            params += tuple(kinds)
         if after is not None:
             sql += " AND (time < ? OR (time = ? AND id < ?))"
             params += (after[0], after[0], after[1])

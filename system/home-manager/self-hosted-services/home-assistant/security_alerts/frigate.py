@@ -5,7 +5,8 @@ The base URL comes from the Frigate integration's config entry.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import contextlib
+from collections.abc import AsyncIterator, Mapping
 from typing import Any
 
 import aiohttp
@@ -15,6 +16,8 @@ from homeassistant.util.json import json_loads
 
 FRIGATE_DOMAIN = "frigate"
 TIMEOUT = aiohttp.ClientTimeout(total=15)
+# A streamed clip has no total limit; Frigate takes a few seconds to join its segments.
+STREAM_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=60)
 
 
 class FrigateError(Exception):
@@ -139,6 +142,25 @@ class FrigateClient:
             FrigateError: no Frigate integration is set up.
         """
         return f"{self._base_url()}/api/{camera}/start/{start}/end/{end}/clip.mp4"
+
+    @contextlib.asynccontextmanager
+    async def stream_clip(
+        self, camera: str, start: int, end: int
+    ) -> AsyncIterator[aiohttp.ClientResponse]:
+        """A camera's recording from `start` to `end`, as one MP4 response to read in chunks.
+
+        Raises:
+            FrigateError: Frigate could not be reached or answered with an error.
+        """
+        session = async_get_clientsession(self._hass)
+        path = f"api/{camera}/start/{start}/end/{end}/clip.mp4"
+        try:
+            async with session.get(self.clip_url(camera, start, end), timeout=STREAM_TIMEOUT) as r:
+                if r.status != 200:
+                    raise FrigateError(f"GET {path}: HTTP {r.status}")
+                yield r
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise FrigateError(f"GET {path}: {err}") from err
 
     async def recording_clip(self, camera: str, start: float, end: float) -> bytes:
         """A camera's recording from `start` to `end`, as MP4 bytes."""

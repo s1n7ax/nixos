@@ -20,7 +20,9 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import (
     AUDIO_URL,
+    CLIP_DOWNLOAD_URL,
     CONF_LOG_DAYS,
+    CROP,
     DOMAIN,
     FULL,
     IMAGE_URL,
@@ -31,7 +33,7 @@ from .core.icons import icon_for
 from .core.policy import DETECTION, HOME, SENSOR_KINDS, SOUND
 from .core.quiet import QUIET_KINDS, changed_kinds
 from .notify import local_clock, local_day, type_name
-from .pipeline import SecurityAlerts
+from .pipeline import REVIEW_KINDS, SecurityAlerts
 from .services import QUIET_FIELDS
 from .store import AlertRow
 
@@ -75,15 +77,23 @@ def _item(
     if row.kind not in (DETECTION, SOUND):
         return item
     item["camera_entity"] = alerts.camera_entity(row.source)
-    clip: dict[str, Any] = {"ready": False, "url": None}
+    # `download` saves the clip as a named file; `url` plays it.
+    clip: dict[str, Any] = {"ready": False, "url": None, "download": None}
     if (window := alerts.clip_window(row)) is not None:
         start, end = window
         clip["ready"] = alerts.clip_ready(window, now)
         if clip["ready"]:
             clip["url"] = sign(CLIP_URL.format(camera=row.source, start=start, end=end))
+            clip["download"] = sign(CLIP_DOWNLOAD_URL.format(alert_id=row.id))
     item["clip"] = clip
     if row.kind == DETECTION:
-        item["image"] = sign(IMAGE_URL.format(alert_id=row.id, variant=FULL))
+        image = IMAGE_URL.format(alert_id=row.id, variant=FULL)
+        item["image"] = sign(image)
+        # Until the recording around the snapshot is saved, the review image is the
+        # detect snapshot. The clip is saved after it, so the full-resolution image
+        # downloads from then on, with the clip.
+        item["image_download"] = sign(f"{image}?download=1") if clip["ready"] else None
+        item["crop"] = sign(IMAGE_URL.format(alert_id=row.id, variant=CROP))
     else:
         # A sound shows no picture: it plays its audio, cut from the same clip.
         item["audio"] = {
@@ -148,11 +158,13 @@ async def ws_review_get(
 def ws_review_subscribe(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Send each alert as it is logged, as an item of the review list."""
+    """Send each alert the review list shows as it is logged, as an item of the list."""
     alerts = _alerts(hass)
 
     @callback
     def logged(row: AlertRow) -> None:
+        if row.kind not in REVIEW_KINDS:
+            return
         # Runs in the alert's own task, which does not know this command's user.
         item = _item(hass, alerts, row, time.time(), connection.refresh_token_id)
         connection.send_message(websocket_api.event_message(msg["id"], item))

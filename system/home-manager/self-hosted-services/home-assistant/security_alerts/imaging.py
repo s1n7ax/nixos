@@ -1,4 +1,4 @@
-"""Pillow rendering of notification thumbnails and review images.
+"""Pillow rendering of notification thumbnails, review images and review tiles.
 
 Each box is drawn with its label (the type name, such as "Person") in a filled
 tab on its top-left corner. Takes JPEG bytes or a decoded frame and rectangles
@@ -18,6 +18,12 @@ Size = tuple[int, int]
 
 THUMB_SIZE: Size = (1024, 512)
 THUMB_QUALITY = 90
+# A review tile is small, as a grid shows many, with a label and outline that
+# stay readable at a hundred or so pixels across.
+TILE_SIZE: Size = (512, 512)
+TILE_QUALITY = 85
+TILE_LABEL_SHARE = 1 / 12
+TILE_LINE_WIDTH = 5
 FULL_QUALITY = 92
 BOX_COLOR = (255, 40, 40)
 LABEL_COLOR = (255, 255, 255)
@@ -63,9 +69,9 @@ def _line_width(size: Size) -> int:
     return max(2, round(min(size) / 170))
 
 
-def _draw_box(image: Image.Image, box: Box) -> None:
+def _draw_box(image: Image.Image, box: Box, width: int | None = None) -> None:
     ImageDraw.Draw(image).rectangle(
-        [round(v) for v in box], outline=BOX_COLOR, width=_line_width(image.size)
+        [round(v) for v in box], outline=BOX_COLOR, width=width or _line_width(image.size)
     )
 
 
@@ -94,6 +100,38 @@ def _encode(image: Image.Image, quality: int) -> bytes:
     return out.getvalue()
 
 
+def _render_crop(
+    frame: Image.Image,
+    crop: Box,
+    box: Box,
+    label: str,
+    out_size: Size,
+    quality: int,
+    label_share: float,
+    line_width: int | None = None,
+) -> bytes:
+    """Crop `crop` out of `frame` (black where it leaves the frame; `frame` is left as
+    is), resize it and draw `box` and `label`.
+
+    Raises:
+        ImageRenderError: the crop is empty.
+    """
+    # Whole pixels, grown outwards, so the box maps exactly onto the crop taken.
+    x1, y1 = math.floor(crop[0]), math.floor(crop[1])
+    x2, y2 = math.ceil(crop[2]), math.ceil(crop[3])
+    if x2 <= x1 or y2 <= y1:
+        raise ImageRenderError(f"Empty crop: {crop}")
+    # Pillow fills the area outside the image with zeros: black for RGB.
+    cropped = frame.crop((x1, y1, x2, y2))
+    image = cropped.resize(out_size, Image.Resampling.LANCZOS)
+    sx = out_size[0] / (x2 - x1)
+    sy = out_size[1] / (y2 - y1)
+    mapped = ((box[0] - x1) * sx, (box[1] - y1) * sy, (box[2] - x1) * sx, (box[3] - y1) * sy)
+    _draw_box(image, mapped, line_width)
+    _draw_label(image, mapped, label, round(out_size[1] * label_share))
+    return _encode(image, quality)
+
+
 def render_crop(
     jpeg: bytes,
     crop: Box,
@@ -107,20 +145,20 @@ def render_crop(
     Raises:
         ImageRenderError: the frame cannot be read, or the crop is empty.
     """
-    # Whole pixels, grown outwards, so the box maps exactly onto the crop taken.
-    x1, y1 = math.floor(crop[0]), math.floor(crop[1])
-    x2, y2 = math.ceil(crop[2]), math.ceil(crop[3])
-    if x2 <= x1 or y2 <= y1:
-        raise ImageRenderError(f"Empty crop: {crop}")
-    # Pillow fills the area outside the image with zeros: black for RGB.
-    cropped = _open(jpeg).crop((x1, y1, x2, y2))
-    image = cropped.resize(out_size, Image.Resampling.LANCZOS)
-    sx = out_size[0] / (x2 - x1)
-    sy = out_size[1] / (y2 - y1)
-    mapped = ((box[0] - x1) * sx, (box[1] - y1) * sy, (box[2] - x1) * sx, (box[3] - y1) * sy)
-    _draw_box(image, mapped)
-    _draw_label(image, mapped, label, round(out_size[1] * THUMB_LABEL_SHARE))
-    return _encode(image, quality)
+    return _render_crop(_open(jpeg), crop, box, label, out_size, quality, THUMB_LABEL_SHARE)
+
+
+def render_tile(frame: bytes | Image.Image, crop: Box, box: Box, label: str) -> bytes:
+    """A review tile: `crop` (a square) of a JPEG or a decoded frame, with `box` and
+    `label`. A decoded frame is left as is, so it can still be drawn on.
+
+    Raises:
+        ImageRenderError: the JPEG cannot be read, or the crop is empty.
+    """
+    image = frame if isinstance(frame, Image.Image) else _open(frame)
+    return _render_crop(
+        image, crop, box, label, TILE_SIZE, TILE_QUALITY, TILE_LABEL_SHARE, TILE_LINE_WIDTH
+    )
 
 
 def render_frame(image: Image.Image, box: Box, label: str, quality: int = FULL_QUALITY) -> bytes:
