@@ -4,5 +4,6 @@ lib.mkIf config.features.cli.starship.enable {
     enable = true;
     enableZshIntegration = config.settings.shell == "zsh";
     enableFishIntegration = config.settings.shell == "fish";
+    settings.git_status.disabled = true;
   };
 }
