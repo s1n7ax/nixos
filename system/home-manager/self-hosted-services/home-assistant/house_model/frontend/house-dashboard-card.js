@@ -88,7 +88,7 @@ class HouseDashboardCard extends HouseCardBase {
     .marker:not(.kind-light) { color: #8f98a3; }
     .marker.on:not(.kind-light):not(.kind-camera) { color: var(--warm); }
     .marker.kind-climate.on { width: auto; gap: 4px; display: flex; font-size: 12px; }
-    .marker.kind-car { display: none; }
+    .marker.kind-car, .marker.kind-bike { display: none; }
     .marker.kind-smoke.on, .marker.kind-leak.on { color: #ff6b5b; }
     .marker.unavailable { opacity: .3; }
     .dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 0 18px; display: grid; gap: 10px; background: linear-gradient(transparent, rgba(13,15,17,.85) 30%); padding-top: 40px; }
@@ -110,7 +110,7 @@ class HouseDashboardCard extends HouseCardBase {
     .sheet { position: fixed; z-index: 11; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); background: #16191c; border: 1px solid var(--line); border-radius: 20px 20px 0 0; padding: 18px 20px 28px; }
     .sheet header { display: flex; justify-content: space-between; align-items: center; font-weight: 500; margin-bottom: 14px; }
     .sheet header button { font-size: 20px; color: var(--muted); }
-    .feed { width: 100%; border-radius: 12px; display: block; }
+    .feed { width: 100%; border-radius: 12px; display: block; overflow: hidden; aspect-ratio: 16/9; object-fit: cover; background: #000; }
     .thermo { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 20px; }
     .thermo button { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--line); font-size: 22px; display: grid; place-items: center; }
     .setpoint { text-align: center; display: grid; }

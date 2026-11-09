@@ -41,6 +41,7 @@ from .const import (
 )
 from .core.geometry import Box
 from .core.policy import DOOR, MOTION
+from .core.vehicles import is_parked_vehicle
 from .frigate import FrigateError
 from .pipeline import SecurityAlerts
 
@@ -200,6 +201,7 @@ class Sources:
             and after.get("has_clip") is True
             and before.get("has_clip") is not True
             and not after.get("false_positive")
+            and not is_parked_vehicle(after)
             and event_id not in self._alerted
         ):
             self._alerted.add(event_id)

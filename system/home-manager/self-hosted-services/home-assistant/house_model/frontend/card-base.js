@@ -5,7 +5,12 @@
 import { PLAN } from "./plan.js";
 import { HouseView } from "./house-view.js";
 import { ICONS } from "./icons.js";
-import { CAMERAS, SECURITY, shortcutOn, shortcutsFor, summary, toggleShortcut } from "./dashboard-data.js";
+import { CAMERAS, moreInfo, SECURITY, shortcutOn, shortcutsFor, summary, toggleShortcut } from "./dashboard-data.js";
+
+// Kinds a tap toggles; the AC and cameras open the sheet; anything else opens HA's more-info.
+const TOGGLES = ["light", "pump"];
+const SHEETS = ["climate", "camera"];
+const CLOCK_MS = 20000;
 
 export class HouseCardBase extends HTMLElement {
   constructor() {
@@ -23,9 +28,8 @@ export class HouseCardBase extends HTMLElement {
   }
 
   set hass(hass) {
-    const first = !this._hass;
     this._hass = hass;
-    if (first) this.mount();
+    if (!this.view) this.mount();
     this.view.update(hass);
     this.refresh();
   }
@@ -42,7 +46,27 @@ export class HouseCardBase extends HTMLElement {
       onTap: (device) => this.tapDevice(device),
       markerContent: (device, st, active) => this.markerContent(device, st, active),
     });
-    root.addEventListener("click", (ev) => this.onClick(ev));
+    if (!this.listening) {
+      root.addEventListener("click", (ev) => this.onClick(ev));
+      this.listening = true;
+    }
+    this.clock = setInterval(() => this.refresh(), CLOCK_MS);
+  }
+
+  connectedCallback() {
+    if (this._hass && !this.view) {
+      this.mount();
+      this.view.update(this._hass);
+      this.refresh();
+    }
+  }
+
+  // HA detaches cards when the view changes; drop the GL context until it comes back.
+  disconnectedCallback() {
+    clearInterval(this.clock);
+    this.view?.destroy();
+    this.view = null;
+    this.sheet = null;
   }
 
   markerContent(device, st, active) {
@@ -52,12 +76,13 @@ export class HouseCardBase extends HTMLElement {
   }
 
   tapDevice(device) {
-    const hass = this._hass;
-    if (device.kind === "light" || device.kind === "pump") {
-      hass.callService("homeassistant", "toggle", { entity_id: device.entity });
-    } else if (device.kind === "climate" || device.kind === "camera") {
+    if (TOGGLES.includes(device.kind)) {
+      this._hass.callService("homeassistant", "toggle", { entity_id: device.entity });
+    } else if (SHEETS.includes(device.kind)) {
       this.sheet = { kind: device.kind, entity: device.entity, name: device.name };
       this.refresh();
+    } else {
+      moreInfo(this, device.entity);
     }
   }
 
@@ -110,6 +135,23 @@ export class HouseCardBase extends HTMLElement {
       })
       .join(""));
     this.fill(".sheet-host", this.sheet ? this.sheetHtml(hass.states[this.sheet.entity]) : "");
+    this.attachStream();
+  }
+
+  // HA's own camera player, for a live stream instead of a still. The harness has none.
+  attachStream() {
+    const slot = this.shadowRoot.querySelector(".feed-live");
+    if (!slot || !customElements.get("ha-camera-stream")) return;
+    let player = slot.firstElementChild;
+    if (!player) {
+      player = document.createElement("ha-camera-stream");
+      player.muted = true;
+      player.controls = true;
+      player.allowExoPlayer = true;
+      slot.replaceChildren(player);
+    }
+    player.hass = this._hass;
+    player.stateObj = this._hass.states[this.sheet.entity];
   }
 
   shortcutState(sc, on) {
@@ -122,7 +164,9 @@ export class HouseCardBase extends HTMLElement {
     const { kind, entity, name } = this.sheet;
     let body = "";
     if (kind === "camera") {
-      body = `<img class="feed" src="${st.attributes.entity_picture}" alt="${name}">`;
+      body = customElements.get("ha-camera-stream")
+        ? `<div class="feed feed-live"></div>`
+        : `<img class="feed" src="${st.attributes.entity_picture}" alt="${name}">`;
     } else {
       const modes = st.attributes.hvac_modes
         .map((m) => `<button data-action="mode" data-entity="${entity}" data-mode="${m}" class="${st.state === m ? "sel" : ""}">${m.replace("_", " ")}</button>`)

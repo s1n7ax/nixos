@@ -50,8 +50,7 @@ export function toggleShortcut(hass, sc) {
     return hass.callService("homeassistant", service, { entity_id: lights.map((d) => d.entity) });
   }
   if (sc.kind === "climate") {
-    const st = hass.states[sc.entity];
-    return hass.callService("climate", "set_hvac_mode", { entity_id: sc.entity, hvac_mode: st.state === "off" ? "cool" : "off" });
+    return hass.callService("climate", shortcutOn(hass, sc) ? "turn_off" : "turn_on", { entity_id: sc.entity });
   }
   return hass.callService("homeassistant", "toggle", { entity_id: sc.entity });
 }

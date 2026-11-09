@@ -15,7 +15,7 @@
 // A stand-in for Home Assistant: a hass object with the house's entities, whose services
 // flip state so the card can be driven by hand. ?user=nidu switches the person,
 // ?dark=1 asks for the dark scheme, ?night=1 turns some lights on and parks the car.
-import "../frontend/house-dashboard-card.js";
+import "../house_model/frontend/house-dashboard-card.js";
 
 const params = new URLSearchParams(location.search);
 const user = params.get("user") ?? "s1n7ax";
@@ -55,6 +55,7 @@ for (const id of ["hallway_kitchen_side", "living_room_hallway_side", "bathroom_
 states["binary_sensor.f_bedroom_fire_alarm_smoke"] = s("off");
 states["binary_sensor.s_water_tank_flood_sensor_water_leak"] = s("off");
 states["sensor.veranda_parking_car_count"] = s(night ? "1" : "0");
+states["sensor.veranda_parking_motorcycle_count"] = s(night ? "1" : "0");
 states["weather.forecast_home"] = s(night ? "clear-night" : "partlycloudy", { temperature: 28, humidity: 78 });
 states["sensor.t_office_tempeture_sensor_temperature"] = s("27.4", { unit_of_measurement: "°C" });
 states["sensor.t_office_tempeture_sensor_humidity"] = s("68", { unit_of_measurement: "%" });
@@ -74,6 +75,7 @@ const hass = {
     for (const id of ids) {
       const st = states[id];
       if (service === "toggle") st.state = st.state === "on" ? "off" : "on";
+      else if (domain === "climate" && service === "turn_on") st.state = "cool";
       else if (service === "turn_on") st.state = "on";
       else if (service === "turn_off") st.state = "off";
       else if (service === "set_temperature") st.attributes = { ...st.attributes, temperature: data.temperature };

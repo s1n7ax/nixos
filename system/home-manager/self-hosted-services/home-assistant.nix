@@ -30,6 +30,8 @@ with lib;
         # The security_alerts integration, read-only from this repo. A new store
         # path changes the unit, so a deploy that changes it restarts HA.
         "${./home-assistant/security_alerts}:/config/custom_components/security_alerts:ro"
+        # The house_model integration: serves the 3D house dashboard card.
+        "${./home-assistant/house_model}:/config/custom_components/house_model:ro"
       ];
       extraPodmanArgs = [ "--tz=local" ];
       ports = [ "8124:8123" ];

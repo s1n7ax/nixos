@@ -7,12 +7,24 @@ import { OrbitControls } from "./vendor/OrbitControls.js";
 
 const WALL_T = 0.12;
 const SLAB_T = 0.12;
+const VEHICLES = ["car", "bike"];
+// Block models of the parked vehicles, as [width, height, length, lift, offset] boxes.
+const VEHICLE_SHAPES = {
+  car: [
+    [1.8, 0.6, 4.2, 0.45, 0],
+    [1.6, 0.5, 2.2, 1, -0.2],
+  ],
+  bike: [
+    [0.35, 0.55, 1.9, 0.5, 0],
+    [0.45, 0.3, 0.7, 0.9, -0.2],
+  ],
+};
 
 export const isOn = (state) => ["on", "open", "heat", "cool", "dry", "fan_only", "auto", "heat_cool"].includes(state);
 
 export function deviceActive(device, stateObj) {
   if (!stateObj) return false;
-  if (device.kind === "car") return Number(stateObj.state) > 0;
+  if (VEHICLES.includes(device.kind)) return Number(stateObj.state) > 0;
   if (device.kind === "camera") return stateObj.state !== "unavailable";
   return isOn(stateObj.state);
 }
@@ -135,6 +147,7 @@ export class HouseView {
       const floor = this.plan.floors.find((f) => f.id === room.floor);
       const el = document.createElement("button");
       el.className = `marker kind-${device.kind}`;
+      el.setAttribute("aria-label", device.name);
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
         this.onTap(device);
@@ -144,24 +157,22 @@ export class HouseView {
       this.markers.push({ device, el, room, pos: new THREE.Vector3(device.x, floor.elevation + lift, device.y) });
     }
 
-    // The car is a simple block in its spot, shown only while it is parked.
-    const car = this.plan.devices.find((d) => d.kind === "car");
-    if (car) {
+    // Each parked vehicle is a simple block model in its spot, shown only while parked.
+    this.vehicleMeshes = {};
+    const vehicleMat = new THREE.MeshStandardMaterial({ color: t.car, roughness: 0.6 });
+    for (const device of this.plan.devices.filter((d) => VEHICLES.includes(d.kind))) {
       const body = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({ color: t.car, roughness: 0.6 });
-      const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 4.2), mat);
-      base.position.y = 0.45;
-      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 2.2), mat);
-      cabin.position.set(0, 1, -0.2);
-      for (const m of [base, cabin]) {
-        m.castShadow = true;
-        body.add(m);
-        if (t.edges) body.add(this.edges(m, edgeMat));
+      for (const [w, h, l, y, z] of VEHICLE_SHAPES[device.kind]) {
+        const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), vehicleMat);
+        box.position.set(0, y, z);
+        box.castShadow = true;
+        body.add(box);
+        if (t.edges) body.add(this.edges(box, edgeMat));
       }
       body.rotation.y = Math.PI / 2;
-      body.position.set(car.x, 0, car.y);
+      body.position.set(device.x, 0, device.y);
       body.visible = false;
-      this.carMesh = body;
+      this.vehicleMeshes[device.entity] = body;
       this.scene.add(body);
     }
   }
@@ -179,6 +190,7 @@ export class HouseView {
     for (const [fid, group] of Object.entries(this.floorGroups)) {
       group.visible = id === "all" || order.indexOf(fid) <= order.indexOf(id);
     }
+    this.placeMarkers();
   }
 
   update(hass) {
@@ -191,9 +203,8 @@ export class HouseView {
       m.el.classList.toggle("on", active);
       m.el.classList.toggle("unavailable", !st || st.state === "unavailable");
       m.el.innerHTML = this.markerContent(m.device, st, active);
-      m.el.title = m.device.name;
       if (m.device.kind === "light" && active) litRooms[m.device.room] = (litRooms[m.device.room] ?? 0) + 1;
-      if (m.device.kind === "car" && this.carMesh) this.carMesh.visible = active;
+      if (this.vehicleMeshes[m.device.entity]) this.vehicleMeshes[m.device.entity].visible = active;
     }
     for (const [roomId, glow] of Object.entries(this.roomGlow)) {
       const lit = litRooms[roomId] ?? 0;

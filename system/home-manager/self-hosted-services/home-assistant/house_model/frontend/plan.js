@@ -1,6 +1,7 @@
 // Stand-in floor plan until the measured magicplan plan arrives. Metres; x runs east, y south.
 // Each room is a rectangle on a floor; outdoor rooms get a ground slab and no walls.
-// Devices sit at a point inside their room and name the entity they show.
+// Devices sit at a point inside their room and name the entity they show. The car and bike
+// read Frigate's count for the veranda's parking zone, which includes parked (stationary) ones.
 
 export const PLAN = {
   floors: [
@@ -52,5 +53,6 @@ export const PLAN = {
     { kind: "smoke", entity: "binary_sensor.f_bedroom_fire_alarm_smoke", room: "bedroom", x: 4.4, y: 0.6, name: "Smoke" },
     { kind: "leak", entity: "binary_sensor.s_water_tank_flood_sensor_water_leak", room: "backyard", x: 8.5, y: -3, name: "Water tank" },
     { kind: "car", entity: "sensor.veranda_parking_car_count", room: "house_front", x: 3, y: 11.2, name: "Car" },
+    { kind: "bike", entity: "sensor.veranda_parking_motorcycle_count", room: "house_front", x: 6, y: 11.4, name: "Bike" },
   ],
 };

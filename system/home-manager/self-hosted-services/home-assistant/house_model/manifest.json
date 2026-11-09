@@ -1,0 +1,11 @@
+{
+  "domain": "house_model",
+  "name": "House model",
+  "codeowners": [],
+  "config_flow": false,
+  "dependencies": ["frontend", "http", "lovelace"],
+  "documentation": "https://github.com/s1n7ax/nixos/tree/main/system/home-manager/self-hosted-services/home-assistant",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "1.0.0"
+}
