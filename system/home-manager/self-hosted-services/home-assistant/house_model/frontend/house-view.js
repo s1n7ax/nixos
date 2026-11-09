@@ -36,6 +36,7 @@ export class HouseView {
     this.onTap = onTap;
     this.markerContent = markerContent;
     this.visibleFloor = "all";
+    this.floorOrder = plan.floors.map((f) => f.id);
     this.container = container;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -51,8 +52,9 @@ export class HouseView {
     this.scene = new THREE.Scene();
     const cx = 5;
     const cy = 4.5;
-    this.camera = new THREE.PerspectiveCamera(theme.fov ?? 30, 1, 0.1, 200);
-    this.camera.position.set(cx + (theme.view?.[0] ?? 14), theme.view?.[1] ?? 20, cy + (theme.view?.[2] ?? 22));
+    const [vx, vy, vz] = theme.view;
+    this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
+    this.camera.position.set(cx + vx, vy, cy + vz);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.set(cx, 1.5, cy);
     this.controls.enableDamping = true;
@@ -61,8 +63,8 @@ export class HouseView {
     this.controls.maxDistance = 60;
     this.controls.enablePan = false;
 
-    this.scene.add(new THREE.HemisphereLight(theme.sky, theme.groundLight, theme.ambient ?? 1.6));
-    const sun = new THREE.DirectionalLight(0xffffff, theme.sun ?? 1.4);
+    this.scene.add(new THREE.HemisphereLight(theme.sky, theme.groundLight, theme.ambient));
+    const sun = new THREE.DirectionalLight(0xffffff, theme.sun);
     sun.position.set(-8, 20, 12);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -71,6 +73,7 @@ export class HouseView {
 
     this.floorGroups = {};
     this.roomGlow = {};
+    this.roomLights = {};
     this.markers = [];
     this.build();
 
@@ -105,9 +108,9 @@ export class HouseView {
       transparent: t.wallOpacity < 1,
       opacity: t.wallOpacity,
     });
-    const edgeMat = new THREE.LineBasicMaterial({ color: t.edge, transparent: true, opacity: t.edgeOpacity ?? 1 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: t.edge, transparent: true, opacity: t.edgeOpacity });
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: t.shadow ?? 0.12 }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: t.shadow }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.01;
     ground.receiveShadow = true;
@@ -122,7 +125,7 @@ export class HouseView {
         slab.position.set(room.x + room.w / 2, floor.elevation + SLAB_T / 2, room.y + room.h / 2);
         slab.receiveShadow = true;
         group.add(slab);
-        if (t.edges) group.add(this.edges(slab, edgeMat));
+        group.add(this.edges(slab, edgeMat));
 
         // A flat warm patch on the floor that lights up with the room's lights.
         const glowMat = new THREE.MeshBasicMaterial({ color: t.lightOn, transparent: true, opacity: 0, depthWrite: false });
@@ -133,7 +136,7 @@ export class HouseView {
         this.roomGlow[room.id] = glow;
 
         if (room.outdoor) continue;
-        const wh = floor.height * (t.wallHeight ?? 0.42);
+        const wh = floor.height * t.wallHeight;
         const walls = [
           [room.x + room.w / 2, room.y, room.w, WALL_T],
           [room.x + room.w / 2, room.y + room.h, room.w, WALL_T],
@@ -146,7 +149,7 @@ export class HouseView {
           wall.castShadow = true;
           wall.receiveShadow = true;
           group.add(wall);
-          if (t.edges) group.add(this.edges(wall, edgeMat));
+          group.add(this.edges(wall, edgeMat));
         }
       }
     }
@@ -162,8 +165,10 @@ export class HouseView {
         this.onTap(device);
       });
       this.overlay.appendChild(el);
+      if (device.kind === "light") this.roomLights[room.id] = (this.roomLights[room.id] ?? 0) + 1;
       const lift = device.kind === "light" ? 1.1 : 0.5;
-      this.markers.push({ device, el, room, pos: new THREE.Vector3(device.x, floor.elevation + lift, device.y) });
+      const level = this.floorOrder.indexOf(room.floor);
+      this.markers.push({ device, el, level, pos: new THREE.Vector3(device.x, floor.elevation + lift, device.y) });
     }
 
     // Each parked vehicle is a simple block model in its spot, shown only while parked.
@@ -176,7 +181,7 @@ export class HouseView {
         box.position.set(0, y, z);
         box.castShadow = true;
         body.add(box);
-        if (t.edges) body.add(this.edges(box, edgeMat));
+        body.add(this.edges(box, edgeMat));
       }
       body.rotation.y = Math.PI / 2;
       body.position.set(device.x, 0, device.y);
@@ -195,21 +200,17 @@ export class HouseView {
 
   setFloor(id) {
     this.visibleFloor = id;
-    const order = this.plan.floors.map((f) => f.id);
     for (const [fid, group] of Object.entries(this.floorGroups)) {
-      group.visible = id === "all" || order.indexOf(fid) <= order.indexOf(id);
+      group.visible = id === "all" || this.floorOrder.indexOf(fid) <= this.floorOrder.indexOf(id);
     }
-    this.placeMarkers();
     this.invalidate();
   }
 
   update(hass) {
-    this.hass = hass;
     const litRooms = {};
     for (const m of this.markers) {
       const st = hass.states[m.device.entity];
       const active = deviceActive(m.device, st);
-      m.active = active;
       m.el.classList.toggle("on", active);
       m.el.classList.toggle("unavailable", !st || st.state === "unavailable");
       const html = this.markerContent(m.device, st, active);
@@ -219,8 +220,7 @@ export class HouseView {
     }
     for (const [roomId, glow] of Object.entries(this.roomGlow)) {
       const lit = litRooms[roomId] ?? 0;
-      const lights = this.plan.devices.filter((d) => d.kind === "light" && d.room === roomId).length || 1;
-      glow.material.opacity = lit ? (this.theme.glow ?? 0.35) * (0.5 + (0.5 * lit) / lights) : 0;
+      glow.material.opacity = lit ? this.theme.glow * (0.5 + (0.5 * lit) / this.roomLights[roomId]) : 0;
     }
     this.invalidate();
   }
@@ -228,10 +228,10 @@ export class HouseView {
   placeMarkers() {
     const rect = this.size;
     if (!rect) return;
-    const order = this.plan.floors.map((f) => f.id);
+    const visible = this.visibleFloor === "all" ? Infinity : this.floorOrder.indexOf(this.visibleFloor);
     const v = new THREE.Vector3();
     for (const m of this.markers) {
-      const hidden = this.visibleFloor !== "all" && order.indexOf(m.room.floor) > order.indexOf(this.visibleFloor);
+      const hidden = m.level > visible;
       v.copy(m.pos).project(this.camera);
       const x = ((v.x + 1) / 2) * rect.width;
       const y = ((1 - v.y) / 2) * rect.height;
@@ -249,7 +249,7 @@ export class HouseView {
     // Keep the whole house in frame on narrow phones.
     const portrait = height > width;
     this.camera.zoom = portrait ? (width / height) * 1.15 : Math.min(1.25, width / height / 1.2);
-    this.camera.zoom *= this.theme.zoom ?? 1;
+    this.camera.zoom *= this.theme.zoom;
     this.camera.updateProjectionMatrix();
     this.invalidate();
   }

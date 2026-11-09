@@ -13,7 +13,6 @@ export const ICONS = {
   smoke: svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/>'),
   leak: svg('<path d="M12 4c2.5 3.5 4 5.5 4 8a4 4 0 0 1-8 0c0-2.5 1.5-4.5 4-8zM4 20h16"/>'),
   car: svg('<path d="M5 16V12l2-5h10l2 5v4M3 16h18v2H3zM7.5 12h9"/>'),
-  room: svg('<path d="M4 20V9l8-5 8 5v11zM10 20v-6h4v6"/>'),
   shield: svg('<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/>'),
   close: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
   minus: svg('<path d="M5 12h14"/>'),

@@ -63,20 +63,18 @@ export function summary(hass) {
     .map((id) => hass.states[id])
     .filter((p) => p?.state === "home")
     .map((p) => p.attributes.friendly_name);
-  const motion = PLAN.devices.filter((d) => d.kind === "motion" && hass.states[d.entity]?.state === "on").map((d) => d.name);
   const alarm = PLAN.devices.filter((d) => (d.kind === "smoke" || d.kind === "leak") && hass.states[d.entity]?.state === "on");
   const away = SECURITY.find((s) => hass.states[s.entity]?.state === "on");
   const outside = Number(hass.states["weather.forecast_home"]?.attributes?.temperature);
   const inside = Number(hass.states["sensor.t_office_tempeture_sensor_temperature"]?.state);
-  // The AC's setpoint, or null while it is off or unreachable.
-  const acTemp = ac && isOn(ac.state) ? (ac.attributes.temperature ?? null) : null;
+  const acOn = !!ac && isOn(ac.state);
   return {
     lightsOn,
-    acOn: !!ac && isOn(ac.state),
-    acTemp,
+    acOn,
+    // The AC's setpoint, or null while it is off or unreachable.
+    acTemp: acOn ? (ac.attributes.temperature ?? null) : null,
     carHome,
     home,
-    motion,
     alarm,
     away,
     outside: Number.isFinite(outside) ? Math.round(outside) : null,

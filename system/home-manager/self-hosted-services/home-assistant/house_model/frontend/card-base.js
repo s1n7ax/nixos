@@ -1,6 +1,6 @@
-// The card's behaviour, shared by every look: the 3D view, shortcuts, cameras, security
-// toggles and the bottom sheet for the AC and cameras. A look supplies the 3D theme,
-// its CSS and the page layout.
+// The card's behaviour: the 3D view, shortcuts, cameras, security toggles and the bottom
+// sheet for the AC and cameras. The card's look (house-dashboard-card.js) supplies the 3D
+// theme, its CSS, the page layout and the markup of each row.
 
 import { PLAN } from "./plan.js";
 import { HouseView } from "./house-view.js";
@@ -17,6 +17,8 @@ export class HouseCardBase extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this.sheet = null;
+    // The shadow root outlives the view, so one listener serves every mount.
+    this.shadowRoot.addEventListener("click", (ev) => this.onClick(ev));
   }
 
   setConfig(config) {
@@ -29,37 +31,26 @@ export class HouseCardBase extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (!this.view && !this.isConnected) return;
-    if (!this.view) this.mount();
-    this.view.update(hass);
-    this.refresh();
+    if (this.isConnected) this.render();
   }
 
-  get dark() {
-    return this.constructor.alwaysDark || !!this._hass?.themes?.darkMode;
+  connectedCallback() {
+    if (this._hass) this.render();
+  }
+
+  render() {
+    if (!this.view) this.mount();
+    this.view.update(this._hass);
+    this.refresh();
   }
 
   mount() {
     this.shadowRoot.innerHTML = `<style>${this.constructor.css}</style>${this.constructor.layout}`;
-    this.classList.toggle("dark", this.dark);
-    const root = this.shadowRoot;
-    this.view = new HouseView(root.querySelector(".model"), PLAN, this.constructor.theme(this.dark), {
+    this.view = new HouseView(this.shadowRoot.querySelector(".model"), PLAN, this.constructor.theme, {
       onTap: (device) => this.tapDevice(device),
       markerContent: (device, st, active) => this.markerContent(device, st, active),
     });
-    if (!this.listening) {
-      root.addEventListener("click", (ev) => this.onClick(ev));
-      this.listening = true;
-    }
     this.clock = setInterval(() => this.refresh(), CLOCK_MS);
-  }
-
-  connectedCallback() {
-    if (this._hass && !this.view) {
-      this.mount();
-      this.view.update(this._hass);
-      this.refresh();
-    }
   }
 
   // HA detaches cards when the view changes; drop the GL context until it comes back.
@@ -131,11 +122,8 @@ export class HouseCardBase extends HTMLElement {
     this.fill(".shortcuts", shortcutsFor(hass).map((sc, i) => this.shortcutHtml(sc, i, shortcutOn(hass, sc))).join(""));
     this.fill(".cameras", CAMERAS.map((c) => this.cameraHtml(c, hass.states[c.entity])).join(""));
     this.fill(".security", SECURITY.map((s) => this.securityHtml(s, hass.states[s.entity]?.state === "on")).join(""));
-    this.fill(".floors", ["all", ...PLAN.floors.map((f) => f.id)]
-      .map((id) => {
-        const label = id === "all" ? "All" : PLAN.floors.find((f) => f.id === id).name;
-        return `<button data-action="floor" data-floor="${id}" class="${this.view.visibleFloor === id ? "sel" : ""}">${label}</button>`;
-      })
+    this.fill(".floors", [{ id: "all", name: "All" }, ...PLAN.floors]
+      .map((f) => `<button data-action="floor" data-floor="${f.id}" class="${this.view.visibleFloor === f.id ? "sel" : ""}">${f.name}</button>`)
       .join(""));
     this.fill(".sheet-host", this.sheet ? this.sheetHtml(hass.states[this.sheet.entity]) : "");
     this.attachStream();

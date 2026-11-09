@@ -14,7 +14,7 @@
 <script type="module">
 // A stand-in for Home Assistant: a hass object with the house's entities, whose services
 // flip state so the card can be driven by hand. ?user=nidu switches the person,
-// ?dark=1 asks for the dark scheme, ?night=1 turns some lights on and parks the car.
+// ?night=1 turns some lights on and parks the car.
 import "../house_model/frontend/house-dashboard-card.js";
 
 const params = new URLSearchParams(location.search);
@@ -68,7 +68,6 @@ const card = document.querySelector("house-dashboard-card");
 const push = () => { card.hass = { ...hass, states: { ...states } }; };
 const hass = {
   user: { name: user, id: user },
-  themes: { darkMode: params.has("dark") },
   states,
   callService(domain, service, data) {
     const ids = [].concat(data.entity_id);

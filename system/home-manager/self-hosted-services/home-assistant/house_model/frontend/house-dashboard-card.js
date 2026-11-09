@@ -5,15 +5,11 @@ import { HouseCardBase } from "./card-base.js";
 import { ICONS } from "./icons.js";
 
 class HouseDashboardCard extends HouseCardBase {
-  static alwaysDark = true;
-
-  static theme() {
-    return {
-      sky: 0x8090a0, groundLight: 0x0b0c0e, slab: 0x1b1e22, outdoor: 0x14171a, wall: 0x2a2f36, wallOpacity: 0.55,
-      lightOn: 0xffb54d, car: 0x3a4048, edges: true, edge: 0x6b7480, edgeOpacity: 0.55, glow: 0.32, zoom: 0.8, shadow: 0.5,
-      ambient: 0.9, sun: 0.6, wallHeight: 0.55, view: [16, 18, 20],
-    };
-  }
+  static theme = {
+    sky: 0x8090a0, groundLight: 0x0b0c0e, slab: 0x1b1e22, outdoor: 0x14171a, wall: 0x2a2f36, wallOpacity: 0.55,
+    lightOn: 0xffb54d, car: 0x3a4048, edge: 0x6b7480, edgeOpacity: 0.55, glow: 0.32, zoom: 0.8, shadow: 0.5,
+    ambient: 0.9, sun: 0.6, wallHeight: 0.55, view: [16, 18, 20],
+  };
 
   summaryHtml(s) {
     const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
