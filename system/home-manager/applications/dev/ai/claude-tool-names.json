@@ -1,0 +1,9 @@
+{
+  "read": "Read",
+  "grep": "Grep",
+  "find": "Glob",
+  "ls": "Glob",
+  "bash": "Bash",
+  "write": "Write",
+  "edit": "Edit"
+}

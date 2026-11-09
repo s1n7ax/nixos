@@ -50,16 +50,25 @@ warn() {
   echo "ai-sync: $1" >&2
 }
 
+# Brings the clone to the tip of $branch. Fails, keeping the last copy, when
+# that can't be fetched or no longer has the skills where they are expected.
 fetch() {
   if [ -d "$clone/.git" ]; then
-    timeout 30 git -C "$clone" fetch --quiet --depth 1 origin "$branch" &&
-      git -C "$clone" reset --quiet --hard FETCH_HEAD
+    timeout 30 git -C "$clone" fetch --quiet --depth 1 origin "$branch" || return
+    if ! git -C "$clone" cat-file -e "FETCH_HEAD:$ai/skills" 2>/dev/null; then
+      echo "$branch has no $ai/skills" >&2
+      return 1
+    fi
+    git -C "$clone" reset --quiet --hard FETCH_HEAD
   else
     rm -rf "$clone.tmp"
-    timeout 60 git clone --quiet --depth 1 --branch "$branch" --sparse "$repo" "$clone.tmp" &&
-      git -C "$clone.tmp" sparse-checkout set "$ai/skills" "$ai/agents" &&
-      rm -rf "$clone" &&
-      mv "$clone.tmp" "$clone"
+    timeout 60 git clone --quiet --depth 1 --branch "$branch" --sparse "$repo" "$clone.tmp" || return
+    git -C "$clone.tmp" sparse-checkout set "$ai/skills" "$ai/agents" || return
+    if [ ! -d "$clone.tmp/$ai/skills" ]; then
+      echo "$branch has no $ai/skills" >&2
+      return 1
+    fi
+    rm -rf "$clone" && mv "$clone.tmp" "$clone"
   fi
 }
 
@@ -100,36 +109,32 @@ link_skills() {
   prune "$dest"
 }
 
-# pi's tool names in ../agents, as Claude Code names them; claude.nix keeps
-# the same table for local sessions. An agent with an unknown name is skipped
-# rather than given every tool.
+# Prints agent $1 with Claude Code's tool names, from claude-tool-names.json,
+# which claude.nix reads too. An agent with an unknown name fails, to be
+# skipped rather than given every tool.
 to_claude() {
-  awk '
-    BEGIN {
-      m["read"] = "Read"; m["grep"] = "Grep"; m["find"] = "Glob"; m["ls"] = "Glob"
-      m["bash"] = "Bash"; m["write"] = "Write"; m["edit"] = "Edit"
-    }
-    /^tools: / {
-      n = split(substr($0, 8), tools, ",")
-      line = ""
-      split("", seen)
-      for (i = 1; i <= n; i++) {
-        tool = tools[i]
-        gsub(/^[ \t]+|[ \t]+$/, "", tool)
-        if (!(tool in m)) {
-          print "unknown tool: " tool > "/dev/stderr"
-          exit 3
-        }
-        if (!(m[tool] in seen)) {
-          seen[m[tool]] = 1
-          line = line (line == "" ? "" : ", ") m[tool]
-        }
-      }
-      print "tools: " line
-      next
-    }
-    { print }
-  ' "$1"
+  python3 -c '
+import json, sys
+
+names_file, agent = sys.argv[1:]
+try:
+    with open(names_file) as f:
+        names = json.load(f)
+except (OSError, ValueError) as e:
+    sys.exit(f"cannot read {names_file}: {e}")
+with open(agent) as f:
+    lines = f.read().split("\n")
+for i, line in enumerate(lines):
+    if line.startswith("tools: "):
+        tools = []
+        for tool in (t.strip() for t in line[len("tools: "):].split(",")):
+            if tool not in names:
+                sys.exit(f"unknown tool: {tool}")
+            if names[tool] not in tools:
+                tools.append(names[tool])
+        lines[i] = "tools: " + ", ".join(tools)
+sys.stdout.write("\n".join(lines))
+' "$src/claude-tool-names.json" "$1"
 }
 
 link_agents() {
@@ -158,17 +163,15 @@ link_all() {
   place "$home/.pi/agent/agents" "$src/agents"
 }
 
-if fetch 2>"$state/fetch.err"; then
-  git -C "$clone" log -1 --format='%h %cI' >"$state/synced"
-else
+if ! fetch 2>"$state/fetch.err"; then
   rm -rf "$clone.tmp"
-  if [ -d "$src" ]; then
-    warn "could not fetch $branch of $repo, so skills and agents are the copy from $(cut -d' ' -f2 "$state/synced" 2>/dev/null || echo 'an earlier sync'): $(tail -n1 "$state/fetch.err")"
+  if [ -d "$src/skills" ]; then
+    warn "could not sync with $branch of $repo ($(tail -n1 "$state/fetch.err")), so skills and agents are $branch as of $(git -C "$clone" log -1 --format=%cI)"
   else
-    warn "could not fetch $branch of $repo, so this session has none of its skills or agents: $(tail -n1 "$state/fetch.err")"
+    warn "could not sync with $branch of $repo ($(tail -n1 "$state/fetch.err")), so this session has none of its skills or agents"
   fi
 fi
-[ -d "$src" ] && link_all
+[ -d "$src/skills" ] && link_all
 
 if [ "${1:-}" = --hook ] && [ ${#warnings[@]} -gt 0 ]; then
   python3 -c '

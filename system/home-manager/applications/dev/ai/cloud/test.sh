@@ -149,8 +149,28 @@ check "a removed agent is gone" test ! -e "$HOME/.claude/agents/extra.md" -a ! -
 check "an agent with an unknown tool is skipped" test ! -e "$HOME/.claude/agents/odd.md"
 check "... and the hook says so" contains "$out" "skipped agent odd"
 check "... while the other agents stay" test -f "$HOME/.claude/agents/code-reviewer.md"
+
+python3 -c '
+import json, sys
+names = json.load(open(sys.argv[1]))
+names["teleport"] = "Bash"
+json.dump(names, open(sys.argv[1], "w"))
+' "$origin/$ai/claude-tool-names.json"
+git -C "$origin" commit --quiet --all --message "tool name"
+hook
+check "a tool name added on main reaches the cloud without a re-paste" \
+  grep -qx 'tools: Read, Bash' "$HOME/.claude/agents/odd.md"
 git -C "$origin" rm --quiet "$ai/agents/odd.md"
 git -C "$origin" commit --quiet --message fix
+
+echo "== main without the skills directory"
+git -C "$origin" mv "$ai" "$ai.moved"
+git -C "$origin" commit --quiet --message move
+hook
+check "hook warns" contains "$out" "has no $ai/skills"
+check "the last copy's skills stay" test -f "$HOME/.claude/skills/ship/SKILL.md"
+git -C "$origin" mv "$ai.moved" "$ai"
+git -C "$origin" commit --quiet --message "move back"
 
 echo "== GitHub unreachable"
 mv "$origin" "$origin.away"
@@ -160,9 +180,9 @@ valid_warning() {
   python3 -c '
 import json, sys
 r = json.loads(sys.argv[1])
-assert "could not fetch" in r["systemMessage"], r
+assert "could not sync" in r["systemMessage"], r
 assert r["hookSpecificOutput"]["hookEventName"] == "SessionStart"
-assert "could not fetch" in r["hookSpecificOutput"]["additionalContext"]
+assert "could not sync" in r["hookSpecificOutput"]["additionalContext"]
 ' "$1"
 }
 check "hook warns the user and Claude" valid_warning "$out"

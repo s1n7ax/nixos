@@ -12,18 +12,10 @@ let
 
   /**
     pi's tool names in ./agents frontmatter, as Claude Code names them. A name
-    missing here fails evaluation rather than silently granting nothing.
-    ./cloud/setup.sh keeps the same table for cloud sessions.
+    missing there fails evaluation rather than silently granting nothing.
+    ./cloud/setup.sh reads the same file for cloud sessions.
   */
-  claudeToolNames = {
-    read = "Read";
-    grep = "Grep";
-    find = "Glob";
-    ls = "Glob";
-    bash = "Bash";
-    write = "Write";
-    edit = "Edit";
-  };
+  claudeToolNames = lib.importJSON ./claude-tool-names.json;
 
   /**
     One of ./agents with its `tools:` line in Claude Code's names, so the
