@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House card harness</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  house-dashboard-card { display: block; min-height: 100vh; }
+</style>
+</head>
+<body>
+<house-dashboard-card></house-dashboard-card>
+<script type="module">
+// A stand-in for Home Assistant: a hass object with the house's entities, whose services
+// flip state so the card can be driven by hand. ?user=nidu switches the person,
+// ?night=1 turns some lights on and parks the car.
+import "../house_model/frontend/house-dashboard-card.js";
+
+const params = new URLSearchParams(location.search);
+const user = params.get("user") ?? "s1n7ax";
+const night = params.has("night");
+
+const camSvg = (label, hue) =>
+  "data:image/svg+xml," +
+  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="hsl(${hue},12%,${night ? 14 : 62}%)"/><stop offset="1" stop-color="hsl(${hue},10%,${night ? 6 : 38}%)"/></linearGradient></defs>
+  <rect width="640" height="360" fill="url(#g)"/>
+  <path d="M0 260 L180 200 L360 230 L640 170 L640 360 L0 360Z" fill="hsl(${hue},8%,${night ? 10 : 30}%)"/>
+  <text x="20" y="34" font-family="monospace" font-size="16" fill="#fff" opacity=".7">${label}  2026-11-09 19:42:10</text></svg>`);
+
+const s = (state, attributes = {}) => ({ state, attributes, last_changed: new Date(Date.now() - 1000 * 60 * 23).toISOString() });
+const states = {};
+const on = new Set(night
+  ? ["switch.sw_house_front_lights_left", "switch.sw_house_front_lights_center", "switch.sw_living_room_lights_center", "light.b_office_nidu", "switch.sw_backyard_lights_right"]
+  : ["light.b_office_nidu"]);
+for (const id of [
+  "switch.sw_living_room_lights_left", "switch.sw_living_room_lights_center", "switch.sw_living_room_lights_right",
+  "switch.sw_house_front_lights_left", "switch.sw_house_front_lights_center", "switch.sw_house_front_lights_right",
+  "switch.sw_backyard_lights_left", "switch.sw_backyard_lights_center", "switch.sw_backyard_lights_right",
+  "switch.sw_bathroom_lights_left", "switch.sw_bathroom_lights_right",
+  "light.b_bedroom", "light.b_office_nidu", "light.b_office_srinesh",
+  "switch.p_water_pump", "switch.p_pressure_pump",
+]) states[id] = s(on.has(id) ? "on" : "off");
+states["climate.panasonic_ac_panasonic_ac"] = s(night ? "cool" : "off", {
+  friendly_name: "AC", temperature: 24, current_temperature: 27.5, hvac_modes: ["off", "cool", "dry", "fan_only", "auto"], min_temp: 16, max_temp: 30,
+});
+const cams = { front_road: 210, veranda: 30, front_kitchen: 140, backyard_roof: 100, backyard_water_tank: 260 };
+for (const [c, hue] of Object.entries(cams)) states[`camera.${c}`] = s("idle", { entity_picture: camSvg(c, hue) });
+for (const id of ["binary_sensor.d_bathroom_door_contact", "binary_sensor.d_office_door_contact"]) states[id] = s("off");
+states["binary_sensor.d_office_door_contact"] = s("on");
+for (const id of ["hallway_kitchen_side", "living_room_hallway_side", "bathroom_door", "bathroom_shower", "stairs"])
+  states[`binary_sensor.ms_${id}_occupancy`] = s(id === "stairs" ? "on" : "off");
+states["binary_sensor.f_bedroom_fire_alarm_smoke"] = s("off");
+states["binary_sensor.s_water_tank_flood_sensor_water_leak"] = s("off");
+states["sensor.veranda_parking_car_count"] = s(night ? "1" : "0");
+states["sensor.veranda_parking_motorcycle_count"] = s(night ? "1" : "0");
+states["weather.forecast_home"] = s(night ? "clear-night" : "partlycloudy", { temperature: 28, humidity: 78 });
+states["sensor.t_office_tempeture_sensor_temperature"] = s("27.4", { unit_of_measurement: "°C" });
+states["sensor.t_office_tempeture_sensor_humidity"] = s("68", { unit_of_measurement: "%" });
+states["person.s1n7ax"] = s("home", { friendly_name: "Srinesh" });
+states["person.nidu"] = s(night ? "home" : "not_home", { friendly_name: "Nidu" });
+for (const id of ["i_m_away_from_home", "we_are_away_from_home", "no_one_s_home"]) states[`input_boolean.${id}`] = s("off");
+states["sensor.security_alerts_quiet"] = s("0");
+
+const card = document.querySelector("house-dashboard-card");
+const push = () => { card.hass = { ...hass, states: { ...states } }; };
+const hass = {
+  user: { name: user, id: user },
+  states,
+  callService(domain, service, data) {
+    const ids = [].concat(data.entity_id);
+    for (const id of ids) {
+      const st = states[id];
+      if (service === "toggle") st.state = st.state === "on" ? "off" : "on";
+      else if (domain === "climate" && service === "turn_on") st.state = "cool";
+      else if (service === "turn_on") st.state = "on";
+      else if (service === "turn_off") st.state = "off";
+      else if (service === "set_temperature") st.attributes = { ...st.attributes, temperature: data.temperature };
+      else if (service === "set_hvac_mode") st.state = data.hvac_mode;
+      states[id] = { ...st, last_changed: new Date().toISOString() };
+    }
+    push();
+    return Promise.resolve();
+  },
+};
+card.setConfig({ type: "custom:house-dashboard-card" });
+push();
+window.__hass = hass;
+window.__push = push;
+</script>
+</body>
+</html>

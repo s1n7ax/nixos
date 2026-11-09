@@ -12,17 +12,10 @@ let
 
   /**
     pi's tool names in ./agents frontmatter, as Claude Code names them. A name
-    missing here fails evaluation rather than silently granting nothing.
+    missing there fails evaluation rather than silently granting nothing.
+    ./cloud/setup.sh reads the same file for cloud sessions.
   */
-  claudeToolNames = {
-    read = "Read";
-    grep = "Grep";
-    find = "Glob";
-    ls = "Glob";
-    bash = "Bash";
-    write = "Write";
-    edit = "Edit";
-  };
+  claudeToolNames = lib.importJSON ./claude-tool-names.json;
 
   /**
     One of ./agents with its `tools:` line in Claude Code's names, so the
@@ -103,17 +96,6 @@ let
     text = builtins.readFile ./claude/statusline.sh;
   };
 
-  gitWorkStatus = pkgs.writeShellApplication {
-    name = "claude-git-work-status";
-    runtimeInputs = with pkgs; [
-      coreutils
-      git
-      jq
-    ];
-    bashOptions = [ ];
-    text = builtins.readFile ./claude/git-work-status.sh;
-  };
-
   # Yolo skips every permission prompt. Only turn it on for throwaway,
   # sandboxed hosts like the dev microvm; everywhere else Claude asks first.
   yoloSettings = {
@@ -145,18 +127,6 @@ let
       type = "command";
       command = lib.getExe statusline;
     };
-    hooks.Stop = [
-      {
-        hooks = [
-          {
-            type = "command";
-            command = lib.getExe gitWorkStatus;
-            timeout = 15;
-            statusMessage = "Checking git state...";
-          }
-        ];
-      }
-    ];
     enabledPlugins = {
       "github@claude-plugins-official" = true;
       "skill-creator@claude-plugins-official" = true;

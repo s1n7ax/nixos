@@ -43,12 +43,7 @@ When a tool choice leaks into the user's world, rewrite it as the consequence th
 
 When the requirement is clear, first **summarize it back in full** — every section of the document below, as it will be written. Print the summary as regular output, never inside the ask-question tool; the tool's question is only a short "Is this summary correct?". Get a "yes, that's it" before writing anything down.
 
-Then ask where the requirement should live. Check first which project management tools are available — `gh` for a GitHub repo, or a Jira / Linear MCP or CLI if the project is set up for one. The suggestions:
-
-1. **Local document.** Write it to `.goals/<goal>/requirement/requirement.md` under the repo root, where `<goal>` is a short kebab-case description of what we are trying to achieve (e.g. `record-screen-demos`). `.goals/` is local working state, never committed: before writing anything under it, create `.goals/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
-2. **Project ticket.** Create a ticket in the project's management tool — one suggestion per available tool.
-
-Either way, the content is the same:
+Then write it to `.ship/<goal>/requirement/requirement.md` under the repo root, where `<goal>` is a short kebab-case description of what we are trying to achieve (e.g. `record-screen-demos`). This is the only place the requirement lives; never ask where to keep it, and never put it in a ticket. `.ship/` is local working state, never committed: before writing anything under it, create `.ship/.gitignore` containing `*` if it is missing, so git ignores the directory in every checkout.
 
 ```markdown
 # <Title>
@@ -82,7 +77,7 @@ Either way, the content is the same:
 
 When `/ship` is driving this skill, skip this section — `/ship` moves on by itself.
 
-Once the requirement document is saved, the workflow's next step is `/implement <goal>`, where `<goal>` is the goal's directory name (or the kebab-case name used for a ticket).
+Once the requirement document is saved, the workflow's next step is `/implement <goal>`, where `<goal>` is the goal's directory name.
 
 1. **Tell the user** the next step: run `/implement <goal>`.
 2. **Copy the command to the clipboard** so the user can paste it: run `printf '%s' '/implement <goal>' | wl-copy` (Wayland; fall back to `xclip -selection clipboard` or `xsel --clipboard` when wl-copy is unavailable).

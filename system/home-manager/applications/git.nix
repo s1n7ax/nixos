@@ -7,7 +7,7 @@
 
       ignores = [
         ".claude/worktrees/"
-        ".goals/"
+        ".ship/"
       ];
 
       settings = {

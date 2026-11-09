@@ -35,7 +35,7 @@ A UI verdict comes from the rendered page in a browser. Never decide one with cu
 
 ### 1. Load the goal
 
-Resolve the `<goal>` the same way `/implement` does: the name or path the user gave, else the goal under `.goals/` the current branch name starts with, else the only goal with a requirement. Several candidates → ask which, following the `questions` skill. Read the requirement: its acceptance criteria are what you test.
+Resolve the `<goal>` the same way `/implement` does: the name or path the user gave, else the goal under `.ship/` the current branch name starts with, else the only goal with a requirement. Several candidates → ask which, following the `questions` skill. Read the requirement: its acceptance criteria are what you test.
 
 No goal at all is fine; the user may run `/verify` on any branch. Then `<goal>` is the branch name in kebab-case, the change is the diff from the branch's base, and the tests come from the commits, the PR description, and what the user said.
 
@@ -85,7 +85,7 @@ Keep secrets out of the proof. Pass a token as an environment variable (`term.sh
 
 ### 6. Run each test, on both sides
 
-Run the steps on **before**, then the same steps on **after**. Save screenshots under `.goals/<goal>/verify/<n>/`, where `<n>` is one higher than the highest existing report number: `<test>-before.png` and `<test>-after.png`, plus `<test>-before-<step>.png` for any extra step a reader needs to follow along. Look at every screenshot you take. A PNG is the proof; a text dump next to it is welcome but no substitute.
+Run the steps on **before**, then the same steps on **after**. Save screenshots under `.ship/<goal>/verify/<n>/`, where `<n>` is one higher than the highest existing report number: `<test>-before.png` and `<test>-after.png`, plus `<test>-before-<step>.png` for any extra step a reader needs to follow along. Look at every screenshot you take. A PNG is the proof; a text dump next to it is welcome but no substitute.
 
 **Web.** Drive the browser with Playwright MCP.
 
@@ -102,7 +102,7 @@ $T start <goal>-before <tmp>/before HOME=<tmp>/home-before  # clean shell in a d
 $T type  <goal>-before 'todo add milk'                      # type a command, press Enter
 $T wait  <goal>-before                                      # until the screen stops changing
 $T read  <goal>-before                                      # the screen as text, for you to judge
-$T shot  <goal>-before .goals/<goal>/verify/<n>/1-before.png
+$T shot  <goal>-before .ship/<goal>/verify/<n>/1-before.png
 $T keys  <goal>-before Down Down Enter                      # drive a TUI: Up, Tab, Escape, C-c, q ...
 $T until <goal>-before 'Listening on' 60                    # wait for text to appear
 $T clear <goal>-before                                      # clean screen before the next test
@@ -128,11 +128,11 @@ Stop every server and `term.sh` session you started, close the browser, and remo
 
 The report is an HTML page that opens in the user's browser, with each test's before and after screenshots side by side. Never write it as Markdown, and never write the HTML by hand: describe the run as JSON and let `scripts/report.py` (next to `term.sh`) render it, so every report looks the same whichever agent wrote it.
 
-1. Write `.goals/<goal>/verify/<n>-report.json`. Screenshot paths in it are relative to `.goals/<goal>/verify/`.
-2. Run `~/.agents/skills/verify/scripts/report.py .goals/<goal>/verify/<n>-report.json` (it needs `python3`; on Nix without it, run it through `nix shell nixpkgs#python3 --command python3`). It writes `<n>-report.html` next to the JSON, prints the result line, and opens the page in the browser.
+1. Write `.ship/<goal>/verify/<n>-report.json`. Screenshot paths in it are relative to `.ship/<goal>/verify/`.
+2. Run `~/.agents/skills/verify/scripts/report.py .ship/<goal>/verify/<n>-report.json` (it needs `python3`; on Nix without it, run it through `nix shell nixpkgs#python3 --command python3`). It writes `<n>-report.html` next to the JSON, prints the result line, and opens the page in the browser.
 3. If it lists problems instead (a PASS without screenshots on both sides, a FAIL or NOT RUN without a `why`, a screenshot path that does not exist), fix them and run it again: take the missing screenshot or correct the path; a PASS you cannot prove is NOT RUN.
 
-Each run gets its own number; earlier reports are never edited. `.goals/` is local working state, never committed: create `.goals/.gitignore` containing `*` if it is missing. The report holds screenshots of the user's app: the PR comment of step 9 is the only place it goes beyond this machine.
+Each run gets its own number; earlier reports are never edited. `.ship/` is local working state, never committed: create `.ship/.gitignore` containing `*` if it is missing. The report holds screenshots of the user's app: the PR comment of step 9 is the only place it goes beyond this machine.
 
 ```json
 {
@@ -178,7 +178,7 @@ Each run gets its own number; earlier reports are never edited. `.goals/` is loc
 Post the report on the branch's pull request, so whoever reviews it sees the results and the screenshots without this machine. Run from the checkout:
 
 ```sh
-~/.agents/skills/verify/scripts/publish.py .goals/<goal>/verify/<n>-report.json
+~/.agents/skills/verify/scripts/publish.py .ship/<goal>/verify/<n>-report.json
 ```
 
 It checks the JSON as `report.py` does, finds the open PR of the current branch (`--pr <number|url>` names another), uploads this run's screenshots to the PR's repository under the ref `refs/verify/pr-<number>` (not a branch, so it stays out of the branch list, clones and the diff), posts the report as a comment, and deletes every earlier `/verify` comment on that PR. The PR only ever shows the latest run: after a requirement changes and you verify again, the new comment replaces the old one. It prints the comment's URL.

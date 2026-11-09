@@ -1,4 +1,4 @@
-"""Crop rectangles for notification thumbnails and box scaling.
+"""Crop rectangles for notification thumbnails and review tiles, and box scaling.
 
 Boxes and rectangles are (x1, y1, x2, y2) in pixels; sizes are (width, height).
 
@@ -6,6 +6,7 @@ The companion app uses one image as the square collapsed thumbnail, the round
 Android Auto thumbnail and the expanded picture. So the thumbnail is 2:1,
 centred on the box, and tall enough that the box's diagonal fits inside the
 circle inscribed in the centred square: the whole box survives every shape.
+A review tile is that centred square.
 """
 
 from __future__ import annotations
@@ -37,6 +38,15 @@ def thumbnail_crop(box: Box, frame: Size) -> Box:
     height = max(diagonal * THUMB_MARGIN, frame[1] * THUMB_MIN_HEIGHT_FRACTION)
     width = height * THUMB_ASPECT
     return (cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2)
+
+
+def square_crop(box: Box, frame: Size) -> Box:
+    """Return the square crop around `box`: the thumbnail's centred square, so the whole
+    box fits. It may reach outside the frame."""
+    x1, y1, x2, y2 = thumbnail_crop(box, frame)
+    cx = (x1 + x2) / 2
+    side = y2 - y1
+    return (cx - side / 2, y1, cx + side / 2, y2)
 
 
 def scale_box(box: Box, from_size: Size, to_size: Size) -> Box:

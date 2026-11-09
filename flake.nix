@@ -115,33 +115,43 @@
 
       formatter.${system} = pkgs.nixfmt-tree;
 
-      # The security_alerts Home Assistant integration: formatting, lint, unit
-      # tests and a syntax check of its frontend modules.
-      checks.${system}.security-alerts =
-        pkgs.runCommand "security-alerts-check"
-          {
-            src = ./system/home-manager/self-hosted-services/home-assistant;
-            nativeBuildInputs = [
-              (pkgs.python3.withPackages (ps: [
-                ps.pytest
-                ps.pillow
-              ]))
-              pkgs.ruff
-              pkgs.nodejs
-            ];
-          }
-          ''
-            cp -r $src source
-            chmod -R u+w source
-            cd source
-            ruff format --check --no-cache .
-            ruff check --no-cache .
-            python -m pytest
-            for js in security_alerts/frontend/*.js; do
-              node --check "$js"
-            done
-            touch $out
-          '';
+      checks.${system} = {
+        # The security_alerts and house_model Home Assistant integrations: formatting,
+        # lint, unit tests and a syntax check of their frontend modules.
+        security-alerts =
+          pkgs.runCommand "security-alerts-check"
+            {
+              src = ./system/home-manager/self-hosted-services/home-assistant;
+              nativeBuildInputs = [
+                (pkgs.python3.withPackages (ps: [
+                  ps.pytest
+                  ps.pillow
+                  ps.av
+                ]))
+                pkgs.ruff
+                pkgs.nodejs
+              ];
+            }
+            ''
+              cp -r $src source
+              chmod -R u+w source
+              cd source
+              ruff format --check --no-cache .
+              ruff check --no-cache .
+              python -m pytest
+              for js in security_alerts/frontend/*.js house_model/frontend/*.js house_model/frontend/vendor/*.js; do
+                node --check "$js"
+              done
+              touch $out
+            '';
+
+        # The homelab's pre-rebuild Dropbox backup, run against fake service data.
+        homelab-backup = pkgs.callPackage ./system/nixos/self-hosted-services/homelab-backup/check.nix { };
+
+        # The setup script that gives Claude Code cloud sessions the skills
+        # and agents, run against a throwaway HOME.
+        claude-cloud-setup = pkgs.callPackage ./system/home-manager/applications/dev/ai/cloud/check.nix { };
+      };
     };
 
   inputs = {

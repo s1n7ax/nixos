@@ -1,4 +1,4 @@
-"""Websocket commands for the review page and the dashboard card.
+"""Websocket commands for the review page, the review tab and the dashboard card.
 
 Results carry image, audio and clip URLs signed for the logged-in user, because
 plain <img>, <audio> and <video> requests send no token.
@@ -16,19 +16,24 @@ from homeassistant.components.http.auth import async_sign_path
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import (
     AUDIO_URL,
+    CLIP_DOWNLOAD_URL,
+    CONF_LOG_DAYS,
+    CROP,
     DOMAIN,
     FULL,
     IMAGE_URL,
+    SIGNAL_ALERT_LOGGED,
     SIGNED_URL_HOURS,
 )
 from .core.icons import icon_for
 from .core.policy import DETECTION, HOME, SENSOR_KINDS, SOUND
 from .core.quiet import QUIET_KINDS, changed_kinds
-from .notify import local_clock, type_name
-from .pipeline import SecurityAlerts
+from .notify import local_clock, local_day, type_name
+from .pipeline import REVIEW_KINDS, SecurityAlerts
 from .services import QUIET_FIELDS
 from .store import AlertRow
 
@@ -40,11 +45,26 @@ def _alerts(hass: HomeAssistant) -> SecurityAlerts:
     return hass.data[DOMAIN]
 
 
-def _item(hass: HomeAssistant, alerts: SecurityAlerts, row: AlertRow, now: float) -> dict[str, Any]:
+def _item(
+    hass: HomeAssistant,
+    alerts: SecurityAlerts,
+    row: AlertRow,
+    now: float,
+    refresh_token_id: str | None = None,
+) -> dict[str, Any]:
+    """One alert for the review list. URLs are signed for `refresh_token_id`, by
+    default the user of the websocket command being handled."""
+
+    def sign(path: str) -> str:
+        return async_sign_path(hass, path, SIGNED_FOR, refresh_token_id=refresh_token_id)
+
+    day, day_name = local_day(row.time)
     item: dict[str, Any] = {
         "id": row.id,
         "time": row.time,
         "clock": local_clock(row.time),
+        "day": day,
+        "day_name": day_name,
         "kind": row.kind,
         "type": row.type,
         "type_name": type_name(row.type),
@@ -57,26 +77,28 @@ def _item(hass: HomeAssistant, alerts: SecurityAlerts, row: AlertRow, now: float
     if row.kind not in (DETECTION, SOUND):
         return item
     item["camera_entity"] = alerts.camera_entity(row.source)
-    clip: dict[str, Any] = {"ready": False, "url": None}
+    # `download` saves the clip as a named file; `url` plays it.
+    clip: dict[str, Any] = {"ready": False, "url": None, "download": None}
     if (window := alerts.clip_window(row)) is not None:
         start, end = window
         clip["ready"] = alerts.clip_ready(window, now)
         if clip["ready"]:
-            clip["url"] = async_sign_path(
-                hass, CLIP_URL.format(camera=row.source, start=start, end=end), SIGNED_FOR
-            )
+            clip["url"] = sign(CLIP_URL.format(camera=row.source, start=start, end=end))
+            clip["download"] = sign(CLIP_DOWNLOAD_URL.format(alert_id=row.id))
     item["clip"] = clip
     if row.kind == DETECTION:
-        item["image"] = async_sign_path(
-            hass, IMAGE_URL.format(alert_id=row.id, variant=FULL), SIGNED_FOR
-        )
+        image = IMAGE_URL.format(alert_id=row.id, variant=FULL)
+        item["image"] = sign(image)
+        # Until the recording around the snapshot is saved, the review image is the
+        # detect snapshot. The clip is saved after it, so the full-resolution image
+        # downloads from then on, with the clip.
+        item["image_download"] = sign(f"{image}?download=1") if clip["ready"] else None
+        item["crop"] = sign(IMAGE_URL.format(alert_id=row.id, variant=CROP))
     else:
         # A sound shows no picture: it plays its audio, cut from the same clip.
         item["audio"] = {
             "ready": clip["ready"],
-            "url": async_sign_path(hass, AUDIO_URL.format(alert_id=row.id), SIGNED_FOR)
-            if clip["ready"]
-            else None,
+            "url": sign(AUDIO_URL.format(alert_id=row.id)) if clip["ready"] else None,
         }
     return item
 
@@ -131,6 +153,28 @@ async def ws_review_get(
     connection.send_result(msg["id"], _window(hass, start, end, rows, more))
 
 
+@websocket_api.websocket_command({probatio.Required("type"): "security_alerts/review/subscribe"})
+@callback
+def ws_review_subscribe(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Send each alert the review list shows as it is logged, as an item of the list."""
+    alerts = _alerts(hass)
+
+    @callback
+    def logged(row: AlertRow) -> None:
+        if row.kind not in REVIEW_KINDS:
+            return
+        # Runs in the alert's own task, which does not know this command's user.
+        item = _item(hass, alerts, row, time.time(), connection.refresh_token_id)
+        connection.send_message(websocket_api.event_message(msg["id"], item))
+
+    connection.subscriptions[msg["id"]] = async_dispatcher_connect(
+        hass, SIGNAL_ALERT_LOGGED, logged
+    )
+    connection.send_result(msg["id"])
+
+
 @websocket_api.websocket_command(
     {
         probatio.Required("type"): "security_alerts/alert",
@@ -154,7 +198,8 @@ async def ws_alert(
 def ws_types(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """The types and cameras the pickers offer, the durations, the modes and Home.
+    """The types and cameras the pickers offer, the durations, the modes, Home, and
+    how many days the alert log keeps.
 
     Each mode, in ladder order, and Home (no away mode on) list per quiet kind the
     event kinds it changes there, so the card offers only those types for the mode
@@ -184,6 +229,7 @@ def ws_types(
             "durations": alerts.durations_hours,
             "modes": modes,
             "home": {"name": HOME, "changes": changed_kinds(alerts.home)},
+            "log_days": alerts.config[CONF_LOG_DAYS],
         },
     )
 
@@ -246,6 +292,7 @@ def async_register(hass: HomeAssistant) -> None:
     for command in (
         ws_review_start,
         ws_review_get,
+        ws_review_subscribe,
         ws_alert,
         ws_types,
         ws_quiet_list,

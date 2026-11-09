@@ -57,6 +57,19 @@ in
         ];
       }
       {
+        name = "Android";
+        bookmarks = [
+          {
+            name = "Google Play Console";
+            tags = [
+              "android"
+              "google"
+            ];
+            url = "https://play.google.com/console/";
+          }
+        ];
+      }
+      {
         name = "Other";
         bookmarks = [
           {

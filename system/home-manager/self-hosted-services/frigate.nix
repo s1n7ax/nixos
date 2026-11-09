@@ -240,18 +240,17 @@ with lib;
           veranda:
             motion:
               threshold: 40
-            # Our own parked car and bikes sit in the veranda permanently.
-            # Mask them out by label so people are still detected there.
-            objects:
-              filters:
-                car:
-                  mask:
-                    parked_vehicles:
-                      coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
-                motorcycle:
-                  mask:
-                    parked_vehicles:
-                      coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
+            # Our own car and bikes park here. The zone's car and motorcycle
+            # counts (sensor.veranda_parking_*_count) put them on the dashboard's
+            # house model. Frigate gives no clip to an object that never moved, so a
+            # parked vehicle it finds again (after a restart) neither alerts nor
+            # turns the lights on; one pulling in does both, like any detection.
+            zones:
+              veranda_parking:
+                coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"
+                objects:
+                  - car
+                  - motorcycle
             ffmpeg:
               inputs:
                 - path: rtsp://viewer:${veranda}@192.168.1.124:554/Streaming/Channels/101/
