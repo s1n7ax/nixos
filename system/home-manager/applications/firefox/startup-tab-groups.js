@@ -14,6 +14,10 @@
     "about:blank",
     "chrome://browser/content/blanktab.html",
   ]);
+  const restorePromptURLs = new Set([
+    "about:sessionrestore",
+    "about:welcomeback",
+  ]);
 
   const lazy = {};
   ChromeUtils.defineESModuleGetters(lazy, {
@@ -72,21 +76,54 @@
     blankTabs.forEach((tab) => gBrowser.removeTab(tab));
   };
 
+  const whenIdle = (window) =>
+    new Promise((resolve) => window.requestIdleCallback(resolve));
+
+  /**
+   * Resolves once the window no longer shows Firefox's restore prompt, which
+   * replaces the automatic restore after repeated crashes. The crashed session
+   * already holds the groups, so opening them next to the prompt would
+   * duplicate them when the user restores it.
+   */
+  const leftRestorePrompt = ({ gBrowser }) =>
+    new Promise((resolve) => {
+      const showsPrompt = () =>
+        gBrowser.tabs.some(({ linkedBrowser }) =>
+          restorePromptURLs.has(linkedBrowser.currentURI.spec),
+        );
+      if (!showsPrompt()) {
+        resolve();
+        return;
+      }
+      const listener = {
+        onLocationChange() {
+          if (!showsPrompt()) {
+            gBrowser.removeTabsProgressListener(listener);
+            resolve();
+          }
+        },
+      };
+      gBrowser.addTabsProgressListener(listener);
+    });
+
   const startupTopic = "browser-delayed-startup-finished";
 
   /**
    * Opens the groups once the first window has started up, Firefox has
-   * restored whatever session state it brings into that window, and the
-   * window has gone idle. Firefox restores state even after a clean quit (the
-   * previous session's groups, pinned and closed tabs), and tabs added before
-   * that restore and idle are never attached to the tab strip, so their
-   * groups are dropped.
+   * restored whatever session state it brings into that window, the user has
+   * answered the restore prompt if Firefox showed one, and the window has gone
+   * idle. Firefox restores state even after a clean quit (the previous
+   * session's groups, pinned and closed tabs), and tabs added before that
+   * restore and idle are never attached to the tab strip, so their groups are
+   * dropped.
    */
   const onStartup = (window) => {
     Services.obs.removeObserver(onStartup, startupTopic);
-    lazy.SessionStore.promiseAllWindowsRestored.then(() =>
-      window.requestIdleCallback(() => openGroups(window)),
-    );
+    lazy.SessionStore.promiseAllWindowsRestored
+      .then(() => whenIdle(window))
+      .then(() => leftRestorePrompt(window))
+      .then(() => whenIdle(window))
+      .then(() => openGroups(window));
   };
   Services.obs.addObserver(onStartup, startupTopic);
 })();
