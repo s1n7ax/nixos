@@ -1,30 +1,12 @@
 /**
- * Opens one tab group per project, each with its pull requests and Claude
- * Code, in the first browser window after Firefox starts.
+ * Opens one tab group per project, each with its pull requests, issues and
+ * Claude Code, in the first browser window after Firefox starts.
  */
 (() => {
   const groups = [
-    {
-      label: "NixOS",
-      color: "blue",
-      urls: ["https://github.com/s1n7ax/nixos/pulls", "https://claude.ai/code"],
-    },
-    {
-      label: "riya-mandiya",
-      color: "orange",
-      urls: [
-        "https://github.com/Syntxio/riya-mandiya/pulls",
-        "https://claude.ai/code",
-      ],
-    },
-    {
-      label: "openrep",
-      color: "green",
-      urls: [
-        "https://github.com/s1n7ax/openrep/pulls",
-        "https://claude.ai/code",
-      ],
-    },
+    { label: "NixOS", color: "blue", repo: "s1n7ax/nixos" },
+    { label: "riya-mandiya", color: "orange", repo: "Syntxio/riya-mandiya" },
+    { label: "openrep", color: "green", repo: "s1n7ax/openrep" },
   ];
 
   const blankURLs = new Set([
@@ -50,10 +32,12 @@
 
     const groupTabs = groups
       .filter(({ label }) => !existingLabels.has(label))
-      .map(({ label, color, urls }) => {
-        const tabs = urls.map((url) =>
-          gBrowser.addTab(url, { triggeringPrincipal }),
-        );
+      .map(({ label, color, repo }) => {
+        const tabs = [
+          `https://github.com/${repo}/pulls`,
+          `https://github.com/${repo}/issues`,
+          "https://claude.ai/code",
+        ].map((url) => gBrowser.addTab(url, { triggeringPrincipal }));
         gBrowser.addTabGroup(tabs, { label, color });
         return tabs;
       });
