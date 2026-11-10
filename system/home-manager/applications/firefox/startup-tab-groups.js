@@ -14,6 +14,12 @@
     "chrome://browser/content/blanktab.html",
   ]);
 
+  const lazy = {};
+  ChromeUtils.defineESModuleGetters(lazy, {
+    SessionStore:
+      "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  });
+
   const openGroups = (window) => {
     const { gBrowser } = window;
     const triggeringPrincipal =
@@ -49,32 +55,21 @@
     blankTabs.forEach((tab) => gBrowser.removeTab(tab));
   };
 
-  const restoredTopic = "sessionstore-windows-restored";
   const startupTopic = "browser-delayed-startup-finished";
 
   /**
-   * Opens the groups once the first window has started up. When Firefox is
-   * about to restore a session into that window, waits for the restore to
-   * finish and the window to go idle first: tabs added any earlier are never
-   * attached to the tab strip, so their groups are dropped.
+   * Opens the groups once the first window has started up, Firefox has
+   * restored whatever session state it brings into that window, and the
+   * window has gone idle. Firefox restores state even after a clean quit (the
+   * previous session's groups, pinned and closed tabs), and tabs added before
+   * that restore and idle are never attached to the tab strip, so their
+   * groups are dropped.
    */
   const onStartup = (window) => {
     Services.obs.removeObserver(onStartup, startupTopic);
-
-    const { SessionStartup } = ChromeUtils.importESModule(
-      "moz-src:///browser/components/sessionstore/SessionStartup.sys.mjs",
+    lazy.SessionStore.promiseAllWindowsRestored.then(() =>
+      window.requestIdleCallback(() => openGroups(window)),
     );
-    SessionStartup.onceInitialized.then(() => {
-      if (!SessionStartup.willRestore()) {
-        openGroups(window);
-        return;
-      }
-      const onRestored = () => {
-        Services.obs.removeObserver(onRestored, restoredTopic);
-        window.requestIdleCallback(() => openGroups(window));
-      };
-      Services.obs.addObserver(onRestored, restoredTopic);
-    });
   };
   Services.obs.addObserver(onStartup, startupTopic);
 })();
