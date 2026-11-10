@@ -94,10 +94,16 @@ def git(*args):
 
 
 def origin_repo():
-    """(host, owner, repo) of the checkout's origin remote."""
+    """(host, owner, repo) of the checkout's origin remote.
+
+    The repository is the URL's last two path segments, so a git proxy's
+    prefix (http://proxy@127.0.0.1:<port>/git/<owner>/<repo>) reads too. A
+    remote on a loopback or IP address is such a proxy, standing in for
+    github.com.
+    """
     url = git("remote", "get-url", "origin")
     match = re.fullmatch(
-        r"(?:https?://(?:[^@/]+@)?|ssh://(?:[^@/]+@)?|[^@/:]+@)([^/:]+)[/:]"
+        r"(?:[a-z+]+://)?(?:[^@/]+@)?([^/:]+)(?::\d+)?[/:](?:.*/)?"
         r"([^/]+)/([^/]+?)(?:\.git)?/?",
         url,
     )
@@ -105,24 +111,39 @@ def origin_repo():
         die(
             f"cannot read the repository from the origin remote {url!r}; pass --pr <url>"
         )
-    return match.groups()
+    host, owner, repo = match.groups()
+    if host == "localhost" or re.fullmatch(r"[\d.]+|\[[\da-f:]*\]", host):
+        host = "github.com"
+    return host, owner, repo
+
+
+def upstream_branch():
+    """The current branch's name on origin: its upstream there, else its own."""
+    upstream = git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
+    if upstream.startswith("origin/"):
+        return upstream.removeprefix("origin/")
+    return git("branch", "--show-current")
 
 
 def find_pr(selector):
     """The open PR to post on, or None when there is none.
 
     Read over REST rather than `gh pr view`, which needs the GraphQL API.
+    A number or branch is looked up in the origin remote's repository; a PR
+    on another repository (a fork's upstream) needs its URL.
     """
+    selector = (selector or "").strip()
     match = re.fullmatch(
-        r"https?://([^/]+)/([^/]+)/([^/]+)/pull/(\d+)/?", selector or ""
+        r"(?:https?://)?([^/]+)/([^/]+)/([^/]+)/pull/(\d+)(?:[/?#].*)?", selector
     )
     if match:
         host, owner, repo, number = match.groups()
         branch = None
     else:
         host, owner, repo = origin_repo()
-        number = selector if selector and selector.isdigit() else None
-        branch = None if number else selector or git("branch", "--show-current")
+        digits = re.fullmatch(r"#?(\d+)", selector)
+        number = digits.group(1) if digits else None
+        branch = None if number else selector or upstream_branch()
         if not number and not branch:
             die("not on a branch; pass --pr <number|url|branch>")
     pr = {"host": host, "owner": owner, "repo": repo}
@@ -369,6 +390,11 @@ def main(argv):
 
     paths = screenshots(data, base_dir)
     standalone = None
+    # A standalone report from an earlier failed upload is stale once this
+    # run's screenshots go up, so it never outlives the run that needed it.
+    stale = os.path.join(base_dir, f"{number}-report-standalone.html")
+    if os.path.exists(stale):
+        os.remove(stale)
     try:
         commit = upload(pr, paths, base_dir, number)
     except GhError as error:
