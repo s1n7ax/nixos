@@ -65,13 +65,14 @@
     blankTabs.forEach((tab) => gBrowser.removeTab(tab));
   };
 
+  const restoredTopic = "sessionstore-windows-restored";
+  const startupTopic = "browser-delayed-startup-finished";
+
   /**
    * Opens the groups once the first window has started up. When Firefox is
    * about to restore a session into that window, waits for the restore to
    * finish first, so the restored session cannot replace the new tabs.
    */
-  const restoredTopic = "sessionstore-windows-restored";
-  const startupTopic = "browser-delayed-startup-finished";
   const onStartup = (window) => {
     Services.obs.removeObserver(onStartup, startupTopic);
 
