@@ -25,15 +25,23 @@
     },
   ];
 
+  const blankURLs = new Set([
+    "about:blank",
+    "chrome://browser/content/blanktab.html",
+  ]);
+
   const openGroups = (window) => {
     const { gBrowser } = window;
     const triggeringPrincipal =
       Services.scriptSecurityManager.getSystemPrincipal();
-    const blankTabs = gBrowser.tabs.filter((tab) =>
-      window.isBlankPageURL(tab.linkedBrowser.currentURI.spec),
+    const blankTabs = gBrowser.tabs.filter(({ linkedBrowser }) =>
+      [linkedBrowser.currentURI.spec, linkedBrowser.userTypedValue ?? "about:blank"]
+        .every((url) => blankURLs.has(url)),
     );
     const existingLabels = new Set(
-      gBrowser.tabGroups.map((group) => group.label),
+      [...Services.wm.getEnumerator("navigator:browser")].flatMap((win) =>
+        win.gBrowser.tabGroups.map((group) => group.label),
+      ),
     );
 
     const groupTabs = groups
@@ -46,30 +54,37 @@
         return tabs;
       });
 
-    if (groupTabs.length) {
-      gBrowser.selectedTab = groupTabs[0][0];
+    if (!groupTabs.length) {
+      return;
     }
+    gBrowser.selectedTab = groupTabs[0][0];
     blankTabs.forEach((tab) => gBrowser.removeTab(tab));
   };
 
   /**
-   * Waits for the first window to finish starting up and for startup session
-   * restore to finish, so neither can replace or close the new tabs.
+   * Opens the groups once the first window has started up. When Firefox is
+   * about to restore a session into that window, waits for the restore to
+   * finish first, so the restored session cannot replace the new tabs.
    */
-  const pending = new Set([
-    "browser-delayed-startup-finished",
-    "sessionstore-windows-restored",
-  ]);
-  const observer = (subject, topic) => {
-    Services.obs.removeObserver(observer, topic);
-    pending.delete(topic);
-    if (pending.size) {
-      return;
-    }
-    const window = Services.wm.getMostRecentWindow("navigator:browser");
-    if (window) {
-      Services.tm.dispatchToMainThread(() => openGroups(window));
-    }
+  const restoredTopic = "sessionstore-windows-restored";
+  const startupTopic = "browser-delayed-startup-finished";
+  const onStartup = (window) => {
+    Services.obs.removeObserver(onStartup, startupTopic);
+
+    const { SessionStartup } = ChromeUtils.importESModule(
+      "moz-src:///browser/components/sessionstore/SessionStartup.sys.mjs",
+    );
+    SessionStartup.onceInitialized.then(() => {
+      if (!SessionStartup.willRestore()) {
+        openGroups(window);
+        return;
+      }
+      const onRestored = () => {
+        Services.obs.removeObserver(onRestored, restoredTopic);
+        Services.tm.dispatchToMainThread(() => openGroups(window));
+      };
+      Services.obs.addObserver(onRestored, restoredTopic);
+    });
   };
-  pending.forEach((topic) => Services.obs.addObserver(observer, topic));
+  Services.obs.addObserver(onStartup, startupTopic);
 })();
