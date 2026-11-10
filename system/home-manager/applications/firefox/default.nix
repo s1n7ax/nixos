@@ -1,5 +1,6 @@
 {
   config,
+  pkgs,
   ...
 }:
 {
@@ -29,6 +30,9 @@
 
   programs.firefox = {
     enable = config.features.web.enable;
+    package = pkgs.firefox.override {
+      extraPrefsFiles = [ "${./startup-tab-groups.js}" ];
+    };
     configPath = "${config.xdg.configHome}/mozilla/firefox";
 
     # ---- POLICIES ----
@@ -79,7 +83,7 @@
       };
       Homepage = {
         Locked = true;
-        StartPage = "previous-session";
+        StartPage = "none";
       };
       HttpAllowlist = [ "192.168.1.110" ];
       HttpsOnlyMode = "force_enabled";
