@@ -184,6 +184,7 @@ Post the report on the branch's pull request, so whoever reviews it sees the res
 It checks the JSON as `report.py` does, finds the open PR of the current branch (`--pr <number|url>` names another), uploads this run's screenshots to the PR's repository under the ref `refs/verify/pr-<number>` (not a branch, so it stays out of the branch list, clones and the diff), posts the report as a comment, and deletes every earlier `/verify` comment on that PR. The PR only ever shows the latest run: after a requirement changes and you verify again, the new comment replaces the old one. It prints the comment's URL.
 
 - **No open PR** → it says so and posts nothing. Say so in the chat report; running it again once the PR exists posts this report.
+- **Screenshots not uploaded** (a proxy that refuses git writes, a token without contents access) → it still posts the comment, with every test but no screenshots, and a notice naming the standalone report. It writes `<n>-report-standalone.html` next to the JSON, with every screenshot embedded so it opens complete wherever it is copied, and prints its path. Hand that file to the user (Claude Code: SendUserFile; elsewhere, give its path). This is a fallback only: when the upload works there is no standalone file.
 - **It fails** (no `gh`, not logged in, no write access) → report its error. The local report stands; the run is not redone.
 - **Visibility.** The screenshots become as visible as the PR: public on a public repository. One more reason no secret may appear in them.
 
@@ -191,7 +192,7 @@ When `/ship` is driving this skill, skip this step; `/ship` posts the final repo
 
 ### 10. Finish
 
-Report in chat: the result line, the table of tests with verdicts, the path to `<n>-report.html`, the PR comment's URL (or why there is none), and one line per FAIL or NOT RUN saying what went wrong or what blocked it. If `report.py` said it could not open the browser, ask the user to open that path.
+Report in chat: the result line, the table of tests with verdicts, the path to `<n>-report.html`, the PR comment's URL (or why there is none), the path to `<n>-report-standalone.html` when step 9 fell back to it, and one line per FAIL or NOT RUN saying what went wrong or what blocked it. If `report.py` said it could not open the browser, ask the user to open that path.
 
 When `/ship` is driving this skill, run `report.py` with `--no-open` and stop after the chat report; `/ship` opens the final report and the PR.
 

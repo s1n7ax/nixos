@@ -81,6 +81,11 @@
             tags = [ "self-hosted" ];
             url = "http://192.168.1.112/";
           }
+          {
+            name = "Router";
+            tags = [ "router" ];
+            url = "http://192.168.1.1/";
+          }
         ];
       }
     ];

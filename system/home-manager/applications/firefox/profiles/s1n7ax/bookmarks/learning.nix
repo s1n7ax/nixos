@@ -7,6 +7,11 @@
         name = "Learning";
         bookmarks = [
           {
+            name = "LeetCode";
+            tags = [ "programming" ];
+            url = "https://leetcode.com/problemset/?difficulty=EASY&page=1";
+          }
+          {
             name = "GitHub";
             bookmarks = [
               {

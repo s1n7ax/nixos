@@ -46,9 +46,11 @@ FAIL and NOT RUN need a `why`. A side that did not exist before the change
 is `"before": null`.
 """
 
+import base64
 import datetime
 import html
 import json
+import mimetypes
 import os
 import re
 import shutil
@@ -231,18 +233,33 @@ def ref_text(info):
     return text
 
 
-def render_side(name, info):
-    """One column of the before/after comparison."""
+def embedded(path):
+    """The image at path as a data: URI, so the page needs no other file."""
+    kind = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    with open(path, "rb") as handle:
+        return f"data:{kind};base64,{base64.b64encode(handle.read()).decode()}"
+
+
+def render_side(name, info, base_dir=None):
+    """One column of the before/after comparison.
+
+    With base_dir, each screenshot is embedded from there instead of linked,
+    and not wrapped in a link: browsers refuse to open a data: URI as a page.
+    """
     parts = [f'<div class="side"><h3>{name}</h3>']
     if info is None:
         parts.append('<p class="na">n/a: did not exist before the change.</p>')
     else:
         images = as_list(info.get("images"))
         for image in images:
-            src = html.escape(image, quote=True)
-            parts.append(
-                f'<a href="{src}" target="_blank"><img src="{src}" alt="{name} screenshot"></a>'
-            )
+            if base_dir is not None:
+                src = embedded(os.path.join(base_dir, image))
+                parts.append(f'<img src="{src}" alt="{name} screenshot">')
+            else:
+                src = html.escape(image, quote=True)
+                parts.append(
+                    f'<a href="{src}" target="_blank"><img src="{src}" alt="{name} screenshot"></a>'
+                )
         if not images:
             parts.append('<p class="na">No screenshot.</p>')
         if info.get("note"):
@@ -253,8 +270,8 @@ def render_side(name, info):
     return "".join(parts)
 
 
-def render(report, number):
-    """The whole report as an HTML page."""
+def render(report, number, base_dir=None):
+    """The whole report as an HTML page; with base_dir, its screenshots embedded."""
     tests = report["tests"]
     counts = result_counts(tests)
     goal = html.escape(report["goal"])
@@ -279,7 +296,7 @@ def render(report, number):
             f'<div class="test-head"><h2>{index}. {name}</h2>{badge(verdict)}</div>'
             f"{why}"
             f"<h3>Steps</h3><ol>{steps}</ol>"
-            f'<div class="sides">{render_side("Before", test.get("before"))}{render_side("After", test.get("after"))}</div>'
+            f'<div class="sides">{render_side("Before", test.get("before"), base_dir)}{render_side("After", test.get("after"), base_dir)}</div>'
             f"</section>"
         )
 
@@ -330,6 +347,20 @@ def render(report, number):
 </body>
 </html>
 """
+
+
+def standalone_path(base_dir, number):
+    """Where the standalone report for report <n> goes."""
+    return os.path.join(base_dir, f"{number}-report-standalone.html")
+
+
+def write_standalone(report, number, base_dir):
+    """Write <n>-report-standalone.html, the report with every screenshot
+    embedded, so it opens complete wherever it is copied; return its path."""
+    path = standalone_path(base_dir, number)
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(render(report, number, base_dir))
+    return path
 
 
 def open_in_browser(path):
