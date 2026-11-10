@@ -66,7 +66,9 @@
     if (!groupTabs.length) {
       return;
     }
-    gBrowser.selectedTab = groupTabs[0][0];
+    if (blankTabs.includes(gBrowser.selectedTab)) {
+      gBrowser.selectedTab = groupTabs[0][0];
+    }
     blankTabs.forEach((tab) => gBrowser.removeTab(tab));
   };
 
