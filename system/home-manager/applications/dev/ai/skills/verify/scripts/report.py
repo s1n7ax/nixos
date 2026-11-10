@@ -255,11 +255,11 @@ def render_side(name, info, base_dir=None):
             if base_dir is not None:
                 src = embedded(os.path.join(base_dir, image))
                 parts.append(f'<img src="{src}" alt="{name} screenshot">')
-                continue
-            src = html.escape(image, quote=True)
-            parts.append(
-                f'<a href="{src}" target="_blank"><img src="{src}" alt="{name} screenshot"></a>'
-            )
+            else:
+                src = html.escape(image, quote=True)
+                parts.append(
+                    f'<a href="{src}" target="_blank"><img src="{src}" alt="{name} screenshot"></a>'
+                )
         if not images:
             parts.append('<p class="na">No screenshot.</p>')
         if info.get("note"):
@@ -349,10 +349,15 @@ def render(report, number, base_dir=None):
 """
 
 
+def standalone_path(base_dir, number):
+    """Where the standalone report for report <n> goes."""
+    return os.path.join(base_dir, f"{number}-report-standalone.html")
+
+
 def write_standalone(report, number, base_dir):
     """Write <n>-report-standalone.html, the report with every screenshot
     embedded, so it opens complete wherever it is copied; return its path."""
-    path = os.path.join(base_dir, f"{number}-report-standalone.html")
+    path = standalone_path(base_dir, number)
     with open(path, "w", encoding="utf-8") as handle:
         handle.write(render(report, number, base_dir))
     return path

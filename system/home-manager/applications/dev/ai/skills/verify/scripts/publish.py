@@ -234,19 +234,17 @@ def side_cell(name, info, image_url):
     if info is None:
         return "<em>n/a: did not exist before the change.</em>"
     images = report.as_list(info.get("images"))
-    if images and image_url is None:
+    if not images:
+        parts = ["<em>No screenshot.</em>"]
+    elif image_url is None:
         count = "1 screenshot" if len(images) == 1 else f"{len(images)} screenshots"
         parts = [f"<em>{count}, not uploaded: see the standalone report.</em>"]
-        if info.get("note"):
-            parts.append(text(info["note"]))
-        return "<br>".join(parts)
-    parts = [
-        f'<img src="{html.escape(image_url(image), quote=True)}" '
-        f'width="{IMAGE_WIDTH}" alt="{name} screenshot">'
-        for image in images
-    ]
-    if not images:
-        parts.append("<em>No screenshot.</em>")
+    else:
+        parts = [
+            f'<img src="{html.escape(image_url(image), quote=True)}" '
+            f'width="{IMAGE_WIDTH}" alt="{name} screenshot">'
+            for image in images
+        ]
     if info.get("note"):
         parts.append(text(info["note"]))
     return "<br>".join(parts)
@@ -392,7 +390,7 @@ def main(argv):
     standalone = None
     # A standalone report from an earlier failed upload is stale once this
     # run's screenshots go up, so it never outlives the run that needed it.
-    stale = os.path.join(base_dir, f"{number}-report-standalone.html")
+    stale = report.standalone_path(base_dir, number)
     if os.path.exists(stale):
         os.remove(stale)
     try:
