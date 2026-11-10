@@ -12,9 +12,15 @@ list, in clones or in the diff; each run replaces it), posts the report as a
 comment, then deletes every earlier /verify comment on the PR, so the PR
 only ever shows the latest run.
 
-Needs gh, logged in with write access to the repository. Prints the
-comment's URL. Exits 0 without posting when there is no open pull request,
-and 1 on any other problem.
+When the screenshot upload fails (a proxy that refuses git writes, a token
+without contents access), it still posts the comment, without screenshots,
+and writes <dir>/<n>-report-standalone.html: the report with every
+screenshot embedded, to hand over instead. It prints that file's path.
+
+Needs gh, logged in with write access to the repository. It uses only the
+REST API, so it also works where GitHub's GraphQL API is blocked. Prints
+the comment's URL. Exits 0 without posting when there is no open pull
+request, and 1 on any other problem.
 """
 
 import base64
@@ -35,6 +41,10 @@ TEXT_LIMITS = (None, 2000, 0)
 IMAGE_WIDTH = 400
 
 
+class GhError(Exception):
+    """A gh command that failed, with its error."""
+
+
 def die(message):
     """Print the problem and exit 1."""
     print(f"publish.py: {message}", file=sys.stderr)
@@ -42,7 +52,7 @@ def die(message):
 
 
 def gh(args, payload=None):
-    """Run gh and return its stdout; exit with its error when it fails."""
+    """Run gh and return its stdout; raise GhError when it fails."""
     try:
         result = subprocess.run(
             ["gh", *args],
@@ -53,7 +63,7 @@ def gh(args, payload=None):
     except FileNotFoundError:
         die("needs gh (https://cli.github.com) on PATH, logged in")
     if result.returncode != 0:
-        die(f"gh {' '.join(args[:4])} failed: {result.stderr.strip()}")
+        raise GhError(f"gh {' '.join(args[:4])} failed: {result.stderr.strip()}")
     return result.stdout
 
 
@@ -77,25 +87,60 @@ def api(pr, method, path, payload=None, jq=None):
     return json.loads(out) if out.strip() else None
 
 
-def find_pr(selector):
-    """The open PR to post on, or None when there is none."""
-    args = ["pr", "view", *([selector] if selector else [])]
-    args += ["--json", "number,url,state,headRefName,headRefOid"]
-    try:
-        result = subprocess.run(["gh", *args], capture_output=True, text=True)
-    except FileNotFoundError:
-        die("needs gh (https://cli.github.com) on PATH, logged in")
-    if result.returncode != 0:
-        if "no pull requests found" in result.stderr.lower():
-            return None
-        die(f"gh pr view failed: {result.stderr.strip()}")
-    pr = json.loads(result.stdout)
-    if pr["state"] != "OPEN":
-        return None
-    match = re.fullmatch(r"https?://([^/]+)/([^/]+)/([^/]+)/pull/\d+", pr["url"])
+def git(*args):
+    """Run git in the current directory; return its stdout, or '' on failure."""
+    result = subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def origin_repo():
+    """(host, owner, repo) of the checkout's origin remote."""
+    url = git("remote", "get-url", "origin")
+    match = re.fullmatch(
+        r"(?:https?://(?:[^@/]+@)?|ssh://(?:[^@/]+@)?|[^@/:]+@)([^/:]+)[/:]"
+        r"([^/]+)/([^/]+?)(?:\.git)?/?",
+        url,
+    )
     if not match:
-        die(f"cannot read the repository from the PR URL {pr['url']}")
-    pr["host"], pr["owner"], pr["repo"] = match.groups()
+        die(
+            f"cannot read the repository from the origin remote {url!r}; pass --pr <url>"
+        )
+    return match.groups()
+
+
+def find_pr(selector):
+    """The open PR to post on, or None when there is none.
+
+    Read over REST rather than `gh pr view`, which needs the GraphQL API.
+    """
+    match = re.fullmatch(
+        r"https?://([^/]+)/([^/]+)/([^/]+)/pull/(\d+)/?", selector or ""
+    )
+    if match:
+        host, owner, repo, number = match.groups()
+        branch = None
+    else:
+        host, owner, repo = origin_repo()
+        number = selector if selector and selector.isdigit() else None
+        branch = None if number else selector or git("branch", "--show-current")
+        if not number and not branch:
+            die("not on a branch; pass --pr <number|url|branch>")
+    pr = {"host": host, "owner": owner, "repo": repo}
+    if number:
+        found = api(pr, "GET", f"pulls/{number}")
+    else:
+        query = urllib.parse.urlencode(
+            {"head": f"{owner}:{branch}", "state": "open", "per_page": 1}
+        )
+        found = next(iter(api(pr, "GET", f"pulls?{query}")), None)
+    if not found or found["state"] != "open":
+        return None
+    pr.update(
+        number=found["number"],
+        url=found["html_url"],
+        headRefName=found["head"]["ref"],
+        headRefOid=found["head"]["sha"],
+    )
     return pr
 
 
@@ -164,10 +209,16 @@ def badge(verdict):
 
 
 def side_cell(name, info, image_url):
-    """One cell of the before/after table."""
+    """One cell of the before/after table; image_url None means none uploaded."""
     if info is None:
         return "<em>n/a: did not exist before the change.</em>"
     images = report.as_list(info.get("images"))
+    if images and image_url is None:
+        count = "1 screenshot" if len(images) == 1 else f"{len(images)} screenshots"
+        parts = [f"<em>{count}, not uploaded: see the standalone report.</em>"]
+        if info.get("note"):
+            parts.append(text(info["note"]))
+        return "<br>".join(parts)
     parts = [
         f'<img src="{html.escape(image_url(image), quote=True)}" '
         f'width="{IMAGE_WIDTH}" alt="{name} screenshot">'
@@ -193,8 +244,12 @@ def text_dump(name, info, limit):
     )
 
 
-def render(data, number, pr, image_url, limit):
-    """The whole comment, in the HTML subset GitHub renders."""
+def render(data, number, pr, image_url, limit, not_uploaded=None):
+    """The whole comment, in the HTML subset GitHub renders.
+
+    not_uploaded, when the screenshots could not be uploaded, is the
+    standalone report's file name, named in a notice at the top.
+    """
     tests = data["tests"]
     counts = report.result_counts(tests)
     result = " · ".join(
@@ -211,6 +266,13 @@ def render(data, number, pr, image_url, limit):
         f"<strong>After:</strong> {report.ref_text(data['after'])}"
         "</p>",
     ]
+    if not_uploaded:
+        lines.append(
+            "<p>⚠️ The screenshots could not be uploaded to this repository, so "
+            "this comment has none. They are in the standalone report "
+            f"<code>{html.escape(not_uploaded)}</code>, which embeds every "
+            "screenshot, on the machine that ran <code>/verify</code>.</p>"
+        )
     sha = data["after"].get("sha")
     if sha and not pr["headRefOid"].startswith(sha):
         lines.append(
@@ -305,15 +367,26 @@ def main(argv):
         print(f"No open pull request for {where}; nothing posted.")
         return 0
 
-    commit = upload(pr, screenshots(data, base_dir), base_dir, number)
+    paths = screenshots(data, base_dir)
+    standalone = None
+    try:
+        commit = upload(pr, paths, base_dir, number)
+    except GhError as error:
+        # Post the report anyway; the screenshots go in a file to hand over.
+        print(f"Screenshots not uploaded: {error}")
+        commit = None
+        if paths:
+            standalone = report.write_standalone(data, number, base_dir)
 
     def image_url(image):
         """The URL GitHub serves an uploaded screenshot at."""
         path = urllib.parse.quote(os.path.normpath(image))
         return f"https://{pr['host']}/{pr['owner']}/{pr['repo']}/raw/{commit}/{path}"
 
+    url_of = None if standalone else image_url
+    not_uploaded = os.path.basename(standalone) if standalone else None
     for limit in TEXT_LIMITS:
-        body = render(data, number, pr, image_url, limit)
+        body = render(data, number, pr, url_of, limit, not_uploaded)
         if len(body) <= LIMIT:
             break
     else:
@@ -331,8 +404,13 @@ def main(argv):
     for comment in old:
         api(pr, "DELETE", f"issues/comments/{comment}")
     print(f"Removed {len(old)} earlier /verify comment(s).")
+    if standalone:
+        print(f"Standalone report, screenshots embedded: {standalone}")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except GhError as error:
+        die(str(error))
