@@ -612,6 +612,10 @@ with lib;
       firefox.librewolf = {
         enable = mkEnableOption "LibreWolf browser";
       };
+
+      firefox.startupTabGroups = {
+        enable = mkEnableOption "Firefox project tab groups on startup";
+      };
     };
 
     presentation = {
