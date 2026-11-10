@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drive the whole workflow — /requirement, /implement, independent verification, /verify's end-user tests, and the PR — in one session, stopping for the user only where their decision is needed. Run with no argument to pick one of the unfinished local goals or open agent:ship GitHub issues; parallel runs never take the same task. Pass --critical to add a requirement-vs-implementation check. Asking for prototypes means: build a few, the user picks one, and the pick ships. Only use when the user explicitly runs the /ship command; never trigger on your own.
+description: "Drive the whole workflow — /requirement, /implement, independent verification, /verify's end-user tests, and the PR — in one session, stopping for the user only where their decision is needed. Run with no argument to pick one of the unfinished local goals or open agent:ship GitHub issues; parallel runs never take the same task. Pass --critical to add a requirement-vs-implementation check. Asking for prototypes means: build a few, the user picks one, and the pick ships. Only use when the user explicitly runs the /ship command; never trigger on your own."
 disable-model-invocation: true
 ---
 
