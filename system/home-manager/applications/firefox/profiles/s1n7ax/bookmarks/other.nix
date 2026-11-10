@@ -4,6 +4,31 @@
     force = true;
     settings = [
       {
+        name = "Tools";
+        bookmarks = [
+          {
+            name = "ChatGPT";
+            tags = [ "AI" ];
+            url = "https://chatgpt.com/";
+          }
+          {
+            name = "OpenUnicodeConverter";
+            tags = [ "unicode" ];
+            url = "https://www.sinhalaunicode.org/";
+          }
+          {
+            name = "Adobe Express";
+            tags = [ "editor" ];
+            url = "https://express.adobe.com/";
+          }
+          {
+            name = "Drawing";
+            tags = [ "notes" ];
+            url = "https://excalidraw.com/";
+          }
+        ];
+      }
+      {
         name = "Other";
         bookmarks = [
           {

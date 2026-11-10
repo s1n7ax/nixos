@@ -31,11 +31,6 @@
             url = "https://studio.youtube.com/";
           }
           {
-            name = "Router";
-            tags = [ "router" ];
-            url = "http://192.168.1.1/";
-          }
-          {
             name = "Music";
             tags = [ "music" ];
             url = "https://music.youtube.com/";
@@ -44,16 +39,6 @@
             name = "Home Assistant";
             tags = [ "self-hosted" ];
             url = "http://192.168.1.110:8124/";
-          }
-          {
-            name = "ChatGPT";
-            tags = [ "AI" ];
-            url = "https://chatgpt.com/";
-          }
-          {
-            name = "LeetCode";
-            tags = [ "programming" ];
-            url = "https://leetcode.com/problemset/?difficulty=EASY&page=1";
           }
           {
             name = "HNB";
@@ -66,11 +51,6 @@
             url = "https://www.aliexpress.com/";
           }
           {
-            name = "OpenUnicodeConverter";
-            tags = [ "unicode" ];
-            url = "https://www.sinhalaunicode.org/";
-          }
-          {
             name = "Monkeytype";
             tags = [ "typing" ];
             url = "https://monkeytype.com/";
@@ -81,14 +61,14 @@
             url = "https://mail.google.com/";
           }
           {
-            name = "Adebe Express";
-            tags = [ "editor" ];
-            url = "https://express.adobe.com/";
+            name = "riya-mandiya";
+            tags = [ "project" ];
+            url = "https://github.com/Syntxio/riya-mandiya";
           }
           {
-            name = "Drawing";
-            tags = [ "notes" ];
-            url = "https://excalidraw.com/";
+            name = "openrep";
+            tags = [ "project" ];
+            url = "https://github.com/s1n7ax/openrep";
           }
         ];
       }
