@@ -1,5 +1,6 @@
 {
   config,
+  pkgs,
   ...
 }:
 {
@@ -29,6 +30,9 @@
 
   programs.firefox = {
     enable = config.features.web.enable;
+    package = pkgs.firefox.override {
+      extraPrefsFiles = [ "${./startup-tab-groups.js}" ];
+    };
     configPath = "${config.xdg.configHome}/mozilla/firefox";
 
     # ---- POLICIES ----
@@ -78,15 +82,8 @@
         Locked = false;
       };
       Homepage = {
-        URL = "https://github.com/s1n7ax/nixos/pulls";
-        Additional = [
-          "https://github.com/s1n7ax/openrep/pulls"
-          "https://claude.ai/code#openrep"
-          "https://github.com/Syntxio/riya-mandiya/pulls"
-          "https://claude.ai/code#riya-mandiya"
-        ];
         Locked = true;
-        StartPage = "homepage";
+        StartPage = "none";
       };
       HttpAllowlist = [ "192.168.1.110" ];
       HttpsOnlyMode = "force_enabled";
