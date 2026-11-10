@@ -71,7 +71,8 @@
   /**
    * Opens the groups once the first window has started up. When Firefox is
    * about to restore a session into that window, waits for the restore to
-   * finish first, so the restored session cannot replace the new tabs.
+   * finish and the window to go idle first: tabs added any earlier are never
+   * attached to the tab strip, so their groups are dropped.
    */
   const onStartup = (window) => {
     Services.obs.removeObserver(onStartup, startupTopic);
@@ -86,7 +87,7 @@
       }
       const onRestored = () => {
         Services.obs.removeObserver(onRestored, restoredTopic);
-        Services.tm.dispatchToMainThread(() => openGroups(window));
+        window.requestIdleCallback(() => openGroups(window));
       };
       Services.obs.addObserver(onRestored, restoredTopic);
     });
