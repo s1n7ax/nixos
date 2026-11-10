@@ -1,4 +1,3 @@
-
 /**
  * Opens one tab group per project, each with its pull requests and Claude
  * Code, in the first browser window after Firefox starts.
@@ -21,7 +20,10 @@
     {
       label: "openrep",
       color: "green",
-      urls: ["https://github.com/s1n7ax/openrep/pulls", "https://claude.ai/code"],
+      urls: [
+        "https://github.com/s1n7ax/openrep/pulls",
+        "https://claude.ai/code",
+      ],
     },
   ];
 
@@ -35,8 +37,10 @@
     const triggeringPrincipal =
       Services.scriptSecurityManager.getSystemPrincipal();
     const blankTabs = gBrowser.tabs.filter(({ linkedBrowser }) =>
-      [linkedBrowser.currentURI.spec, linkedBrowser.userTypedValue ?? "about:blank"]
-        .every((url) => blankURLs.has(url)),
+      [
+        linkedBrowser.currentURI.spec,
+        linkedBrowser.userTypedValue ?? "about:blank",
+      ].every((url) => blankURLs.has(url)),
     );
     const existingLabels = new Set(
       [...Services.wm.getEnumerator("navigator:browser")].flatMap((win) =>
