@@ -153,9 +153,11 @@ in
         .pi/mcp.json.
 
         Pi's default `codemode` exposure keeps a server's tools out of the
-        model's tool list, so models that only check that list report Jira as
-        unavailable. Jira is exposed `direct` so its tools are declared like
-        built-ins, which is also what the Atlassian server instructions assume.
+        model's tool list, so models that only check that list report the
+        server as unavailable. Jira is exposed `direct` because that is also
+        what the Atlassian server instructions assume, and Slack is exposed
+        `direct` because writing to Slack or Jira is a routine step of the
+        shared skills, not something worth a `searchTools` detour.
       */
       (lib.mkIf ai.pi.enable {
         home.file.".pi/agent/mcp.json".source = mkMcpJson "pi-mcp.json" (
@@ -167,6 +169,7 @@ in
               clientId = slackCursorClientId;
               callbackUrl = "http://localhost:8787/callback";
             };
+            slack.exposure = "direct";
           }
         );
       })
