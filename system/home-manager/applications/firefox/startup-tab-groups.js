@@ -8,6 +8,7 @@
     { label: "riya-mandiya", color: "orange", repo: "Syntxio/riya-mandiya" },
     { label: "openrep", color: "green", repo: "s1n7ax/openrep" },
   ];
+  const labels = new Set(groups.map(({ label }) => label));
 
   const blankURLs = new Set([
     "about:blank",
@@ -19,6 +20,16 @@
     SessionStore:
       "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   });
+
+  /**
+   * Forgets the saved copies of the project groups. Firefox saves the groups
+   * that were open when it last quit, so without this the saved groups list
+   * gains a copy of every project group on each restart.
+   */
+  const forgetSavedGroups = () =>
+    lazy.SessionStore.getSavedTabGroups()
+      .filter(({ name }) => labels.has(name))
+      .forEach(({ id }) => lazy.SessionStore.forgetSavedTabGroup(id));
 
   const openGroups = (window) => {
     const { gBrowser } = window;
@@ -35,6 +46,8 @@
         win.gBrowser.tabGroups.map((group) => group.label),
       ),
     );
+
+    forgetSavedGroups();
 
     const groupTabs = groups
       .filter(({ label }) => !existingLabels.has(label))
