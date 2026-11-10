@@ -78,8 +78,15 @@
         Locked = false;
       };
       Homepage = {
+        URL = "https://github.com/s1n7ax/nixos/pulls";
+        Additional = [
+          "https://github.com/s1n7ax/openrep/pulls"
+          "https://claude.ai/code#openrep"
+          "https://github.com/Syntxio/riya-mandiya/pulls"
+          "https://claude.ai/code#riya-mandiya"
+        ];
         Locked = true;
-        StartPage = "previous-session";
+        StartPage = "homepage";
       };
       HttpAllowlist = [ "192.168.1.110" ];
       HttpsOnlyMode = "force_enabled";
