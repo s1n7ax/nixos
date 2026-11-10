@@ -93,6 +93,7 @@
       enable = true;
       browser.enable = true;
       firefox.librewolf.enable = true;
+      firefox.startupTabGroups.enable = true;
     };
 
     presentation = {
