@@ -35,11 +35,13 @@
     const { gBrowser } = window;
     const triggeringPrincipal =
       Services.scriptSecurityManager.getSystemPrincipal();
-    const blankTabs = gBrowser.tabs.filter(({ linkedBrowser }) =>
-      [
-        linkedBrowser.currentURI.spec,
-        linkedBrowser.userTypedValue ?? "about:blank",
-      ].every((url) => blankURLs.has(url)),
+    const blankTabs = gBrowser.tabs.filter(
+      (tab) =>
+        !tab.hasAttribute("busy") &&
+        [
+          tab.linkedBrowser.currentURI.spec,
+          tab.linkedBrowser.userTypedValue ?? "about:blank",
+        ].every((url) => blankURLs.has(url)),
     );
     const existingLabels = new Set(
       [...Services.wm.getEnumerator("navigator:browser")].flatMap((win) =>
