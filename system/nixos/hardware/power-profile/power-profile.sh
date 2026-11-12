@@ -28,10 +28,11 @@
 #
 # Idle hooks (hypridle, the power-idle user unit): `idle screen-off` applies
 # a pending display mode, lets the modeset settle, then turns the screen off
-# (DPMS); `idle screen-on` turns it on. hypridle runs both without waiting,
-# so a flag file under a lock makes a screen-off that was overtaken by input
-# leave the screen on. `idle after-sleep` restarts hypridle's timers after a
-# wake.
+# (DPMS); `idle screen-on` turns it on once the seat is back from a VT
+# switch (NVIDIA's sleep hooks hold one past the wake). hypridle runs both
+# without waiting, so a flag file under a lock makes a screen-off that was
+# overtaken by input leave the screen on. `idle after-sleep` restarts
+# hypridle's timers after a wake.
 #
 # Sleep: hypridle suspends after the idle timeout only when `can-sleep` says
 # nothing is busy (exit 0), and asks again every 30 s while it says busy.
@@ -542,9 +543,37 @@ idle_screen_off() {
   fi
 }
 
+# True while this user's session holds the seat (not another VT).
+seat_ours() {
+  local session
+  session=$(loginctl show-seat "${XDG_SEAT:-seat0}" -p ActiveSession --value 2>/dev/null) || return 1
+  [ -n "$session" ] &&
+    [ "$(loginctl show-session "$session" -p User --value 2>/dev/null)" = "$(id -u)" ]
+}
+
+# NVIDIA's sleep hooks hold the console on another VT until about a second
+# after the wake, and the wake's screen-on runs in that gap. A DPMS commit
+# then fails, yet Hyprland counts the screen as on and ignores every later
+# DPMS on: the frame from before the screen-off stays up, the lock screen
+# never draws, and input goes to it unseen. So wait for the seat, then for
+# Hyprland's own restore after the VT switch.
+wait_for_seat() {
+  local i
+  seat_ours && return 0
+  for ((i = 0; i < 50; i++)); do
+    sleep 0.2
+    if seat_ours; then
+      sleep 1
+      return 0
+    fi
+  done
+  warn "the seat is still on another VT after 10 s; turning the screen on anyway"
+}
+
 idle_screen_on() {
   idle_lock
   rm -f "$screen_off_flag"
+  wait_for_seat
   dpms on
 }
 
