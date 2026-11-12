@@ -9,9 +9,11 @@ let
     cd ~/.config/nvim
     launch --title "Neovim Config" nvim
   '';
-  # Attaches to the homelab's one tmux session, creating it only when it is
-  # missing, so closing the window detaches instead of killing what runs there.
-  # The kitten requests a tty only without a remote command, hence -t.
+  /**
+    Attaches to the homelab's one tmux session, creating it only when it is
+    missing, so closing the window detaches instead of killing what runs there.
+    The kitten requests a tty only without a remote command, hence -t.
+  */
   homelab_session = pkgs.writeText "homelab.kitty-session" ''
     launch --title "Homelab" kitty +kitten ssh -t homelab tmux new-session -A -s main
   '';
