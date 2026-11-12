@@ -580,11 +580,25 @@ idle_screen_on() {
 # hypridle fires each timeout once per idle period, so a wake without input
 # would never turn the screen off again. force_idle(0) counts as input: the
 # screen comes on and the timers start from 0.
+#
+# logind can hand the seat back a moment before Hyprland takes it, so the
+# wake's screen-on may still hit a failed commit. Once the wake has settled,
+# DPMS off then on clears Hyprland's stale "on". The off only commits at the
+# end of its fade, which the on cancels, so the screen does not blank (with
+# animations off, as in the eco display mode, it may blink once).
 idle_after_sleep() {
   local out
   [ -n "$hyprctl" ] && hypr_session || return 0
   out=$(hypr dispatch 'hl.dsp.force_idle(0)' 2>&1) || true
   [ "$out" = ok ] || warn "restarting the idle timers failed: ${out:-no answer from hyprctl}"
+
+  wait_for_seat
+  sleep 2
+  idle_lock
+  if [ ! -e "$screen_off_flag" ]; then
+    dpms off
+    dpms on
+  fi
 }
 
 cmd_idle() {
