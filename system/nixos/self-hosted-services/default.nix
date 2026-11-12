@@ -6,5 +6,6 @@
     ./storage.nix
     ./dongle-m-serial-log.nix
     ./homelab-backup.nix
+    ./home-assistant-proxy.nix
   ];
 }

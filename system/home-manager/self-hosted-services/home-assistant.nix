@@ -34,7 +34,9 @@ with lib;
         "${./home-assistant/house_model}:/config/custom_components/house_model:ro"
       ];
       extraPodmanArgs = [ "--tz=local" ];
-      ports = [ "8124:8123" ];
+      # Loopback only: the host Caddy (nixos/self-hosted-services/home-assistant-proxy.nix)
+      # serves :8124 so HA sees real client IPs.
+      ports = [ "127.0.0.1:8123:8123" ];
       addCapabilities = [
         "NET_ADMIN"
         "NET_RAW"
