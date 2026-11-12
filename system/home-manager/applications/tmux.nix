@@ -16,7 +16,7 @@
       historyLimit = 50000;
       baseIndex = 1;
       clock24 = false;
-      newSession = true;
+      newSession = false;
       shell = "${pkgs.fish}/bin/fish";
       extraConfig = ''
         unbind-key -a
