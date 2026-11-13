@@ -31,14 +31,16 @@ let
     launch --title "Nixos" nvim
   '';
   /**
-    Sends Ctrl+1..9 as CSI u, which kitty only does when an app asks for its
-    keyboard protocol. tmux never asks, so without this they arrive as plain
-    digits; tmux passes CSI u through to apps that want it, such as Neovim.
+    Sends Ctrl+1..9 as CSI u while tmux is attached, which sets the in_tmux
+    user var. kitty only sends CSI u to apps that ask for its keyboard
+    protocol and tmux never asks, so Neovim inside tmux would not see these
+    keys; tmux passes CSI u on to it. Elsewhere the keys keep their usual
+    control bytes (Ctrl+3 is Esc, Ctrl+8 is Backspace).
   */
   ctrl_number_keys = lib.listToAttrs (
     map (n: {
-      name = "ctrl+${toString n}";
-      value = "send_text all \\x1b[${toString (48 + n)};5u";
+      name = "--when-focus-on var:in_tmux ctrl+${toString n}";
+      value = "send_text normal,application \\x1b[${toString (48 + n)};5u";
     }) (lib.range 1 9)
   );
 in
