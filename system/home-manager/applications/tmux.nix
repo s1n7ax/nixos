@@ -24,6 +24,8 @@
         set -s extended-keys on
 
         set -sg terminal-overrides ",*:RGB"  # true color support
+        # Lets kitty know tmux is attached, so it sends Ctrl+number as CSI u
+        set -as terminal-overrides ',*kitty*:smcup=\E[?1049h\E]1337;SetUserVar=in_tmux=MQ==\a:rmcup=\E[?1049l\E]1337;SetUserVar=in_tmux\a'
         set -g mouse on
         set -g renumber-windows on  # keep numbering sequential
         set -g repeat-time 1000  # increase "prefix-free" window

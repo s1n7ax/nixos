@@ -30,6 +30,19 @@ let
     cd ~/Workspace/nixos
     launch --title "Nixos" nvim
   '';
+  /**
+    Sends Ctrl+1..9 as CSI u while tmux is attached, which sets the in_tmux
+    user var. kitty only sends CSI u to apps that ask for its keyboard
+    protocol and tmux never asks, so Neovim inside tmux would not see these
+    keys; tmux passes CSI u on to it. Elsewhere the keys keep their usual
+    control bytes (Ctrl+3 is Esc, Ctrl+8 is Backspace).
+  */
+  ctrl_number_keys = lib.listToAttrs (
+    map (n: {
+      name = "--when-focus-on var:in_tmux ctrl+${toString n}";
+      value = "send_text normal,application \\x1b[${toString (48 + n)};5u";
+    }) (lib.range 1 9)
+  );
 in
 lib.mkIf config.features.terminal.kitty.enable {
   programs.kitty = {
@@ -62,6 +75,7 @@ lib.mkIf config.features.terminal.kitty.enable {
       "alt+s>d" = "goto_session ${dev_session}";
       "alt+s>m" = "goto_session ${mac_session}";
       "alt+s>e" = "goto_session ${nix_session}";
-    };
+    }
+    // ctrl_number_keys;
   };
 }
