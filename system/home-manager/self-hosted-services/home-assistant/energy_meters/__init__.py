@@ -4,6 +4,9 @@ Set up from a bare `energy_meters:` line in configuration.yaml. Every energy met
 device (smart plugs etc.) is added, deleted and excluded ones are dropped, and entries
 added by hand in the UI are left alone. Give an entity the `energy_exclude` label in Home
 Assistant to keep it off the dashboard. The rules live in `meters.py`.
+
+Every add and remove is logged at INFO. Home Assistant prints only warnings unless told
+otherwise, so to keep that record set `logger: logs: custom_components.energy_meters: info`.
 """
 
 from __future__ import annotations
