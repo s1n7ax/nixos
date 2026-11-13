@@ -30,6 +30,17 @@ let
     cd ~/Workspace/nixos
     launch --title "Nixos" nvim
   '';
+  /**
+    Sends Ctrl+1..9 as CSI u, which kitty only does when an app asks for its
+    keyboard protocol. tmux never asks, so without this they arrive as plain
+    digits; tmux passes CSI u through to apps that want it, such as Neovim.
+  */
+  ctrl_number_keys = lib.listToAttrs (
+    map (n: {
+      name = "ctrl+${toString n}";
+      value = "send_text all \\x1b[${toString (48 + n)};5u";
+    }) (lib.range 1 9)
+  );
 in
 lib.mkIf config.features.terminal.kitty.enable {
   programs.kitty = {
@@ -62,6 +73,7 @@ lib.mkIf config.features.terminal.kitty.enable {
       "alt+s>d" = "goto_session ${dev_session}";
       "alt+s>m" = "goto_session ${mac_session}";
       "alt+s>e" = "goto_session ${nix_session}";
-    };
+    }
+    // ctrl_number_keys;
   };
 }
