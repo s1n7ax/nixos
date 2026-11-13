@@ -116,8 +116,8 @@
       formatter.${system} = pkgs.nixfmt-tree;
 
       checks.${system} = {
-        # The security_alerts and house_model Home Assistant integrations: formatting,
-        # lint, unit tests and a syntax check of their frontend modules.
+        # The security_alerts, house_model and energy_meters Home Assistant integrations:
+        # formatting, lint, unit tests and a syntax check of their frontend modules.
         security-alerts =
           pkgs.runCommand "security-alerts-check"
             {
