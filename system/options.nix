@@ -631,6 +631,14 @@ with lib;
       };
       tmux = {
         enable = mkEnableOption "tmux terminal multiplexer";
+        workspaces = {
+          enable = mkEnableOption "one tmux session of project workspaces that kitty opens into, remembered across restarts";
+          hosts = mkOption {
+            type = types.listOf types.str;
+            default = [ ];
+            description = "SSH hosts whose projects the workspace picker offers, besides this machine.";
+          };
+        };
       };
     };
 

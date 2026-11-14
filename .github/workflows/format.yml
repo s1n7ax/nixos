@@ -37,3 +37,11 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Check the Claude Code cloud setup script
         run: nix build -L .#checks.x86_64-linux.claude-cloud-setup
+
+  tmux-workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check the tmux workspace session
+        run: nix build -L .#checks.x86_64-linux.tmux-workspace
