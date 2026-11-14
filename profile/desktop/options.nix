@@ -107,6 +107,16 @@
 
     tools = {
       downloading.enable = true;
+      tmux = {
+        enable = true;
+        workspaces = {
+          enable = true;
+          hosts = [
+            "dev"
+            "homelab"
+          ];
+        };
+      };
     };
 
     cli = {

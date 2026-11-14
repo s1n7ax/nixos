@@ -151,6 +151,9 @@
         # The setup script that gives Claude Code cloud sessions the skills
         # and agents, run against a throwaway HOME.
         claude-cloud-setup = pkgs.callPackage ./system/home-manager/applications/dev/ai/cloud/check.nix { };
+
+        # The tmux workspace session, run against a real tmux server and a fake ssh.
+        tmux-workspace = pkgs.callPackage ./system/home-manager/applications/tmux/check.nix { };
       };
     };
 
