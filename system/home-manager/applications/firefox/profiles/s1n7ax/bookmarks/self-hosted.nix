@@ -67,11 +67,6 @@
             url = "http://192.168.1.110:3001/dashboards/";
           }
           {
-            name = "Node-RED";
-            tags = [ "self-hosted" ];
-            url = "http://192.168.1.110:1880/";
-          }
-          {
             name = "Paperless";
             tags = [ "self-hosted" ];
             url = "http://192.168.1.110:8000/";

@@ -32,6 +32,8 @@ with lib;
         "${./home-assistant/security_alerts}:/config/custom_components/security_alerts:ro"
         # The house_model integration: serves the 3D house dashboard card.
         "${./home-assistant/house_model}:/config/custom_components/house_model:ro"
+        # The energy_meters integration: keeps the Energy dashboard's device list in sync.
+        "${./home-assistant/energy_meters}:/config/custom_components/energy_meters:ro"
       ];
       extraPodmanArgs = [ "--tz=local" ];
       # Loopback only: the host Caddy (nixos/self-hosted-services/home-assistant-proxy.nix)
