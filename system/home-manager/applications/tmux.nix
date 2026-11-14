@@ -68,7 +68,7 @@ in
         set -g status-right "#[fg=black,bright]%I:%M %p   #S   "
 
         set -g window-status-format "●"
-        set -g window-status-current-format "●"
+        set -g window-status-current-format "● #W"
 
         set -g window-status-current-style "#{?window_zoomed_flag,fg=yellow,fg=magenta\#,nobold}"
         set -g window-status-bell-style "fg=red,nobold"
