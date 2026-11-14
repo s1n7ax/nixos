@@ -66,7 +66,7 @@ home_pattern() {
 }
 
 # The window name format of a workspace on $1: window_name's rule applied to
-# the folder its shell last reported (pane_path, a URL; see reported), or the
+# the folder its shell last reported (pane_path, a URL; see reported_dir), or the
 # name it was opened with until the shell reports one. tmux cannot decode the
 # URL, so the name may hold %-escapes; its change is what triggers a save,
 # which works out the real folder. ':' ends a tmux modifier, so the patterns
@@ -127,13 +127,19 @@ open_window() {
 }
 
 # Writes the session's workspaces to the state file, leaving out windows
-# whose @ws_host was cleared (closing ones). Writes nothing when tmux or the
-# session is gone. A workspace is saved in the folder its shell last
-# reported, which also becomes its @ws_dir, or else the one it was opened in.
+# whose @ws_host was cleared (closing ones), as it first is for the window
+# given as $1. Clearing it before saving keeps the window out of every save
+# from now on, including one a rename hook started before the window is gone.
+# Writes nothing when tmux or the session is gone. A workspace is saved in the
+# folder its shell last reported, which also becomes its @ws_dir, or else the
+# one it was opened in.
 # Fields are space separated because tmux prints a tab as "_" without a UTF-8
 # locale; the folder comes last, so spaces inside it survive.
 save() {
-  local windows id host dir url
+  local windows id host dir url reported
+  if [[ -n ${1:-} ]]; then
+    tmux set-option -w -u -t "$1" @ws_host
+  fi
   mkdir -p "$state_dir"
   (
     flock 9
@@ -142,9 +148,9 @@ save() {
     while read -r id host dir; do
       if [[ $host != - ]]; then
         url=$(tmux display-message -p -t "$id" '#{pane_path}' 2>/dev/null) || true
-        url=$(reported_dir "$host" "$url")
-        if [[ -n $url && $url != "$dir" ]]; then
-          dir=$url
+        reported=$(reported_dir "$host" "$url")
+        if [[ -n $reported && $reported != "$dir" ]]; then
+          dir=$reported
           tmux set-option -w -t "$id" @ws_dir "$dir" 2>/dev/null || true
         fi
         printf '%s\t%s\n' "$host" "$dir"
@@ -188,19 +194,16 @@ add() {
   save
 }
 
-# Clearing @ws_host first keeps the window out of every save from now on,
-# including one a rename hook started before the window is gone.
 close() {
-  tmux set-option -w -u -t "$1" @ws_host
-  save
+  save "$1"
   tmux kill-window -t "$1"
 }
 
 # The shell a remote workspace runs in the folder $1 (relative to home, or
-# absolute), as one command line for the host's login shell.
-# Only single-quoted words, so fish and POSIX shells read it the same. It ends
-# with `exit 0` whatever the shell's last status was, so an exit 255 from ssh
-# always means a lost connection.
+# absolute), as one command line for the host's login shell. Only
+# single-quoted words, so fish and POSIX shells read it the same. It ends with
+# `exit 0` whatever the shell's last status was, so an exit 255 from ssh always
+# means a lost connection.
 remote_command() {
   printf '%s' "exec sh -c 'case \$1 in /*) ;; *) set -- \"\$HOME/\$1\" ;; esac; cd -- \"\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '$1'"
 }
@@ -277,8 +280,7 @@ on_hangup() {
 forget_self() {
   local id
   id=$(tmux display-message -p -t "${TMUX_PANE:?}" '#{window_id}' 2>/dev/null) || return 0
-  tmux set-option -w -u -t "$id" @ws_host
-  save
+  save "$id"
 }
 
 # Lists "~" and every git repository up to three levels under home, as

@@ -6,8 +6,8 @@
 # with its workspace, "drop" makes the fake ssh lose the connection, "cd
 # <dir>" changes folder and reports it with OSC 7 (locally unencoded like
 # kitty's integration, remotely percent-encoded like fish, with the home as
-# /home/me), "osc <url>" reports <url>, anything else exits with that code. Run by the flake check `tmux-workspace` (in the
-# Nix sandbox).
+# /home/me), "osc <url>" reports <url>, anything else exits with that code.
+# Run by the flake check `tmux-workspace` (in the Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
 # condition each time it polls, hence the two shellcheck exceptions.
