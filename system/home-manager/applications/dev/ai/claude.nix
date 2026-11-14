@@ -90,6 +90,7 @@ let
     runtimeInputs = with pkgs; [
       coreutils
       gawk
+      git
       jq
     ];
     bashOptions = [ ];
@@ -126,6 +127,8 @@ let
     statusLine = {
       type = "command";
       command = lib.getExe statusline;
+      # Re-reads /ship's CI state file while the agent idles waiting on CI.
+      refreshInterval = 10;
     };
     enabledPlugins = {
       "github@claude-plugins-official" = true;

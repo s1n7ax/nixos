@@ -18,6 +18,31 @@ if [[ -n "$used" ]]; then
   limit=" | session ${left}% left, resets $(date -d "@$resets" '+%-I:%M %p') (in ${eta})"
 fi
 
+# CI of the current worktree's PR, as last written by /ship's pr.py. Reads a
+# local file only, so refreshing it costs no tokens and no network.
+ci=""
+dir=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // empty')
+gitdir=$([[ -n "$dir" ]] && git -C "$dir" rev-parse --absolute-git-dir 2>/dev/null)
+if [[ -n "$gitdir" && -f "$gitdir/ship-ci.json" ]]; then
+  read -r pr status sha passed total watcher failed < <(jq -r '[.pr, .status, .sha, .passed, .total, (.watcher // 0), (.failed | join(","))] | @tsv' "$gitdir/ship-ci.json" 2>/dev/null)
+  case "$status" in
+    pending)
+      if (( watcher > 0 )) && kill -0 "$watcher" 2>/dev/null; then
+        ci="CI #$pr running $passed/$total"
+      else
+        ci="CI #$pr unwatched $passed/$total"
+      fi
+      ;;
+    green) ci="CI #$pr green" ;;
+    red) ci="CI #$pr red: ${failed:-?}" ;;
+    draft) ci="CI #$pr green, draft" ;;
+    conflict) ci="CI #$pr conflict" ;;
+    unpushed) ci="CI #$pr unpushed" ;;
+  esac
+  [[ -n "$ci" && "$sha" != "$(git -C "$dir" rev-parse HEAD 2>/dev/null)" ]] && ci="$ci (older commit)"
+  [[ -n "$ci" ]] && ci=" | $ci"
+fi
+
 fmt() {
   awk -v n="$1" 'BEGIN{
     if (n>=1e9) printf "%.2fB", n/1e9;
@@ -49,7 +74,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
     "$(fmt "$out_tot")" \
     "$(fmt $((cache_c + cache_r)))" \
     "$(fmt "$total")" \
-    "$limit"
+    "$limit$ci"
 else
-  printf '%s | ctx 0 | in 0 | out 0 | cache 0 | total 0%s' "$model" "$limit"
+  printf '%s | ctx 0 | in 0 | out 0 | cache 0 | total 0%s' "$model" "$limit$ci"
 fi
