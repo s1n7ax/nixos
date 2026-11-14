@@ -14,11 +14,18 @@
 #   tmux-workspace switch              pick an open workspace and switch to it
 #
 # <dir> is relative to the home directory, written "~" or "~/<path>", so one
-# entry works on hosts whose home paths differ.
+# entry works on hosts whose home paths differ. A folder outside home is
+# written as its absolute path.
 #
-# The state file is only rewritten by these commands, never by tmux hooks:
-# tmux unlinks every window while it shuts down, and a hook would save an
-# empty list right before a reboot.
+# A workspace follows its shell: when the shell reports a new folder (OSC 7,
+# as fish does on every prompt), the window is renamed after it, and the
+# rename saves the folder, so a restart reopens the workspace there. tmux
+# runs the rename hook on its next event (the status clock, output or a key),
+# so a save can lag a rename by seconds.
+#
+# Only that rename hook saves; the unlink hooks never do: tmux unlinks every
+# window while it shuts down, and saving then would write an empty list right
+# before a reboot.
 
 # $tools (this script's pinned tools, set by package.nix) come first only for
 # the script itself. The tmux server and the workspace shells get the user's
@@ -46,6 +53,31 @@ window_name() {
   fi
 }
 
+# The home folder pattern (an extended regex) for host $1: $HOME here, and
+# /home/<user>, /Users/<user> or /root on an SSH host, whose home path is not
+# known here.
+home_pattern() {
+  if [[ $1 == local ]]; then
+    sed 's/[][\.*^$+?(){}|/%]/\\&/g' <<<"$HOME"
+  else
+    echo '/home/[^/]+|/Users/[^/]+|/root'
+  fi
+}
+
+# The window name format of a workspace on $1: window_name's rule applied to
+# the folder its shell last reported (pane_path, a file:// style URL, home
+# shown as "~", spaces decoded), or the name it was opened with until the
+# shell reports one. ':' ends a tmux modifier, so the patterns avoid it.
+name_format() {
+  local prefix=
+  if [[ $1 != local ]]; then
+    prefix="$1:"
+  fi
+  local path='#{s|^[^/]*//[^/]*||:pane_path}' home
+  home="#{s%^($(home_pattern "$1"))\$%~%:$path}"
+  printf '%s\n' "#{?pane_path,$prefix#{s%^.*/([^/])%\\1%;s/%20/ /:$home},#{window_name}}"
+}
+
 # Runs a tmux command that creates a workspace window (new-session or
 # new-window, with its own flags) and prints the window's id.
 create_window() {
@@ -53,8 +85,28 @@ create_window() {
   shift 2
   id=$(PATH=$user_path "$tmux_bin" "$@" -d -P -F '#{window_id}' -n "$(window_name "$host" "$dir")" -c "$HOME" \
     -- "$self" run "$host" "$dir") || return 1
-  tmux set-option -w -t "$id" @ws_host "$host" \; set-option -w -t "$id" @ws_dir "$dir"
+  tmux set-option -w -t "$id" @ws_host "$host" \; set-option -w -t "$id" @ws_dir "$dir" \; \
+    set-option -w -t "$id" automatic-rename-format "$(name_format "$host")" \; \
+    set-option -w -t "$id" automatic-rename on \; \
+    set-hook -w -t "$id" window-renamed "run-shell -b '$self save'"
   echo "$id"
+}
+
+# The <dir> of the folder the shell of a workspace on $1 last reported, from
+# its pane_path URL ($2, percent-encoded). Prints nothing when the URL is not
+# one, or decodes to a folder that a state file line (newline) or
+# remote_command (single quote) cannot hold.
+reported_dir() {
+  local path=${2#*://}
+  [[ $2 == *://* && $path == */* ]] || return 0
+  path=/${path#*/}
+  printf -v path '%b' "${path//%/\\x}"
+  [[ $path != *[$'\n\'']* ]] || return 0
+  if [[ $path =~ ^($(home_pattern "$1"))(/.*)?$ ]]; then
+    echo "~${BASH_REMATCH[-1]}"
+  else
+    echo "$path"
+  fi
 }
 
 open_window() {
@@ -62,11 +114,12 @@ open_window() {
 }
 
 # Writes the session's workspaces to the state file, leaving out the window
-# given as $1. Writes nothing when tmux or the session is gone. Fields are
-# space separated because tmux prints a tab as "_" without a UTF-8 locale;
-# the folder comes last, so spaces inside it survive.
+# given as $1. Writes nothing when tmux or the session is gone. A workspace
+# is saved in the folder its shell last reported, or else the one it was
+# opened in. Fields are space separated because tmux prints a tab as "_"
+# without a UTF-8 locale; the folder comes last, so spaces inside it survive.
 save() {
-  local skip=${1:-} windows id host dir
+  local skip=${1:-} windows id host dir url
   mkdir -p "$state_dir"
   (
     flock 9
@@ -74,7 +127,9 @@ save() {
     tmp=$(mktemp "$state.XXXXXX")
     while read -r id host dir; do
       if [[ $id != "$skip" && -n $host ]]; then
-        printf '%s\t%s\n' "$host" "$dir"
+        url=$(tmux display-message -p -t "$id" '#{pane_path}' 2>/dev/null) || true
+        url=$(reported_dir "$host" "$url")
+        printf '%s\t%s\n' "$host" "${url:-$dir}"
       fi
     done <<<"$windows" >"$tmp"
     mv -f "$tmp" "$state"
@@ -120,12 +175,13 @@ close() {
   tmux kill-window -t "$1"
 }
 
-# The shell a remote workspace runs in the folder $1 (relative to home), as one
-# command line for the host's login shell. Only single-quoted words, so fish
-# and POSIX shells read it the same. It ends with `exit 0` whatever the shell's
-# last status was, so an exit 255 from ssh always means a lost connection.
+# The shell a remote workspace runs in the folder $1 (relative to home, where
+# ssh starts, or absolute), as one command line for the host's login shell.
+# Only single-quoted words, so fish and POSIX shells read it the same. It ends
+# with `exit 0` whatever the shell's last status was, so an exit 255 from ssh
+# always means a lost connection.
 remote_command() {
-  printf '%s' "exec sh -c 'cd \"\$HOME/\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '$1'"
+  printf '%s' "exec sh -c 'cd \"\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '$1'"
 }
 
 # Runs the workspace's shell. A local shell runs once; a remote one is
@@ -136,12 +192,16 @@ remote_command() {
 # pane lookup in forget_self fails as a second guard, so nothing is written.
 # Ctrl-C only cuts the reconnect wait short.
 run() {
-  local host=$1 dir=$2 rel=${2#\~} status shell_pid=
-  rel=${rel#/}
+  local host=$1 dir=$2 rel status shell_pid=
+  case $dir in
+  \~) rel=. ;;
+  \~/*) rel=${dir#\~/} ;;
+  *) rel=$dir ;;
+  esac
   trap on_hangup HUP TERM
   trap : INT
   if [[ $host == local ]]; then
-    if ! cd -- "$HOME/$rel" 2>/dev/null; then
+    if ! { cd -- "$HOME" && cd -- "$rel"; } 2>/dev/null; then
       echo "$dir is gone, starting in ~"
       cd
     fi

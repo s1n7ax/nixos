@@ -3,8 +3,9 @@
 # home. With -t, like the real one, it outlives a lost terminal: only a signal
 # or the remote shell's exit ends it. A fake shell logs where it started (and
 # a local one its PATH), then reads lines: "busy" runs a job that must end
-# with its workspace, "drop" makes the fake ssh lose the connection, anything
-# else exits with that code. Run by the flake check `tmux-workspace` (in the
+# with its workspace, "drop" makes the fake ssh lose the connection, "cd
+# <dir>" changes folder and reports it with OSC 7 like fish (a remote home as
+# /home/me), anything else exits with that code. Run by the flake check `tmux-workspace` (in the
 # Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
@@ -41,6 +42,14 @@ while read -r line; do
   case \$line in
   busy) sleep 4242 ;;
   drop) kill -USR1 "\$FAKE_SSH" ;;
+  cd\ *)
+    cd "\${line#cd }"
+    where=\$PWD
+    if [[ -n \${WS_WHERE:-} ]]; then
+      where=/home/me\${PWD#"\$HOME"}
+    fi
+    printf '\\033]7;file://fakehost%s\\033\\\\' "\${where// /%20}"
+    ;;
   *) exit "\${line:-0}" ;;
   esac
 done
@@ -99,7 +108,7 @@ names() {
 }
 
 window_id() {
-  tmux list-windows -t =main -F '#{window_id} #{window_name}' | awk -v n="$1" '$2 == n { print $1 }'
+  tmux list-windows -t =main -F '#{window_id} #{window_name}' | awk -v n="$1" '{ id = $1; sub(/^[^ ]* /, "") } $0 == n { print id }'
 }
 
 saved() {
@@ -239,6 +248,44 @@ wait
 [[ $(tmux list-sessions -F '#{session_name}' | paste -sd ' ') == main ]] || fail "concurrent starts made several sessions"
 [[ $(names) == "homelab:nixos dev:missing missing" ]] || fail "windows after concurrent starts: '$(names)'"
 pass "kitty windows opening at once share one session"
+
+# --- Following the shell's folder ----------------------------------------------------
+
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+printf 'local\t~\nhomelab\t~/Workspace/nixos\n' >"$state"
+: >"$shells"
+tmux-workspace start
+mkdir -p "$HOME/Workspace/my proj" "$t/elsewhere"
+tmux send-keys -t "$(window_id '~')" "cd $HOME/Workspace/my proj" Enter
+tmux send-keys -t "$(window_id homelab:nixos)" "cd $t/remote/homelab" Enter
+wait_for '[[ $(names) == "my proj homelab:~" ]]' "workspaces renamed after their shells' folders"
+wait_for '[[ $(saved) == "local:~/Workspace/my proj homelab:~" ]]' "the new folders to be saved"
+pass "a workspace is renamed after its shell's folder and remembers it"
+
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+[[ $(names) == "my proj homelab:~" ]] || fail "windows after restart: '$(names)'"
+wait_for '(($(started "local $HOME/Workspace/my proj") == 1))' "the local shell to come back in its new folder"
+wait_for '(($(started "homelab $t/remote/homelab") == 1))' "the homelab shell to come back in ~"
+pass "a restart reopens workspaces in their shells' last folders"
+
+tmux send-keys -t "$(window_id 'my proj')" "cd $t/elsewhere" Enter
+wait_for '[[ $(names) == "elsewhere homelab:~" ]]' "the workspace renamed after a folder outside home"
+wait_for '[[ $(saved) == "local:$t/elsewhere homelab:~" ]]' "a folder outside home to be saved"
+tmux send-keys -t "$(window_id homelab:~)" "cd $t/remote/homelab/Workspace/nixos" Enter
+wait_for '[[ $(names) == "elsewhere homelab:nixos" ]]' "the homelab workspace renamed again"
+wait_for '[[ $(saved) == "local:$t/elsewhere homelab:~/Workspace/nixos" ]]' "the homelab folder to be saved again"
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+wait_for '(($(started "local $t/elsewhere") == 1))' "the local shell to come back outside home"
+wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 2))' "the homelab shell to come back in ~/Workspace/nixos"
+pass "a folder outside home is remembered by its absolute path"
+
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
 
 # --- Project listing -----------------------------------------------------------------
 
