@@ -1,4 +1,5 @@
 {
+  inputs,
   config,
   lib,
   ...
@@ -31,9 +32,18 @@ in
   # of the same name aside to <name>.hm-backup (backupFileExtension) in the
   # same directory, where agents still load it; delete it once reviewed.
   # Claude Code cloud sessions get the same skills from ../cloud/setup.sh.
+  #
+  # frontend-design comes from Anthropic's official plugin, which Claude Code
+  # already loads (enabledPlugins in ../claude.nix), so it goes to
+  # ~/.agents/skills only; a copy in ~/.claude/skills would load it twice.
   config = lib.mkIf ai.enable (
     lib.mkMerge [
-      { home.file = mountSkills ".agents/skills"; }
+      {
+        home.file = mountSkills ".agents/skills" // {
+          ".agents/skills/frontend-design".source =
+            "${inputs.claude-plugins-official}/plugins/frontend-design/skills/frontend-design";
+        };
+      }
       (lib.mkIf ai.claude.enable { home.file = mountSkills ".claude/skills"; })
     ]
   );
