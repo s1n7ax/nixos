@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "claude-plugins-official": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794616868,
+        "narHash": "sha256-2rggi6MyrjwIRhM/TCOoDvqlGs4l5V0beE11537mO1Y=",
+        "owner": "anthropics",
+        "repo": "claude-plugins-official",
+        "rev": "b5b01ac4f889fec0c4c6bb89f27ca7c8574473f6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "anthropics",
+        "repo": "claude-plugins-official",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
@@ -328,6 +344,7 @@
     },
     "root": {
       "inputs": {
+        "claude-plugins-official": "claude-plugins-official",
         "hardware": "hardware",
         "home-manager": "home-manager",
         "home-manager-master": "home-manager-master",

@@ -181,6 +181,13 @@
     # needs it on PATH. No nixpkgs follows: its bun node_modules FOD hash is
     # pinned against its own lock.
     qmd.url = "github:tobi/qmd";
+    # Anthropic's official Claude Code plugins. Claude Code installs them
+    # itself; the other agents only get the frontend-design skill from here.
+    # See system/home-manager/applications/dev/ai/skills/default.nix.
+    claude-plugins-official = {
+      url = "github:anthropics/claude-plugins-official";
+      flake = false;
+    };
     # Sinhala Singlish keymap (si-ouc) for fcitx5-m17n; see
     # system/home-manager/applications/sinhala.nix.
     open-unicode-converter-m17n = {
