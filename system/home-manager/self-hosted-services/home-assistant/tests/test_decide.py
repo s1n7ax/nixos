@@ -25,12 +25,15 @@ from core.policy import (
     is_asleep,
     is_night,
 )
+from core.pushes import DAY_SECONDS, RING_RESERVE, PushBudget, utc_day
 from core.quiet import DND, PAUSE, SNOOZE, QuietEntry
 from modes import ALL_AWAY, I_AWAY, LADDER, WE_AWAY
 from modes import HOME as HOME_RULES
 
 NOW = 2_000_000.0
 WINDOW = 600.0
+REPEAT = 600.0
+LIMIT = 450
 NIGHT = (time(0, 0), time(5, 0))
 
 
@@ -47,9 +50,11 @@ def run(
     quiet=(),
     restart=False,
     burst=None,
+    pushes=None,
     now=NOW,
 ):
     mode = active_mode(LADDER, lambda entity: entity in on)
+    camera = camera if kind in (DETECTION, SOUND) else None
     base = base_level(
         kind,
         mode=mode,
@@ -59,19 +64,27 @@ def run(
         night=is_night(clock, *NIGHT),
     )
     burst = burst if burst is not None else BurstWindow(WINDOW)
+    pushes = pushes if pushes is not None else PushBudget(REPEAT, LIMIT)
     decision = decide(
         base=base,
         mode_name=mode.name if mode else HOME,
         event_type=event_type or kind,
-        camera=camera if kind in (DETECTION, SOUND) else None,
+        camera=camera,
         quiet_entries=quiet,
         quiet_after_restart=restart,
         burst=burst,
+        pushes=pushes,
         now=now,
     )
     if decision.rings:
         burst.record(event_type or kind, now)
+    if decision.is_sent:
+        pushes.record(event_type or kind, camera, now)
     return decision
+
+
+def sent_today(count):
+    return PushBudget(REPEAT, LIMIT, {"day": utc_day(NOW), "sent": count})
 
 
 def quiet(kind, types, cameras=(), id_="q"):
@@ -270,6 +283,118 @@ def test_reason_names_each_step():
     assert d.reason == "I'm away: critical; rang in the last burst window: popup"
 
 
+# Repeats: a camera pushes each type once per repeat window, unless it rings.
+def test_repeat_on_a_camera_is_logged_but_not_sent():
+    pushes = PushBudget(REPEAT, LIMIT)
+    assert run(DETECTION, "person", pushes=pushes).delivery == REGULAR
+    d = run(DETECTION, "person", pushes=pushes, now=NOW + 1)
+    assert d.delivery == REVIEW_ONLY
+    assert d.is_alert and not d.is_sent
+    assert d.reason == (
+        "Home: regular; pushed for this camera in the last repeat window: review only"
+    )
+    # A repeat does not restart the window; the next push is 10 minutes after the last push.
+    assert run(DETECTION, "person", pushes=pushes, now=NOW + REPEAT - 1).delivery == REVIEW_ONLY
+    assert run(DETECTION, "person", pushes=pushes, now=NOW + REPEAT).delivery == REGULAR
+
+
+def test_repeat_window_is_per_type_and_camera():
+    pushes = PushBudget(REPEAT, LIMIT)
+    assert run(DETECTION, "person", pushes=pushes).delivery == REGULAR
+    assert run(DETECTION, "person", camera="cam_b", pushes=pushes, now=NOW + 1).delivery == REGULAR
+    assert run(DETECTION, "car", pushes=pushes, now=NOW + 1).delivery == REGULAR
+    assert run(SOUND, "bark", pushes=pushes, now=NOW + 1).delivery == SILENT
+    assert run(SOUND, "bark", pushes=pushes, now=NOW + 2).delivery == REVIEW_ONLY
+
+
+def test_popup_repeats_only_for_another_camera():
+    burst, pushes = BurstWindow(WINDOW), PushBudget(REPEAT, LIMIT)
+    on = (I_AWAY.entity,)
+
+    def person(camera, after):
+        return run(
+            DETECTION, "person", on=on, camera=camera, burst=burst, pushes=pushes, now=NOW + after
+        ).delivery
+
+    assert person("cam_a", 0) == CRITICAL
+    assert person("cam_a", 1) == REVIEW_ONLY
+    assert person("cam_b", 2) == POPUP
+    assert person("cam_b", 3) == REVIEW_ONLY
+
+
+def test_a_ring_is_never_a_repeat():
+    burst, pushes = BurstWindow(WINDOW), PushBudget(REPEAT, LIMIT)
+    on = (I_AWAY.entity,)
+    assert run(DETECTION, "person", on=on, burst=burst, pushes=pushes).delivery == CRITICAL
+    popup = run(DETECTION, "person", on=on, camera="cam_b", burst=burst, pushes=pushes, now=NOW + 9)
+    assert popup.delivery == POPUP
+    # The burst window is over, the camera's repeat window is not.
+    ring = run(
+        DETECTION, "person", on=on, camera="cam_b", burst=burst, pushes=pushes, now=NOW + WINDOW
+    )
+    assert ring.delivery == CRITICAL
+
+
+def test_sensors_have_no_repeat_window():
+    pushes = PushBudget(REPEAT, LIMIT)
+    on = (ALL_AWAY.entity,)
+    assert run(MOTION, on=on, pushes=pushes).delivery == SILENT
+    assert run(MOTION, on=on, pushes=pushes, now=NOW + 1).delivery == SILENT
+    assert pushes.sent_today(NOW + 1) == 2
+
+
+# Daily push limit: the day's pushes stop at the limit, and its last part is kept for rings.
+def test_daily_limit_keeps_the_reserve_for_rings():
+    burst, pushes = BurstWindow(WINDOW), sent_today(LIMIT - RING_RESERVE)
+    d = run(DETECTION, "person", pushes=pushes)
+    assert d.delivery == REVIEW_ONLY
+    assert d.is_alert and not d.is_sent
+    assert d.reason == "Home: regular; daily push limit reached: review only"
+    assert run(SOUND, "bark", pushes=pushes).delivery == REVIEW_ONLY
+    on = (I_AWAY.entity,)
+    assert run(DETECTION, "person", on=on, burst=burst, pushes=pushes).delivery == CRITICAL
+    # A popup is no ring.
+    popup = run(DETECTION, "person", on=on, camera="cam_b", burst=burst, pushes=pushes, now=NOW + 1)
+    assert popup.delivery == REVIEW_ONLY
+
+
+def test_last_push_before_the_reserve_is_sent():
+    pushes = sent_today(LIMIT - RING_RESERVE - 1)
+    assert run(DETECTION, "person", pushes=pushes).delivery == REGULAR
+    assert run(DETECTION, "car", pushes=pushes).delivery == REVIEW_ONLY
+
+
+def test_daily_limit_stops_rings_too():
+    burst = BurstWindow(WINDOW)
+    on = (I_AWAY.entity,)
+    last = run(DETECTION, "person", on=on, burst=burst, pushes=sent_today(LIMIT - 1))
+    assert last.delivery == CRITICAL
+    burst = BurstWindow(WINDOW)
+    d = run(DETECTION, "person", on=on, burst=burst, pushes=sent_today(LIMIT))
+    assert d.delivery == REVIEW_ONLY
+    assert not d.rings
+    assert d.reason == "I'm away: critical; daily push limit reached: review only"
+    assert burst.as_dict() == {}
+
+
+def test_daily_limit_starts_again_at_midnight_utc():
+    midnight = (utc_day(NOW) + 1) * DAY_SECONDS
+    pushes = sent_today(LIMIT)
+    assert run(DETECTION, "person", pushes=pushes, now=midnight - 1).delivery == REVIEW_ONLY
+    assert run(DETECTION, "person", pushes=pushes, now=midnight).delivery == REGULAR
+    assert pushes.sent_today(midnight) == 1
+
+
+def test_alerts_that_are_not_sent_do_not_count():
+    pushes = PushBudget(REPEAT, LIMIT)
+    run(DETECTION, "person", on=(I_AWAY.entity,), quiet=[quiet(PAUSE, ["person"])], pushes=pushes)
+    run(SOUND, "bark", home=REVIEW_ONLY_HOME, pushes=pushes)
+    run(DOOR, on=(I_AWAY.entity,), top_floor=True, pushes=pushes)
+    assert pushes.sent_today(NOW) == 0
+    assert run(DETECTION, "person", pushes=pushes).delivery == REGULAR
+    assert pushes.sent_today(NOW) == 1
+
+
 def test_unknown_level_raises():
     with pytest.raises(ValueError):
         decide(
@@ -280,6 +405,7 @@ def test_unknown_level_raises():
             quiet_entries=(),
             quiet_after_restart=False,
             burst=BurstWindow(WINDOW),
+            pushes=PushBudget(REPEAT, LIMIT),
             now=NOW,
         )
 

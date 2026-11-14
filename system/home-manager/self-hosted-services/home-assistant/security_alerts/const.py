@@ -23,6 +23,8 @@ CONF_NIGHT_START = "night_start"
 CONF_NIGHT_END = "night_end"
 CONF_MOTION_MIN_SECONDS = "motion_min_seconds"
 CONF_BURST_MINUTES = "burst_minutes"
+CONF_REPEAT_MINUTES = "repeat_minutes"
+CONF_DAILY_PUSH_LIMIT = "daily_push_limit"
 CONF_LOG_DAYS = "log_days"
 CONF_FIRST_REVIEW_HOURS = "first_review_hours"
 CONF_DURATIONS_HOURS = "durations_hours"
@@ -34,6 +36,10 @@ DEFAULT_NIGHT_START = "00:00"
 DEFAULT_NIGHT_END = "05:00"
 DEFAULT_MOTION_MIN_SECONDS = 5
 DEFAULT_BURST_MINUTES = 10
+DEFAULT_REPEAT_MINUTES = 10
+# The Companion app's push service delivers 500 pushes a day to one phone; the
+# rest is left for what else notifies it.
+DEFAULT_DAILY_PUSH_LIMIT = 480
 DEFAULT_LOG_DAYS = 30
 DEFAULT_FIRST_REVIEW_HOURS = 24
 DEFAULT_DURATIONS_HOURS = [1, 2, 5, 10, 24]

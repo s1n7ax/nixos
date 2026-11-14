@@ -5,6 +5,7 @@ import pytest
 from core.burst import BurstWindow
 from core.decide import PAUSED, decide
 from core.policy import DETECTION, DOOR, EVENT_KINDS, MOTION, SOUND, HomeRules
+from core.pushes import PushBudget
 from core.quiet import (
     DND,
     PAUSE,
@@ -156,6 +157,7 @@ def delivery(base, event_type, camera, entries):
         quiet_entries=entries,
         quiet_after_restart=False,
         burst=BurstWindow(600),
+        pushes=PushBudget(600, 450),
         now=NOW,
     ).delivery
 

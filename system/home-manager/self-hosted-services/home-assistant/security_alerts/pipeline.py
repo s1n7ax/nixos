@@ -41,6 +41,7 @@ from .const import (
     CLIP_PRE_SECONDS,
     CLIP_READY_DELAY_SECONDS,
     CONF_BURST_MINUTES,
+    CONF_DAILY_PUSH_LIMIT,
     CONF_DETECTION,
     CONF_DETECTION_ASLEEP_OR_NIGHT,
     CONF_DOOR_OTHER,
@@ -59,6 +60,7 @@ from .const import (
     CONF_NIGHT_START,
     CONF_NOTIFY_SERVICE,
     CONF_QUIET_AFTER_RESTART_ENTITY,
+    CONF_REPEAT_MINUTES,
     CONF_SIREN_ENTITY,
     CONF_SLEEP_ENTITY,
     CONF_SLEEP_THRESHOLD,
@@ -78,7 +80,7 @@ from .const import (
     THUMB,
 )
 from .core.burst import BurstWindow
-from .core.decide import Decision, decide
+from .core.decide import SENT, Decision, decide
 from .core.geometry import Box, Size, scale_box, square_crop, thumbnail_crop
 from .core.policy import (
     DETECTION,
@@ -94,6 +96,7 @@ from .core.policy import (
     is_asleep,
     is_night,
 )
+from .core.pushes import DAY_SECONDS, PushBudget, seeded, utc_day
 from .core.quiet import SNOOZE, QuietEntry, new_entries, next_expiry, running
 from .frigate import FrigateClient, FrigateError
 from .notify import (
@@ -272,6 +275,7 @@ class SecurityAlerts:
         self.frigate = FrigateClient(hass)
         self.notifier = Notifier(hass, config[CONF_NOTIFY_SERVICE])
         self.burst = BurstWindow(config[CONF_BURST_MINUTES] * 60)
+        self.pushes = PushBudget(config[CONF_REPEAT_MINUTES] * 60, config[CONF_DAILY_PUSH_LIMIT])
         # Set by Sources once it starts; finds the MQTT box for a snapshot frame.
         self.find_snapshot: Callable[[str, float, float], Awaitable[Box | None]] | None = None
         self._quiet: list[QuietEntry] = []
@@ -295,6 +299,9 @@ class SecurityAlerts:
         self._quiet = [QuietEntry.from_dict(d) for d in self.state.quiet]
         self.burst = BurstWindow(self.burst.window_seconds, self.state.last_rings)
         await self.hass.async_add_executor_job(self.log.open)
+        self.pushes = PushBudget(
+            self.pushes.repeat_seconds, self.pushes.daily_limit, await self._async_saved_pushes()
+        )
         self._drop_expired()
         self._schedule_expiry()
         self._unsubs.append(async_track_time_interval(self.hass, self._async_prune, PRUNE_INTERVAL))
@@ -311,6 +318,19 @@ class SecurityAlerts:
             self.hass.async_create_background_task(
                 self._async_reset_full_images(), "security_alerts review images"
             )
+
+    async def _async_saved_pushes(self) -> dict[str, Any]:
+        """The saved push count; before the first one is saved, today's from the log."""
+        if self.state.pushes:
+            return self.state.pushes
+        day = utc_day(time.time())
+        try:
+            sent = await self.hass.async_add_executor_job(
+                self.log.count_since, day * DAY_SECONDS, SENT
+            )
+        except AlertLogError:
+            return {}  # Already logged; the count starts at zero.
+        return seeded(day, sent, self.pushes.daily_limit)
 
     @callback
     def add_unsub(self, unsub: CALLBACK_TYPE) -> None:
@@ -496,7 +516,8 @@ class SecurityAlerts:
     def _decide(
         self, event: AlertEvent, overrides: Overrides | None, record: bool
     ) -> tuple[Decision, str, float]:
-        """Decide one event; with `record`, a ring restarts the burst window at once.
+        """Decide one event; with `record`, a ring restarts the burst window and a push
+        counts at once.
 
         Synchronous, so two events of one type are always decided in order.
         """
@@ -521,16 +542,27 @@ class SecurityAlerts:
             quiet_entries=self.running_quiet(),
             quiet_after_restart=self.quiet_after_restart(),
             burst=self.burst,
+            pushes=self.pushes,
             now=now,
         )
         if record and decision.rings:
             self.burst.record(event.type, now)
             self._save_rings()
+        if record and decision.is_sent:
+            # From here on this type on this camera is a repeat, also while this
+            # push is still on its way.
+            self.pushes.record(event.type, event.camera, now)
+            self._save_pushes()
         return decision, mode_name, now
 
     @callback
     def _save_rings(self) -> None:
         self.state.last_rings = self.burst.as_dict()
+        self.state.save()
+
+    @callback
+    def _save_pushes(self) -> None:
+        self.state.pushes = self.pushes.as_dict()
         self.state.save()
 
     async def async_handle(
@@ -555,9 +587,11 @@ class SecurityAlerts:
 
         # Images are fetched in parallel, but the sends of one type keep the
         # order of the decisions: a popup repeat never lands before its ring.
+        # An alert that is only logged takes no place in that order.
         previous_send = self._sends.get(event.type)
         this_send: asyncio.Future[None] = self.hass.loop.create_future()
-        self._sends[event.type] = this_send
+        if decision.is_sent:
+            self._sends[event.type] = this_send
         alert_id = _new_id()
         sent = False
         try:
@@ -572,6 +606,10 @@ class SecurityAlerts:
                 # The ring never went out, so the next critical alert should ring.
                 self.burst.forget(event.type, decided_at)
                 self._save_rings()
+            if decision.is_sent and not sent:
+                # The push never went out, so it neither counts nor starts a repeat window.
+                self.pushes.forget(event.type, event.camera, decided_at)
+                self._save_pushes()
             this_send.set_result(None)
             if self._sends.get(event.type) is this_send:
                 del self._sends[event.type]

@@ -37,14 +37,15 @@ TMP_EXTENSION = ".tmp"
 
 
 class StateStore:
-    """Quiet entries, last review, last critical ring per type, shown tags, and the
-    version of the cached review images."""
+    """Quiet entries, last review, last critical ring per type, the day's pushes,
+    shown tags, and the version of the cached review images."""
 
     def __init__(self, hass: HomeAssistant) -> None:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self.quiet: list[dict[str, Any]] = []
         self.last_review: float | None = None
         self.last_rings: dict[str, float] = {}
+        self.pushes: dict[str, Any] = {}
         self.shown_tags: list[str] = []
         self.full_image_version: int | None = None
 
@@ -53,6 +54,7 @@ class StateStore:
         self.quiet = list(data.get("quiet", []))
         self.last_review = data.get("last_review")
         self.last_rings = dict(data.get("last_rings", {}))
+        self.pushes = dict(data.get("pushes", {}))
         self.shown_tags = list(data.get("shown_tags", []))
         self.full_image_version = data.get("full_image_version")
 
@@ -64,6 +66,7 @@ class StateStore:
             "quiet": self.quiet,
             "last_review": self.last_review,
             "last_rings": self.last_rings,
+            "pushes": self.pushes,
             "shown_tags": self.shown_tags,
             "full_image_version": self.full_image_version,
         }
@@ -244,6 +247,15 @@ class AlertLog:
             params += (after[0], after[0], after[1])
         rows = self._execute(f"{sql} ORDER BY time DESC, id DESC LIMIT ?", (*params, limit + 1))
         return [_to_row(r) for r in rows[:limit]], len(rows) > limit
+
+    def count_since(self, start: float, deliveries: Collection[str]) -> int:
+        """How many alerts logged from `start` on have one of `deliveries`."""
+        rows = self._execute(
+            "SELECT COUNT(*) FROM alerts WHERE time >= ? "
+            f"AND delivery IN ({', '.join('?' * len(deliveries))})",
+            (start, *deliveries),
+        )
+        return int(rows[0][0])
 
     def fill_missing_clip_ends(self, before: float, length: float) -> None:
         """End every clip still open on an alert older than `before`, `length`
