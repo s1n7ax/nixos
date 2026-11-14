@@ -20,6 +20,13 @@
 # tmux unlinks every window while it shuts down, and a hook would save an
 # empty list right before a reboot.
 
+# $tools (this script's pinned tools, set by package.nix) come first only for
+# the script itself. The tmux server and the workspace shells get the user's
+# own PATH, so a rebuild's new tools reach them without restarting tmux.
+user_path=$PATH
+PATH=${tools:?}:$PATH
+tmux_bin=$(command -v tmux)
+
 session=${TMUX_WORKSPACE_SESSION:-main}
 state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/tmux-workspace
 state=$state_dir/$session
@@ -50,7 +57,7 @@ expand_dir() {
 create_window() {
   local host=$1 dir=$2 id
   shift 2
-  id=$(tmux "$@" -d -P -F '#{window_id}' -n "$(window_name "$host" "$dir")" -c "$HOME" \
+  id=$(PATH=$user_path "$tmux_bin" "$@" -d -P -F '#{window_id}' -n "$(window_name "$host" "$dir")" -c "$HOME" \
     -- "$self" run "$host" "$dir") || return 1
   tmux set-option -w -t "$id" @ws_host "$host" \; set-option -w -t "$id" @ws_dir "$dir"
   echo "$id"
@@ -121,9 +128,11 @@ close() {
 
 # The shell a remote workspace runs, as one command line for the host's login
 # shell. Only single-quoted words, so fish and POSIX shells read it the same.
+# It ends with `exit 0` whatever the shell's last status was, so an exit 255
+# from ssh always means a lost connection.
 remote_command() {
   local rel=${1#\~}
-  printf '%s' "exec sh -c 'cd \"\$HOME/\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; exec \"\$SHELL\" -l' sh '${rel#/}'"
+  printf '%s' "exec sh -c 'cd \"\$HOME/\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '${rel#/}'"
 }
 
 # Runs the workspace's shell. A local shell runs once; a remote one is
@@ -133,14 +142,8 @@ remote_command() {
 # tmux killed the window or itself, on_hangup ends this script first, and the
 # pane lookup in forget_self fails as a second guard, so nothing is written.
 # Ctrl-C only cuts the reconnect wait short.
-#
-# ssh runs in the background and is waited for. A lost terminal signals only
-# this script (the session leader), bash runs a trap only once a foreground
-# command has ended, and ssh outlives its terminal, so a foreground ssh would
-# keep both running forever. <&0 gives the background ssh the terminal back;
-# like every background command, it ignores Ctrl-C while connecting.
 run() {
-  local host=$1 dir=$2 status ssh_pid=
+  local host=$1 dir=$2 status shell_pid=
   trap on_hangup HUP TERM
   trap : INT
   if [[ $host == local ]]; then
@@ -148,19 +151,12 @@ run() {
       echo "$dir is gone, starting in ~"
       cd
     fi
-    "${SHELL:-sh}" -l || true
+    run_shell "${SHELL:-sh}" -l || true
   else
     while :; do
-      ssh -t -o ConnectTimeout=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-        "$host" "$(remote_command "$dir")" <&0 &
-      ssh_pid=$!
       status=0
-      wait "$ssh_pid" || status=$?
-      while kill -0 "$ssh_pid" 2>/dev/null; do
-        status=0
-        wait "$ssh_pid" || status=$?
-      done
-      ssh_pid=
+      run_shell ssh -t -o ConnectTimeout=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+        "$host" "$(remote_command "$dir")" || status=$?
       if ((status != 255)); then
         break
       fi
@@ -171,9 +167,32 @@ run() {
   forget_self
 }
 
+# Runs a command on the terminal with the user's PATH and returns its status.
+#
+# It runs in the background and is waited for. A lost terminal signals only
+# this script (the session leader), and bash runs a trap only once a
+# foreground command has ended; a shell busy with a job, or ssh, outlives its
+# terminal, so a foreground command would keep both running forever. Once
+# on_hangup has exited this script, the kernel hangs up the terminal's
+# foreground jobs. <&0 gives the command the terminal back; like every
+# background command it starts with Ctrl-C ignored, which fish undoes and ssh
+# only notices while connecting.
+run_shell() {
+  local status=0
+  PATH=$user_path "$@" <&0 &
+  shell_pid=$!
+  wait "$shell_pid" || status=$?
+  while kill -0 "$shell_pid" 2>/dev/null; do
+    status=0
+    wait "$shell_pid" || status=$?
+  done
+  shell_pid=
+  return "$status"
+}
+
 on_hangup() {
-  if [[ -n ${ssh_pid:-} ]]; then
-    kill -HUP "$ssh_pid" 2>/dev/null || true
+  if [[ -n ${shell_pid:-} ]]; then
+    kill -HUP "$shell_pid" 2>/dev/null || true
   fi
   exit 129
 }
@@ -186,10 +205,12 @@ forget_self() {
 
 # Lists "~" and every git repository up to three levels under home, as
 # "~/<path>". Folders with a single quote are left out: remote_command could
-# not quote them.
+# not quote them. find's errors (an unreadable folder) are ignored so they do
+# not hide the other projects, and -xdev keeps it out of other mounts, such
+# as network or FUSE drives that can stall. Fails only when ssh does.
 projects() {
   local host=$1 list
-  local script='cd && find . -mindepth 1 -maxdepth 4 -name .git -printf "%h\n" -prune -o \( -name ".*" -o -name node_modules \) -prune'
+  local script='cd && find . -xdev -mindepth 1 -maxdepth 4 -name .git -printf "%h\n" -prune -o \( -name ".*" -o -name node_modules \) -prune 2>/dev/null; exit 0'
   if [[ $host == local ]]; then
     list=$(sh -c "$script") || return 1
   else

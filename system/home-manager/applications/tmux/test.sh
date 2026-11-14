@@ -1,9 +1,11 @@
 # Tests tmux-workspace against a real tmux server in a throwaway HOME. A fake
 # ssh runs the remote command locally, with $t/remote/<host> as the host's
 # home. With -t, like the real one, it outlives a lost terminal: only a signal
-# or the remote shell's exit ends it. A fake shell logs where it started and
-# exits with the code typed into it. Run by the flake check `tmux-workspace`
-# (in the Nix sandbox).
+# or the remote shell's exit ends it. A fake shell logs where it started (and
+# a local one its PATH), then reads lines: "busy" runs a job that must end
+# with its workspace, "drop" makes the fake ssh lose the connection, anything
+# else exits with that code. Run by the flake check `tmux-workspace` (in the
+# Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
 # condition each time it polls, hence the two shellcheck exceptions.
@@ -32,8 +34,16 @@ pass() {
 cat >"$t/bin/fakeshell" <<EOF
 #!$(command -v bash)
 echo "\${WS_WHERE:-local} \$PWD" >>"$shells"
-read -r code
-exit "\${code:-0}"
+if [[ -z \${WS_WHERE:-} ]]; then
+  echo "\$PATH" >"$t/local-path"
+fi
+while read -r line; do
+  case \$line in
+  busy) sleep 4242 ;;
+  drop) kill -USR1 "\$FAKE_SSH" ;;
+  *) exit "\${line:-0}" ;;
+  esac
+done
 EOF
 
 cat >"$t/bin/ssh" <<EOF
@@ -50,7 +60,7 @@ if [[ -e "$t/down-\$host" ]]; then
   echo "ssh: connect to host \$host: Connection refused" >&2
   exit 255
 fi
-export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell"
+export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell" FAKE_SSH=\$\$
 cd "\$HOME"
 if [[ -z \$tty ]]; then
   exec sh -c "\$*"
@@ -59,9 +69,10 @@ in="$t/ssh-in.\$\$"
 mkfifo "\$in"
 exec 3<>"\$in"
 cat <&0 >"\$in" &
-sh -c "\$*" <"\$in" &
+copy=\$!
+setsid sh -c "\$*" <"\$in" &
 remote=\$!
-trap 'kill \$remote; exit 255' HUP TERM
+trap 'kill -HUP -- -\$remote; kill \$copy; exit 255' HUP TERM USR1
 wait \$remote
 EOF
 chmod +x "$t/bin/fakeshell" "$t/bin/ssh"
@@ -100,7 +111,7 @@ started() {
 }
 
 wrappers_gone() {
-  ! pgrep -f "tmux-workspace run|$t/bin/" >/dev/null
+  ! pgrep -f "tmux-workspace run|$t/bin/|sleep 4242" >/dev/null
 }
 
 # --- Nothing remembered: one desktop workspace in ~ -------------------------
@@ -110,6 +121,9 @@ tmux-workspace start
 [[ $(names) == "~" ]] || fail "first start opened '$(names)'"
 wait_for '(($(started "local $HOME") == 1))' "a local shell in ~"
 pass "first start opens one desktop workspace in ~ and remembers it"
+
+[[ $(<"$t/local-path") == "$PATH" ]] || fail "a workspace shell got PATH $(<"$t/local-path")"
+pass "workspace shells get the user's PATH, not the script's tools"
 
 tmux-workspace start
 [[ $(names) == "~" ]] || fail "second start changed the session: '$(names)'"
@@ -133,6 +147,13 @@ pass "add opens local and remote workspaces in their folders, in order, and reme
 
 # --- Restart ------------------------------------------------------------------
 
+jobs_running() {
+  pgrep -cf "sleep 4242" || true
+}
+
+tmux send-keys -t "$(window_id proj-a)" busy Enter
+tmux send-keys -t "$(window_id dev:openrep)" busy Enter
+wait_for '(($(jobs_running) == 2))' "busy jobs in a local and a remote workspace"
 tmux kill-server
 wait_for wrappers_gone "workspace shells to end after kill-server"
 [[ $(saved) == "local:~ local:~/proj-a dev:~/openrep homelab:~/Workspace/nixos" ]] ||
@@ -142,14 +163,17 @@ tmux-workspace start
 wait_for '(($(started "dev $t/remote/dev/openrep") == 2))' "the dev shell to come back in ~/openrep"
 wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 2))' "the homelab shell to come back"
 wait_for '(($(started "local $HOME/proj-a") == 2))' "the local shell to come back in ~/proj-a"
-pass "after tmux is killed, start brings back the same workspaces in the same order"
+pass "killing tmux ends the workspaces' jobs; start brings back the same workspaces in the same order"
 
 # --- Closing ------------------------------------------------------------------
 
+tmux send-keys -t "$(window_id proj-a)" busy Enter
+wait_for '(($(jobs_running) == 1))' "a busy job in a local workspace"
 tmux-workspace close "$(window_id proj-a)"
 [[ $(names) == "~ dev:openrep homelab:nixos" ]] || fail "windows after close: '$(names)'"
 [[ $(saved) == "local:~ dev:~/openrep homelab:~/Workspace/nixos" ]] || fail "saved after close: '$(saved)'"
-pass "close forgets the workspace and closes its window"
+wait_for '(($(jobs_running) == 0))' "the closed workspace's job to end"
+pass "close forgets the workspace, closes its window and ends its job"
 
 tmux send-keys -t "$(window_id dev:openrep)" 0 Enter
 wait_for '[[ $(names) == "~ homelab:nixos" ]]' "the dev window to close after exit"
@@ -159,13 +183,20 @@ pass "exit in a workspace's shell forgets it"
 # --- Lost connection ------------------------------------------------------------
 
 touch "$t/down-homelab"
-tmux send-keys -t "$(window_id homelab:nixos)" 255 Enter
+tmux send-keys -t "$(window_id homelab:nixos)" drop Enter
 sleep 1
 [[ $(names) == "~ homelab:nixos" ]] || fail "a dropped connection closed the window: '$(names)'"
 [[ $(saved) == "local:~ homelab:~/Workspace/nixos" ]] || fail "a dropped connection changed the saved list: '$(saved)'"
 rm "$t/down-homelab"
 wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 3))' "the homelab shell to reconnect"
 pass "a dropped or refused connection keeps the workspace and reconnects to its folder"
+
+tmux-workspace add dev '~/openrep'
+wait_for '(($(started "dev $t/remote/dev/openrep") == 3))' "a new dev shell in ~/openrep"
+tmux send-keys -t "$(window_id dev:openrep)" 255 Enter
+wait_for '[[ $(names) == "~ homelab:nixos" ]]' "the dev window to close after exit 255"
+[[ $(saved) == "local:~ homelab:~/Workspace/nixos" ]] || fail "saved after exit 255: '$(saved)'"
+pass "a remote shell exiting with 255 is an exit, not a lost connection"
 
 # --- Reordering -----------------------------------------------------------------
 
@@ -213,10 +244,11 @@ pass "kitty windows opening at once share one session"
 
 mkdir -p "$HOME/Workspace/nixos/.git" "$HOME/a/b/deep/.git" "$HOME/a/b/c/too-deep/.git" \
   "$HOME/.hidden/repo/.git" "$HOME/web/node_modules/pkg/.git" "$HOME/it's/.git" "$HOME/not-a-repo"
-mkdir -p "$HOME/wt" && touch "$HOME/wt/.git"
+mkdir -p "$HOME/wt" "$HOME/locked/repo/.git" && touch "$HOME/wt/.git" && chmod 000 "$HOME/locked"
 expected=$(printf '%s\n' '~' '~/Workspace/nixos' '~/a/b/deep' '~/wt')
 [[ $(tmux-workspace projects local) == "$expected" ]] ||
   fail "local projects: $(tmux-workspace projects local | paste -sd ' ')"
+chmod 755 "$HOME/locked"
 mkdir -p "$t/remote/dev/openrep/.git" "$t/remote/dev/project/.git"
 expected=$(printf '%s\n' '~' '~/openrep' '~/project')
 [[ $(tmux-workspace projects dev) == "$expected" ]] ||
@@ -225,6 +257,6 @@ touch "$t/down-dev"
 if tmux-workspace projects dev >/dev/null 2>&1; then
   fail "projects succeeded on an unreachable host"
 fi
-pass "projects lists ~ and git repositories up to three levels deep, skipping hidden, node_modules and quoted folders"
+pass "projects lists ~ and git repositories up to three levels deep, skipping hidden, node_modules, quoted and unreadable folders"
 
 echo "all tmux-workspace tests passed"

@@ -9,6 +9,7 @@
   procps,
   shellcheck,
   tmux,
+  util-linux,
 }:
 runCommand "tmux-workspace-check"
   {
@@ -17,6 +18,7 @@ runCommand "tmux-workspace-check"
       procps
       shellcheck
       tmux
+      util-linux
     ];
   }
   ''
