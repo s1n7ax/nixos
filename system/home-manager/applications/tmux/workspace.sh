@@ -46,12 +46,6 @@ window_name() {
   fi
 }
 
-# Prints the absolute path of a "~/<path>" folder under the given home.
-expand_dir() {
-  local home=$1 rel=${2#\~}
-  echo "$home/${rel#/}"
-}
-
 # Runs a tmux command that creates a workspace window (new-session or
 # new-window, with its own flags) and prints the window's id.
 create_window() {
@@ -126,13 +120,12 @@ close() {
   tmux kill-window -t "$1"
 }
 
-# The shell a remote workspace runs, as one command line for the host's login
-# shell. Only single-quoted words, so fish and POSIX shells read it the same.
-# It ends with `exit 0` whatever the shell's last status was, so an exit 255
-# from ssh always means a lost connection.
+# The shell a remote workspace runs in the folder $1 (relative to home), as one
+# command line for the host's login shell. Only single-quoted words, so fish
+# and POSIX shells read it the same. It ends with `exit 0` whatever the shell's
+# last status was, so an exit 255 from ssh always means a lost connection.
 remote_command() {
-  local rel=${1#\~}
-  printf '%s' "exec sh -c 'cd \"\$HOME/\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '${rel#/}'"
+  printf '%s' "exec sh -c 'cd \"\$HOME/\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '$1'"
 }
 
 # Runs the workspace's shell. A local shell runs once; a remote one is
@@ -143,11 +136,12 @@ remote_command() {
 # pane lookup in forget_self fails as a second guard, so nothing is written.
 # Ctrl-C only cuts the reconnect wait short.
 run() {
-  local host=$1 dir=$2 status shell_pid=
+  local host=$1 dir=$2 rel=${2#\~} status shell_pid=
+  rel=${rel#/}
   trap on_hangup HUP TERM
   trap : INT
   if [[ $host == local ]]; then
-    if ! cd -- "$(expand_dir "$HOME" "$dir")" 2>/dev/null; then
+    if ! cd -- "$HOME/$rel" 2>/dev/null; then
       echo "$dir is gone, starting in ~"
       cd
     fi
@@ -156,7 +150,7 @@ run() {
     while :; do
       status=0
       run_shell ssh -t -o ConnectTimeout=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-        "$host" "$(remote_command "$dir")" || status=$?
+        "$host" "$(remote_command "$rel")" || status=$?
       if ((status != 255)); then
         break
       fi
