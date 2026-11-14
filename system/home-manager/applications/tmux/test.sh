@@ -4,8 +4,9 @@
 # or the remote shell's exit ends it. A fake shell logs where it started (and
 # a local one its PATH), then reads lines: "busy" runs a job that must end
 # with its workspace, "drop" makes the fake ssh lose the connection, "cd
-# <dir>" changes folder and reports it with OSC 7 like fish (a remote home as
-# /home/me), anything else exits with that code. Run by the flake check `tmux-workspace` (in the
+# <dir>" changes folder and reports it with OSC 7 (locally unencoded like
+# kitty's integration, remotely percent-encoded like fish, with the home as
+# /home/me), "osc <url>" reports <url>, anything else exits with that code. Run by the flake check `tmux-workspace` (in the
 # Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
@@ -44,12 +45,15 @@ while read -r line; do
   drop) kill -USR1 "\$FAKE_SSH" ;;
   cd\ *)
     cd "\${line#cd }"
-    where=\$PWD
     if [[ -n \${WS_WHERE:-} ]]; then
       where=/home/me\${PWD#"\$HOME"}
+      where=\${where//%/%25}
+      printf '\\033]7;file://fakehost%s\\033\\\\' "\${where// /%20}"
+    else
+      printf '\\033]7;kitty-shell-cwd://%s%s\\033\\\\' "\$(uname -n)" "\$PWD"
     fi
-    printf '\\033]7;file://fakehost%s\\033\\\\' "\${where// /%20}"
     ;;
+  osc\ *) printf '\\033]7;%s\\033\\\\' "\${line#osc }" ;;
   *) exit "\${line:-0}" ;;
   esac
 done
@@ -283,6 +287,27 @@ tmux-workspace start
 wait_for '(($(started "local $t/elsewhere") == 1))' "the local shell to come back outside home"
 wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 2))' "the homelab shell to come back in ~/Workspace/nixos"
 pass "a folder outside home is remembered by its absolute path"
+
+mkdir -p "$HOME/50%dev" "$t/remote/homelab/my 50%" "$t/remote/homelab/-foo"
+tmux send-keys -t "$(window_id elsewhere)" "cd $HOME/50%dev" Enter
+tmux send-keys -t "$(window_id homelab:nixos)" "cd $t/remote/homelab/my 50%" Enter
+wait_for '[[ $(names) == "50%dev homelab:my%2050%25" ]]' "workspaces renamed after folders with % and spaces"
+wait_for '[[ $(saved) == "local:~/50%dev homelab:~/my 50%" ]]' "folders with % and spaces to be saved as they are"
+[[ $(tmux-workspace list | paste -sd '|') == "1: 50%dev|2: homelab:my 50%" ]] ||
+  fail "list after folders with % and spaces: '$(tmux-workspace list | paste -sd '|')'"
+pass "switch lists and remembers folders by their real names, whichever way the shell encodes them"
+
+tmux send-keys -t "$(window_id 50%dev)" "osc file://otherhost/srv/data" Enter
+sleep 1
+tmux display-message -p '' >/dev/null
+sleep 1
+[[ $(names) == "50%dev homelab:my%2050%25" ]] || fail "a folder on another host renamed a local workspace: '$(names)'"
+[[ $(saved) == "local:~/50%dev homelab:~/my 50%" ]] || fail "a folder on another host was saved: '$(saved)'"
+pass "a folder reported from another host (a shell in ssh) is ignored by a local workspace"
+
+tmux-workspace add homelab '~/-foo'
+wait_for '(($(started "homelab $t/remote/homelab/-foo") == 1))' "a homelab shell in ~/-foo"
+pass "a remote folder starting with - opens"
 
 tmux kill-server
 wait_for wrappers_gone "workspace shells to end after kill-server"
