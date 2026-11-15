@@ -214,3 +214,13 @@ def test_night_wrapping_past_midnight(now, expected):
 
 def test_night_with_equal_bounds_is_never():
     assert is_night(time(0, 0), MIDNIGHT, MIDNIGHT) is False
+
+
+@pytest.mark.parametrize("mode", [None, *LADDER])
+@pytest.mark.parametrize("kind", [DETECTION, SOUND, DOOR, MOTION])
+def test_an_ignored_type_is_no_alert_in_any_mode(mode, kind):
+    for asleep in (True, False):
+        level = base_level(
+            kind, mode=mode, home=HOME, top_floor=True, asleep=asleep, night=asleep, ignored=True
+        )
+        assert level == NONE

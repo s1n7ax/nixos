@@ -36,6 +36,7 @@ from .const import (
     CONF_ENTITY,
     CONF_FIRST_REVIEW_HOURS,
     CONF_HOME,
+    CONF_IGNORE_TYPES,
     CONF_LOG_DAYS,
     CONF_MODES,
     CONF_MOTION_MIN_SECONDS,
@@ -133,6 +134,10 @@ CONFIG_SCHEMA = probatio.Schema(
                 probatio.Optional(
                     CONF_DAILY_PUSH_LIMIT, default=DEFAULT_DAILY_PUSH_LIMIT
                 ): probatio.All(probatio.Coerce(int), probatio.Range(min=0)),
+                # Types that are never an alert in any mode, such as speech.
+                probatio.Optional(CONF_IGNORE_TYPES, default=[]): probatio.All(
+                    cv.ensure_list, [cv.string]
+                ),
                 probatio.Optional(CONF_LOG_DAYS, default=DEFAULT_LOG_DAYS): probatio.All(
                     probatio.Coerce(int), probatio.Range(min=1)
                 ),

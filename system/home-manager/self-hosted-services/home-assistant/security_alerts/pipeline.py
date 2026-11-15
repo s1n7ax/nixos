@@ -50,6 +50,7 @@ from .const import (
     CONF_ENTITY,
     CONF_FIRST_REVIEW_HOURS,
     CONF_HOME,
+    CONF_IGNORE_TYPES,
     CONF_LOG_DAYS,
     CONF_MODES,
     CONF_MOTION_MIN_SECONDS,
@@ -268,6 +269,7 @@ class SecurityAlerts:
             sound=home[CONF_SOUND],
         )
         self.top_floors = set(config[CONF_TOP_FLOORS])
+        self.ignore_types = set(config[CONF_IGNORE_TYPES])
         self.motion_min_seconds: float = config[CONF_MOTION_MIN_SECONDS]
         self.durations_hours: list[float] = config[CONF_DURATIONS_HOURS]
         self.state = StateStore(hass)
@@ -531,6 +533,7 @@ class SecurityAlerts:
             top_floor=event.top_floor,
             asleep=asleep,
             night=self.night(overrides.at),
+            ignored=event.type in self.ignore_types,
         )
         mode_name = mode.name if mode else HOME
         now = time.time()
