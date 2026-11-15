@@ -1,7 +1,8 @@
 # Tests tmux-workspace against a real tmux server in a throwaway HOME. A fake
 # ssh runs the remote command locally, with $t/remote/<host> as the host's
 # home, a real tmux as the host's tmux (none on a host with $t/notmux-<host>;
-# on "broken" it cannot start, its socket path being a folder),
+# on "broken" it cannot start, its socket path being a folder), TERM=xterm
+# whatever the terminal is, as a host that forces its own TERM on every login,
 # and, with -t, on a terminal of its own, as sshd would. Like the real one, it
 # outlives a lost terminal: only a signal or the remote command's exit ends
 # it, and `drop <host>` makes it lose the connection. A fake shell logs where
@@ -11,7 +12,9 @@
 # "cd <dir>" changes folder and reports it with OSC 7 (locally unencoded like
 # kitty's integration, remotely percent-encoded like fish, with the home as
 # /home/me), "osc <url>" reports <url>, "title <text>" sets the terminal
-# title, anything else exits with that code.
+# title, "raw <file>" asks for extended keys as Neovim does and writes the
+# bytes it is sent for three seconds to <file>, anything else exits with that
+# code.
 # Run by the flake check `tmux-workspace` (in the Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
@@ -82,6 +85,13 @@ while read -r line; do
     ;;
   osc\ *) printf '\\033]7;%s\\033\\\\' "\${line#osc }" ;;
   title\ *) printf '\\033]2;%s\\033\\\\' "\${line#title }" ;;
+  raw\ *)
+    printf '\\033[>4;2m'
+    stty raw -echo
+    timeout --foreground 3 cat >"\${line#raw }"
+    stty sane
+    printf '\\033[>4;0m'
+    ;;
   *) exit "\${line:-0}" ;;
   esac
 done
@@ -103,7 +113,7 @@ if [[ -e "$t/down-\$host" ]]; then
   exit 255
 fi
 unset TMUX TMUX_PANE TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM XDG_STATE_HOME
-export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell"
+export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell" TERM=xterm
 if [[ -e "$t/notmux-\$host" ]]; then
   PATH=\$(tr ':' '\\n' <<<"\$PATH" | grep -vxF "$tmux_dir" | paste -sd:)
 fi
@@ -133,7 +143,7 @@ EOF
 chmod +x "$t/bin/fakeshell" "$t/bin/ssh"
 
 cat >"$HOME/.tmux.conf" <<EOF
-set -g default-terminal screen-256color
+set -s extended-keys on
 set -g base-index 1
 set -g renumber-windows on
 set -g default-shell "$t/bin/fakeshell"
@@ -250,9 +260,23 @@ wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 1))' "a ho
   fail "sessions after add: dev '$(sessions dev)', homelab '$(sessions homelab)'"
 pass "add opens local and remote workspaces in their folders, in order, and remembers them"
 
-[[ $(<"$t/env.homelab") == "TERM=screen-256color COLORTERM= TERM_PROGRAM= TERM_PROGRAM_VERSION= TMUX= TMUX_PANE=" ]] ||
+[[ $(<"$t/env.homelab") == "TERM=xterm COLORTERM= TERM_PROGRAM= TERM_PROGRAM_VERSION= TMUX= TMUX_PANE=" ]] ||
   fail "a remote workspace's shell got $(<"$t/env.homelab")"
 pass "a remote workspace's shell sees the terminal of its connection, not its session's tmux"
+
+tmux send-keys -t "$(window_id '~')" "raw $t/keys.local" Enter
+tmux send-keys -t "$(window_id homelab:nixos)" "raw $t/keys.homelab" Enter
+wait_for '[[ -e $t/keys.local && -e $t/keys.homelab ]]' "both shells to read keys"
+sleep 0.5
+for window in '~' homelab:nixos; do
+  tmux send-keys -t "$(window_id "$window")" a Home End KPEnter Up F5 C-1 M-x C-Enter BTab
+done
+sleep 3
+keys_local=$(od -An -c "$t/keys.local")
+[[ $keys_local == *'[   1   ~'*'[   4   ~'* ]] || fail "the local workspace was not sent Home and End: $keys_local"
+[[ $(od -An -c "$t/keys.homelab") == "$keys_local" ]] ||
+  fail "keys reach a remote workspace as$(od -An -c "$t/keys.homelab"), a local one as$keys_local"
+pass "keys reach a program in a remote workspace as they do in a local one"
 
 # --- Restart ------------------------------------------------------------------
 
@@ -433,6 +457,7 @@ home_shells=$(started "local $HOME")
 tmux-workspace add dev '~/missing'
 tmux-workspace add local '~/missing'
 wait_for '(($(started "dev $t/remote/dev") == 1))' "a dev shell in ~ for a missing folder"
+wait_for 'screen "$(window_id dev:missing)" | grep -q "missing is gone, starting in ~"' "the note that the folder is gone"
 wait_for "((\$(started 'local $HOME') == $((home_shells + 1))))" "a local shell in ~ for a missing folder"
 [[ $(saved) == "homelab:~/Workspace/nixos dev:~/missing local:~/missing" ]] ||
   fail "saved with missing folders: '$(saved)'"

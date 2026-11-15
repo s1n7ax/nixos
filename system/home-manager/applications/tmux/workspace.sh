@@ -316,8 +316,8 @@ close() {
 }
 
 # What a remote workspace runs on its host, as sh code without a single quote
-# (see remote_command): $1 is its folder (relative to home, or absolute) and
-# $2 its session.
+# (see remote_command): $1 is its folder (relative to home, or absolute), $2
+# its session and $3 the TERM of this machine's pane.
 #
 # The shell runs in the tmux session $2, created in the folder when it is not
 # running yet, on a tmux server of its own, so the host's other tmux sessions
@@ -336,7 +336,13 @@ close() {
 # instead, so programs see the terminal they saw before workspaces had
 # sessions, and a tmux command typed in the workspace still reaches the
 # host's own tmux server, not this one. env wants what it unsets before what
-# it sets.
+# it sets. The tmux client itself runs with $3 as its TERM: a host may force
+# a TERM of its own on every login (these do, see system/nixos/core/env.nix),
+# and the client would then misread the keys this machine's tmux sends, such
+# as Home and End.
+#
+# A note for the user (the folder is gone) is printed in the session, where
+# the client's screen does not cover it.
 #
 # The exit status tells run what happened: 0 when the session is gone (the
 # shell exited), whatever the shell's last status was, and 255, like a lost
@@ -345,8 +351,15 @@ close() {
 # plain shell.
 remote_script=$(
   cat <<'EOF'
-case $1 in /*) ;; *) set -- "$HOME/$1" "$2" ;; esac
-cd -- "$1" 2>/dev/null || { echo "$1 is gone, starting in ~"; cd; }
+case $1 in /*) ;; *) set -- "$HOME/$1" "$2" "$3" ;; esac
+note=
+cd -- "$1" 2>/dev/null || { note="$1 is gone, starting in ~"; cd; }
+session=$2 term=${3:-$TERM}
+plain() {
+  [ -z "$note" ] || echo "$note"
+  echo "$1: what runs in this workspace ends with the connection."
+  "$SHELL" -l
+}
 state=REMOTE_STATE
 if command -v tmux >/dev/null 2>&1 && mkdir -p "$state"; then
   cat >"$state/tmux.conf" <<"CONF"
@@ -362,7 +375,6 @@ set -g history-limit 50000
 set -g set-titles on
 set -g set-titles-string "#{pane_path}"
 CONF
-  session=$2
   set --
   for name in TERM COLORTERM TERM_PROGRAM TERM_PROGRAM_VERSION TMUX TMUX_PANE; do
     if eval "[ -n \"\${$name+set}\" ]"; then
@@ -371,18 +383,17 @@ CONF
       set -- -u "$name" "$@"
     fi
   done
-  tmux -S "$state/tmux.sock" -f "$state/tmux.conf" new-session -A -s "$session" -- env "$@" "$SHELL" -l
+  TERM=$term tmux -S "$state/tmux.sock" -f "$state/tmux.conf" new-session -A -s "$session" -- \
+    env "$@" sh -c "[ -z \"\$1\" ] || echo \"\$1\"; exec \"\$0\" -l" "$SHELL" "$note"
   status=$?
   if tmux -S "$state/tmux.sock" has-session -t "=$session" 2>/dev/null; then
     exit 255
   fi
   if [ "$status" -ne 0 ]; then
-    echo "tmux failed here: what runs in this workspace ends with the connection."
-    "$SHELL" -l
+    plain "tmux failed here"
   fi
 else
-  echo "No tmux here: what runs in this workspace ends with the connection."
-  "$SHELL" -l
+  plain "No tmux here"
 fi
 exit 0
 EOF
@@ -393,7 +404,7 @@ remote_script=${remote_script/REMOTE_STATE/$remote_state}
 # the host's login shell. Only single-quoted words, so fish and POSIX shells
 # read it the same.
 remote_command() {
-  printf '%s' "exec sh -c '$remote_script' sh '$1' '$2'"
+  printf '%s' "exec sh -c '$remote_script' sh '$1' '$2' '${TERM//\'/}'"
 }
 
 # Runs the workspace's shell. A local shell runs once; a remote one is
