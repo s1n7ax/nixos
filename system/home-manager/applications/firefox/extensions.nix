@@ -43,10 +43,9 @@
       installation_mode = "force_installed";
     };
 
-    # simple tab group
+    # simple tab group, blocked so Firefox uninstalls it
     "simple-tab-groups@drive4ik" = {
-      install_url = "https://addons.mozilla.org/firefox/downloads/latest/simple-tab-groups/latest.xpi";
-      installation_mode = "force_installed";
+      installation_mode = "blocked";
     };
   };
 }

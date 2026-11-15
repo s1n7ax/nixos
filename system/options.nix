@@ -613,8 +613,8 @@ with lib;
         enable = mkEnableOption "LibreWolf browser";
       };
 
-      firefox.startupTabGroups = {
-        enable = mkEnableOption "Firefox project tab groups on startup";
+      firefox.startupTabs = {
+        enable = mkEnableOption "Firefox project tabs on startup";
       };
     };
 
