@@ -9,6 +9,12 @@
 
     tools = {
       downloading.enable = true;
+      /**
+        The desktop's workspaces on this VM keep their shells in tmux
+        sessions here, so they outlive a closed or restarted desktop
+        terminal (see system/home-manager/applications/tmux/workspace.sh).
+      */
+      tmux.enable = true;
     };
 
     # No sound card in the VM: synthesis runs here, playback goes to the
