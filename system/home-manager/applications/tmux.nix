@@ -16,9 +16,13 @@ let
     set-clipboard on lets a program in a pane set the clipboard (OSC 52), as
     kitty's clipboard_control already lets programs outside tmux: text copied
     in a remote workspace's own tmux session reaches the clipboard that way.
+    get-clipboard off keeps it to setting: with set-clipboard on, tmux would
+    otherwise answer a program that asks for the clipboard with the last
+    text copied in tmux.
   */
   workspaceConfig = ''
     set -s set-clipboard on
+    set -s get-clipboard off
     bind p display-popup -E -w 60% -h 60% "${tmux-workspace} pick ${lib.escapeShellArgs workspaces.hosts}"
     bind w display-popup -E -w 40% -h 50% "${tmux-workspace} switch"
     bind n run-shell -b "${tmux-workspace} add local '~'"
