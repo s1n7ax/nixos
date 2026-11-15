@@ -3,10 +3,12 @@
 # home, a real tmux as the host's tmux (none on a host with $t/notmux-<host>;
 # on "broken" it cannot start, its socket path being a folder), TERM=xterm
 # whatever the terminal is, as a host that forces its own TERM on every login,
+# an SSH_CLIENT of its own per connection,
 # and, with -t, on a terminal of its own, as sshd would. Like the real one, it
 # outlives a lost terminal: only a signal or the remote command's exit ends
 # it, and `drop <host>` makes it lose the connection. A fake shell logs where
-# it started, the terminal variables it got (and a local one its PATH), then
+# it started, the terminal variables and the SSH_CLIENT it got (and a local
+# one its PATH), then
 # reads lines: "busy" runs a job,
 # "say <text>" prints said:<text>, "later <text>" does so two seconds later,
 # "cd <dir>" changes folder and reports it with OSC 7 (locally unencoded like
@@ -61,6 +63,7 @@ pass() {
 cat >"$t/bin/fakeshell" <<EOF
 #!$(command -v bash)
 echo "\${WS_WHERE:-local} \$PWD" >>"$shells"
+echo "\${SSH_CLIENT:-}" >>"$t/clients.\${WS_WHERE:-local}"
 echo "TERM=\$TERM COLORTERM=\${COLORTERM:-} TERM_PROGRAM=\${TERM_PROGRAM:-} TERM_PROGRAM_VERSION=\${TERM_PROGRAM_VERSION:-} TMUX=\${TMUX:-} TMUX_PANE=\${TMUX_PANE:-}" >"$t/env.\${WS_WHERE:-local}"
 if [[ -z \${WS_WHERE:-} ]]; then
   echo "\$PATH" >"$t/local-path"
@@ -113,7 +116,7 @@ if [[ -e "$t/down-\$host" ]]; then
   exit 255
 fi
 unset TMUX TMUX_PANE TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM XDG_STATE_HOME
-export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell" TERM=xterm
+export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell" TERM=xterm SSH_CLIENT="client \$\$"
 if [[ -e "$t/notmux-\$host" ]]; then
   PATH=\$(tr ':' '\\n' <<<"\$PATH" | grep -vxF "$tmux_dir" | paste -sd:)
 fi
@@ -334,6 +337,10 @@ wait_for '(($(started "dev $t/remote/dev/openrep") == 2))' "a second dev shell i
 [[ $(saved_sessions) == "local:- homelab:~/Workspace/nixos dev:~/openrep dev:~/openrep+2" ]] ||
   fail "saved sessions with two workspaces on a folder: '$(saved_sessions)'"
 pass "a second workspace on an open folder gets a session of its own"
+
+[[ $(sort -u "$t/clients.dev" | grep -c '^client ') == 2 ]] ||
+  fail "the dev shells' connections: $(paste -sd '|' "$t/clients.dev")"
+pass "each session's shell sees its own connection, not the one that started the host's tmux"
 
 tmux send-keys -t "$(window_of dev '~/openrep+2')" 0 Enter
 wait_for '[[ $(names) == "~ homelab:nixos dev:openrep" ]]' "the dev window to close after exit"

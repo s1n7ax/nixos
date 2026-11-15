@@ -341,6 +341,10 @@ close() {
 # and the client would then misread the keys this machine's tmux sends, such
 # as Home and End.
 #
+# Apart from those, a session's shell gets the environment of the connection
+# that started the server, so the variables that differ from one connection
+# to the next are taken from the one creating the session (update-environment).
+#
 # A note for the user (the folder is gone) is printed in the session, where
 # the client's screen does not cover it.
 #
@@ -374,6 +378,9 @@ set -as terminal-features ",*:RGB"
 set -g history-limit 50000
 set -g set-titles on
 set -g set-titles-string "#{pane_path}"
+set -ga update-environment SSH_CLIENT
+set -ga update-environment SSH_TTY
+set -ga update-environment XDG_SESSION_ID
 CONF
   set --
   for name in TERM COLORTERM TERM_PROGRAM TERM_PROGRAM_VERSION TMUX TMUX_PANE; do
