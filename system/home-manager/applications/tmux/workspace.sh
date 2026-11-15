@@ -331,6 +331,11 @@ close() {
 # set-clipboard on for that (see tmux.nix). The config is read when the
 # server starts.
 #
+# Alt+Shift+Tab is sent on by a key binding: this machine's tmux hands it to
+# the session's client as an extended key, and tmux (3.7b) then sends nothing
+# to a program that did not ask for extended keys, where a program in a local
+# workspace gets Shift+Tab. send-keys delivers it as tmux does a typed one.
+#
 # The shell gets the variables tmux sets for a pane (TERM, COLORTERM,
 # TERM_PROGRAM, TMUX and the like) as the connection's login shell has them
 # instead, so programs see the terminal they saw before workspaces had
@@ -381,6 +386,7 @@ set -g set-titles-string "#{pane_path}"
 set -ga update-environment SSH_CLIENT
 set -ga update-environment SSH_TTY
 set -ga update-environment XDG_SESSION_ID
+bind -n M-BTab send-keys M-BTab
 CONF
   set --
   for name in TERM COLORTERM TERM_PROGRAM TERM_PROGRAM_VERSION TMUX TMUX_PANE; do

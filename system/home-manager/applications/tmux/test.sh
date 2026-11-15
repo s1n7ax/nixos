@@ -15,8 +15,8 @@
 # kitty's integration, remotely percent-encoded like fish, with the home as
 # /home/me), "osc <url>" reports <url>, "title <text>" sets the terminal
 # title, "raw <file>" asks for extended keys as Neovim does and writes the
-# bytes it is sent for three seconds to <file>, anything else exits with that
-# code.
+# bytes it is sent for three seconds to <file>, "plain <file>" does so without
+# asking for extended keys, anything else exits with that code.
 # Run by the flake check `tmux-workspace` (in the Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
@@ -88,10 +88,10 @@ while read -r line; do
     ;;
   osc\ *) printf '\\033]7;%s\\033\\\\' "\${line#osc }" ;;
   title\ *) printf '\\033]2;%s\\033\\\\' "\${line#title }" ;;
-  raw\ *)
-    printf '\\033[>4;2m'
+  raw\ * | plain\ *)
+    [[ \$line == plain* ]] || printf '\\033[>4;2m'
     stty raw -echo
-    timeout --foreground 3 cat >"\${line#raw }"
+    timeout --foreground 3 cat >"\${line#* }"
     stty sane
     printf '\\033[>4;0m'
     ;;
@@ -280,6 +280,20 @@ keys_local=$(od -An -c "$t/keys.local")
 [[ $(od -An -c "$t/keys.homelab") == "$keys_local" ]] ||
   fail "keys reach a remote workspace as$(od -An -c "$t/keys.homelab"), a local one as$keys_local"
 pass "keys reach a program in a remote workspace as they do in a local one"
+
+tmux send-keys -t "$(window_id '~')" "plain $t/plain.local" Enter
+tmux send-keys -t "$(window_id homelab:nixos)" "plain $t/plain.homelab" Enter
+wait_for '[[ -e $t/plain.local && -e $t/plain.homelab ]]' "both shells to read plain keys"
+sleep 0.5
+for window in '~' homelab:nixos; do
+  tmux send-keys -t "$(window_id "$window")" a M-BTab b M-x Home
+done
+sleep 3
+plain_local=$(od -An -c "$t/plain.local")
+[[ $plain_local == *'a 033   [   Z   b'* ]] || fail "the local workspace was not sent Shift+Tab for Alt+Shift+Tab: $plain_local"
+[[ $(od -An -c "$t/plain.homelab") == "$plain_local" ]] ||
+  fail "plain keys reach a remote workspace as$(od -An -c "$t/plain.homelab"), a local one as$plain_local"
+pass "Alt+Shift+Tab reaches a program that did not ask for extended keys in a remote workspace"
 
 # --- Restart ------------------------------------------------------------------
 
