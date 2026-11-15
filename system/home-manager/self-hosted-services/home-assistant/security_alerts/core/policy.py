@@ -112,8 +112,11 @@ def base_level(
     top_floor: bool,
     asleep: bool,
     night: bool,
+    ignored: bool = False,
 ) -> str:
-    """Return the level an event gets before any quieting."""
+    """Return the level an event gets before any quieting; none for an ignored type."""
+    if ignored:
+        return NONE
     if mode is None:
         return home.level(kind, asleep, night)
     return mode.level(kind, top_floor)

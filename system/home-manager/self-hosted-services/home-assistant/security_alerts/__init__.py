@@ -27,6 +27,7 @@ from . import services, websocket
 from .const import (
     CARD_FILE,
     CONF_BURST_MINUTES,
+    CONF_DAILY_PUSH_LIMIT,
     CONF_DETECTION,
     CONF_DETECTION_ASLEEP_OR_NIGHT,
     CONF_DOOR_OTHER,
@@ -35,6 +36,7 @@ from .const import (
     CONF_ENTITY,
     CONF_FIRST_REVIEW_HOURS,
     CONF_HOME,
+    CONF_IGNORE_TYPES,
     CONF_LOG_DAYS,
     CONF_MODES,
     CONF_MOTION_MIN_SECONDS,
@@ -45,18 +47,21 @@ from .const import (
     CONF_NIGHT_START,
     CONF_NOTIFY_SERVICE,
     CONF_QUIET_AFTER_RESTART_ENTITY,
+    CONF_REPEAT_MINUTES,
     CONF_SIREN_ENTITY,
     CONF_SLEEP_ENTITY,
     CONF_SLEEP_THRESHOLD,
     CONF_SOUND,
     CONF_TOP_FLOORS,
     DEFAULT_BURST_MINUTES,
+    DEFAULT_DAILY_PUSH_LIMIT,
     DEFAULT_DURATIONS_HOURS,
     DEFAULT_FIRST_REVIEW_HOURS,
     DEFAULT_LOG_DAYS,
     DEFAULT_MOTION_MIN_SECONDS,
     DEFAULT_NIGHT_END,
     DEFAULT_NIGHT_START,
+    DEFAULT_REPEAT_MINUTES,
     DEFAULT_SLEEP_THRESHOLD,
     DOMAIN,
     FRONTEND_URL,
@@ -120,6 +125,18 @@ CONFIG_SCHEMA = probatio.Schema(
                 ): probatio.All(probatio.Coerce(float), probatio.Range(min=0)),
                 probatio.Optional(CONF_BURST_MINUTES, default=DEFAULT_BURST_MINUTES): probatio.All(
                     probatio.Coerce(float), probatio.Range(min=0)
+                ),
+                # A camera pushes each type once per this long, unless it rings.
+                probatio.Optional(
+                    CONF_REPEAT_MINUTES, default=DEFAULT_REPEAT_MINUTES
+                ): probatio.All(probatio.Coerce(float), probatio.Range(min=0)),
+                # The pushes sent per UTC day; the last of them are kept for rings.
+                probatio.Optional(
+                    CONF_DAILY_PUSH_LIMIT, default=DEFAULT_DAILY_PUSH_LIMIT
+                ): probatio.All(probatio.Coerce(int), probatio.Range(min=0)),
+                # Types that are never an alert in any mode, such as speech.
+                probatio.Optional(CONF_IGNORE_TYPES, default=[]): probatio.All(
+                    cv.ensure_list, [cv.string]
                 ),
                 probatio.Optional(CONF_LOG_DAYS, default=DEFAULT_LOG_DAYS): probatio.All(
                     probatio.Coerce(int), probatio.Range(min=1)
