@@ -5,7 +5,8 @@
 # and, with -t, on a terminal of its own, as sshd would. Like the real one, it
 # outlives a lost terminal: only a signal or the remote command's exit ends
 # it, and `drop <host>` makes it lose the connection. A fake shell logs where
-# it started (and a local one its PATH), then reads lines: "busy" runs a job,
+# it started, the terminal variables it got (and a local one its PATH), then
+# reads lines: "busy" runs a job,
 # "say <text>" prints said:<text>, "later <text>" does so two seconds later,
 # "cd <dir>" changes folder and reports it with OSC 7 (locally unencoded like
 # kitty's integration, remotely percent-encoded like fish, with the home as
@@ -57,6 +58,7 @@ pass() {
 cat >"$t/bin/fakeshell" <<EOF
 #!$(command -v bash)
 echo "\${WS_WHERE:-local} \$PWD" >>"$shells"
+echo "TERM=\$TERM COLORTERM=\${COLORTERM:-} TERM_PROGRAM=\${TERM_PROGRAM:-} TERM_PROGRAM_VERSION=\${TERM_PROGRAM_VERSION:-} TMUX=\${TMUX:-} TMUX_PANE=\${TMUX_PANE:-}" >"$t/env.\${WS_WHERE:-local}"
 if [[ -z \${WS_WHERE:-} ]]; then
   echo "\$PATH" >"$t/local-path"
 fi
@@ -100,7 +102,7 @@ if [[ -e "$t/down-\$host" ]]; then
   echo "ssh: connect to host \$host: Connection refused" >&2
   exit 255
 fi
-unset TMUX TMUX_PANE XDG_STATE_HOME
+unset TMUX TMUX_PANE TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM XDG_STATE_HOME
 export HOME="$t/remote/\$host" WS_WHERE=\$host SHELL="$t/bin/fakeshell"
 if [[ -e "$t/notmux-\$host" ]]; then
   PATH=\$(tr ':' '\\n' <<<"\$PATH" | grep -vxF "$tmux_dir" | paste -sd:)
@@ -131,6 +133,7 @@ EOF
 chmod +x "$t/bin/fakeshell" "$t/bin/ssh"
 
 cat >"$HOME/.tmux.conf" <<EOF
+set -g default-terminal screen-256color
 set -g base-index 1
 set -g renumber-windows on
 set -g default-shell "$t/bin/fakeshell"
@@ -246,6 +249,10 @@ wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 1))' "a ho
 [[ $(sessions dev) == "~/openrep" && $(sessions homelab) == "~/Workspace/nixos" ]] ||
   fail "sessions after add: dev '$(sessions dev)', homelab '$(sessions homelab)'"
 pass "add opens local and remote workspaces in their folders, in order, and remembers them"
+
+[[ $(<"$t/env.homelab") == "TERM=screen-256color COLORTERM= TERM_PROGRAM= TERM_PROGRAM_VERSION= TMUX= TMUX_PANE=" ]] ||
+  fail "a remote workspace's shell got $(<"$t/env.homelab")"
+pass "a remote workspace's shell sees the terminal of its connection, not its session's tmux"
 
 # --- Restart ------------------------------------------------------------------
 

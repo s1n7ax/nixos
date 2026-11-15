@@ -331,6 +331,13 @@ close() {
 # set-clipboard on for that (see tmux.nix). The config is read when the
 # server starts.
 #
+# The shell gets the variables tmux sets for a pane (TERM, COLORTERM,
+# TERM_PROGRAM, TMUX and the like) as the connection's login shell has them
+# instead, so programs see the terminal they saw before workspaces had
+# sessions, and a tmux command typed in the workspace still reaches the
+# host's own tmux server, not this one. env wants what it unsets before what
+# it sets.
+#
 # The exit status tells run what happened: 0 when the session is gone (the
 # shell exited), whatever the shell's last status was, and 255, like a lost
 # connection, when it is still running (it was detached by hand), so the
@@ -355,9 +362,18 @@ set -g history-limit 50000
 set -g set-titles on
 set -g set-titles-string "#{pane_path}"
 CONF
-  tmux -S "$state/tmux.sock" -f "$state/tmux.conf" new-session -A -s "$2" -- "$SHELL" -l
+  session=$2
+  set --
+  for name in TERM COLORTERM TERM_PROGRAM TERM_PROGRAM_VERSION TMUX TMUX_PANE; do
+    if eval "[ -n \"\${$name+set}\" ]"; then
+      eval "set -- \"\$@\" \"$name=\$$name\""
+    else
+      set -- -u "$name" "$@"
+    fi
+  done
+  tmux -S "$state/tmux.sock" -f "$state/tmux.conf" new-session -A -s "$session" -- env "$@" "$SHELL" -l
   status=$?
-  if tmux -S "$state/tmux.sock" has-session -t "=$2" 2>/dev/null; then
+  if tmux -S "$state/tmux.sock" has-session -t "=$session" 2>/dev/null; then
     exit 255
   fi
   if [ "$status" -ne 0 ]; then
