@@ -1,6 +1,7 @@
 # Tests tmux-workspace against a real tmux server in a throwaway HOME. A fake
 # ssh runs the remote command locally, with $t/remote/<host> as the host's
-# home, a real tmux as the host's tmux (none on a host with $t/notmux-<host>),
+# home, a real tmux as the host's tmux (none on a host with $t/notmux-<host>;
+# on "broken" it cannot start, its socket path being a folder),
 # and, with -t, on a terminal of its own, as sshd would. Like the real one, it
 # outlives a lost terminal: only a signal or the remote command's exit ends
 # it, and `drop <host>` makes it lose the connection. A fake shell logs where
@@ -150,13 +151,18 @@ names() {
   tmux list-windows -t =main -F '#{window_name}' | paste -sd ' '
 }
 
+# The window whose $1 (a tmux format) is $2.
+window_where() {
+  tmux list-windows -t =main -F "#{window_id} $1" | awk -v v="$2" '{ id = $1; sub(/^[^ ]* /, "") } $0 == v { print id }'
+}
+
 window_id() {
-  tmux list-windows -t =main -F '#{window_id} #{window_name}' | awk -v n="$1" '{ id = $1; sub(/^[^ ]* /, "") } $0 == n { print id }'
+  window_where '#{window_name}' "$1"
 }
 
 # The window of the workspace on host $1 attached to its session $2.
 window_of() {
-  tmux list-windows -t =main -F '#{window_id} #{@ws_host} #{@ws_session}' | awk -v w="$1 $2" '{ id = $1; sub(/^[^ ]* /, "") } $0 == w { print id }'
+  window_where '#{@ws_host} #{@ws_session}' "$1 $2"
 }
 
 screen() {

@@ -186,8 +186,9 @@ remote_sessions() {
 
 # The session a new workspace in the folder $2 on host $1 attaches to: the
 # first one of that folder still running on the host with no workspace open
-# on it (a closed workspace, which comes back this way), or else a new one.
-# When the host cannot be asked, the first one no workspace is open on.
+# on it (a closed workspace, which comes back this way), or else the first
+# one no workspace is open on: by then every running one of the folder is
+# open, so it is a new one, unless the host could not be asked.
 free_session() {
   local host=$1 base open running name n=1
   base=$(session_base "$2")
@@ -200,7 +201,7 @@ free_session() {
     fi
   done <<<"$running"
   name=$base
-  while grep -qxF "$host $name" <<<"$open" || grep -qxF "$name" <<<"$running"; do
+  while grep -qxF "$host $name" <<<"$open"; do
     name=$base+$((++n))
   done
   echo "$name"
