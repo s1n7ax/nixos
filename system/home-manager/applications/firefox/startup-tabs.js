@@ -27,13 +27,30 @@
   });
 
   /**
-   * Forgets the saved project tab groups that earlier versions of this script
-   * opened, so none are left in Firefox's saved groups list.
+   * Removes the project tab groups that earlier versions of this script
+   * opened: forgets their saved copies and ungroups any a restored session
+   * brought back, keeping their tabs.
    */
-  const forgetSavedGroups = () =>
+  const removeOldGroups = (windows) => {
     lazy.SessionStore.getSavedTabGroups()
       .filter(({ name }) => oldGroupLabels.has(name))
       .forEach(({ id }) => lazy.SessionStore.forgetSavedTabGroup(id));
+    windows
+      .flatMap((win) => win.gBrowser.tabGroups)
+      .filter(({ label }) => oldGroupLabels.has(label))
+      .forEach((group) => group.ungroupTabs());
+  };
+
+  /**
+   * The URLs a tab shows or is about to show. A restored tab that has not
+   * loaded yet still reports about:blank, so its session entry is read too.
+   */
+  const tabURLs = (tab) => {
+    const { entries = [], index = entries.length } = JSON.parse(
+      lazy.SessionStore.getTabState(tab),
+    );
+    return [tab.linkedBrowser.currentURI.spec, entries[index - 1]?.url];
+  };
 
   const openTabs = (window) => {
     const { gBrowser } = window;
@@ -47,15 +64,12 @@
           tab.linkedBrowser.userTypedValue ?? "about:blank",
         ].every((url) => blankURLs.has(url)),
     );
+    const windows = [...Services.wm.getEnumerator("navigator:browser")];
     const openURLs = new Set(
-      [...Services.wm.getEnumerator("navigator:browser")].flatMap((win) =>
-        win.gBrowser.tabs.map(
-          ({ linkedBrowser }) => linkedBrowser.currentURI.spec,
-        ),
-      ),
+      windows.flatMap((win) => win.gBrowser.tabs.flatMap(tabURLs)),
     );
 
-    forgetSavedGroups();
+    removeOldGroups(windows);
 
     const tabs = urls
       .filter((url) => !openURLs.has(url))
