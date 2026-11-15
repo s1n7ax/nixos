@@ -3,11 +3,16 @@
  * first browser window after Firefox starts.
  */
 (() => {
-  const urls = [
-    "https://github.com/s1n7ax/nixos/pulls",
-    "https://github.com/Syntxio/riya-mandiya/pulls",
-    "https://github.com/s1n7ax/openrep/pulls",
-    "https://claude.ai/code",
+  /**
+   * Each startup tab opens `url`, unless a tab whose URL starts with `openAs`
+   * is already open. Claude redirects a restored tab to its login page or a
+   * session, so any Claude tab counts.
+   */
+  const startupTabs = [
+    { url: "https://github.com/s1n7ax/nixos/pulls" },
+    { url: "https://github.com/Syntxio/riya-mandiya/pulls" },
+    { url: "https://github.com/s1n7ax/openrep/pulls" },
+    { url: "https://claude.ai/code", openAs: "https://claude.ai/" },
   ];
   const oldGroupLabels = new Set(["NixOS", "riya-mandiya", "openrep"]);
 
@@ -65,15 +70,18 @@
         ].every((url) => blankURLs.has(url)),
     );
     const windows = [...Services.wm.getEnumerator("navigator:browser")];
-    const openURLs = new Set(
-      windows.flatMap((win) => win.gBrowser.tabs.flatMap(tabURLs)),
-    );
+    const openURLs = windows
+      .flatMap((win) => win.gBrowser.tabs.flatMap(tabURLs))
+      .filter(Boolean);
 
     removeOldGroups(windows);
 
-    const tabs = urls
-      .filter((url) => !openURLs.has(url))
-      .map((url) => gBrowser.addTab(url, { triggeringPrincipal }));
+    const tabs = startupTabs
+      .filter(
+        ({ url, openAs = url }) =>
+          !openURLs.some((openURL) => openURL.startsWith(openAs)),
+      )
+      .map(({ url }) => gBrowser.addTab(url, { triggeringPrincipal }));
 
     if (!tabs.length) {
       return;
