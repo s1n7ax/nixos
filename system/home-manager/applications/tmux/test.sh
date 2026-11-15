@@ -8,7 +8,8 @@
 # "say <text>" prints said:<text>, "later <text>" does so two seconds later,
 # "cd <dir>" changes folder and reports it with OSC 7 (locally unencoded like
 # kitty's integration, remotely percent-encoded like fish, with the home as
-# /home/me), "osc <url>" reports <url>, anything else exits with that code.
+# /home/me), "osc <url>" reports <url>, "title <text>" sets the terminal
+# title, anything else exits with that code.
 # Run by the flake check `tmux-workspace` (in the Nix sandbox).
 #
 # Workspace folders are literal "~/<path>" strings, and wait_for evaluates its
@@ -37,7 +38,8 @@ trap 'tmux kill-server 2>/dev/null || true; reboot_hosts; rm -rf "$t"' EXIT
 export HOME=$t/home XDG_STATE_HOME=$t/state TMUX_TMPDIR=$t/sock
 export PATH=$t/bin:$PATH
 unset TMUX TMUX_PANE
-mkdir -p "$HOME" "$TMUX_TMPDIR" "$t/bin" "$t/remote/dev" "$t/remote/homelab" "$t/remote/bare"
+mkdir -p "$HOME" "$TMUX_TMPDIR" "$t/bin" "$t/remote/dev" "$t/remote/homelab" "$t/remote/bare" \
+  "$t/remote/broken/.local/state/tmux-workspace/tmux.sock"
 touch "$t/notmux-bare"
 state=$XDG_STATE_HOME/tmux-workspace/main
 shells=$t/shells.log
@@ -76,6 +78,7 @@ while read -r line; do
     fi
     ;;
   osc\ *) printf '\\033]7;%s\\033\\\\' "\${line#osc }" ;;
+  title\ *) printf '\\033]2;%s\\033\\\\' "\${line#title }" ;;
   *) exit "\${line:-0}" ;;
   esac
 done
@@ -330,13 +333,28 @@ wait_for 'screen "$(window_id homelab:nixos)" | grep -q "said:back"' "the reconn
 [[ $(started "homelab $t/remote/homelab/Workspace/nixos") == 2 ]] || fail "reconnecting started a new shell"
 pass "a dropped or refused connection keeps the workspace and reconnects to its running shell"
 
+remote_tmux homelab detach-client -s '=~/Workspace/nixos+2'
+wait_for '(($(attached homelab "~/Workspace/nixos+2") == 0))' "the homelab workspace to be detached"
+wait_for '(($(attached homelab "~/Workspace/nixos+2") == 1))' "the detached workspace to attach again"
+[[ $(names) == "~ dev:openrep homelab:nixos" && $(started "homelab $t/remote/homelab/Workspace/nixos") == 2 ]] ||
+  fail "a detached workspace was closed or restarted: '$(names)'"
+pass "a workspace detached from its running session attaches to it again"
+
+remote_tmux homelab list-keys -T root | grep -q WheelUpPane || fail "the session has no wheel binding to scroll back with"
+[[ $(remote_tmux homelab show-options -gv status) == off && $(remote_tmux homelab show-options -gv prefix) == None ]] ||
+  fail "the session's tmux shows a status line or takes a prefix key"
+pass "a session's tmux stays out of sight and keeps the wheel for its scrollback"
+
 mkdir -p "$t/remote/dev/other"
+touch "$t/down-dev"
 tmux-workspace add dev '~/other'
-wait_for '(($(started "dev $t/remote/dev/other") == 1))' "a dev shell in ~/other"
-tmux send-keys -t "$(window_id dev:other)" 255 Enter
-wait_for '[[ $(names) == "~ dev:openrep homelab:nixos" ]]' "the dev window to close after exit 255"
-[[ $(saved) == "local:~ dev:~/openrep homelab:~/Workspace/nixos" ]] || fail "saved after exit 255: '$(saved)'"
-pass "a remote shell exiting with 255 is an exit, not a lost connection"
+[[ $(saved_sessions) == "local:- dev:~/openrep homelab:~/Workspace/nixos+2 dev:~/other" ]] ||
+  fail "saved sessions after adding on an unreachable host: '$(saved_sessions)'"
+rm "$t/down-dev"
+wait_for '(($(started "dev $t/remote/dev/other") == 1))' "a dev shell in ~/other once the host is back"
+tmux send-keys -t "$(window_id dev:other)" 0 Enter
+wait_for '[[ $(names) == "~ dev:openrep homelab:nixos" ]]' "the dev window to close after exit"
+pass "a workspace added while its host is unreachable connects once the host is back"
 
 # --- A host without tmux --------------------------------------------------------
 
@@ -353,6 +371,27 @@ drop bare
 wait_for '(($(started "bare $t/remote/bare") == 2))' "a new shell after the connection dropped"
 [[ $(jobs_running) == 1 ]] || fail "a job outlived its connection on a host without tmux"
 pass "a host without tmux gets a plain shell that ends with the connection"
+
+tmux send-keys -t "$(window_id bare:sub)" "title git clone https://example.com/some/repo" Enter
+sleep 1
+tmux display-message -p '' >/dev/null
+sleep 1
+[[ $(names) == "~ dev:openrep homelab:nixos bare:sub" ]] || fail "a URL in a shell's title renamed the workspace: '$(names)'"
+[[ $(saved) == "local:~ dev:~/openrep homelab:~/Workspace/nixos bare:~/sub" ]] ||
+  fail "a URL in a shell's title was saved as the folder: '$(saved)'"
+pass "a URL in a plain shell's title is not taken for its folder"
+
+tmux send-keys -t "$(window_id bare:sub)" 255 Enter
+wait_for '[[ $(names) == "~ dev:openrep homelab:nixos" ]]' "the window to close after exit 255"
+[[ $(saved) == "local:~ dev:~/openrep homelab:~/Workspace/nixos" ]] || fail "saved after exit 255: '$(saved)'"
+pass "a remote shell exiting with 255 is an exit, not a lost connection"
+
+tmux-workspace add broken '~'
+wait_for '(($(started "broken $t/remote/broken") == 1))' "a shell on the host whose tmux cannot start"
+wait_for 'screen "$(window_id broken:~)" | grep -q "tmux failed here"' "the note that tmux failed"
+tmux send-keys -t "$(window_id broken:~)" 255 Enter
+wait_for '[[ $(names) == "~ dev:openrep homelab:nixos" ]]' "the window to close after exit 255"
+pass "a host whose tmux cannot start gets a plain shell"
 
 # --- Reordering -----------------------------------------------------------------
 
@@ -402,9 +441,9 @@ pass "kitty windows opening at once share one session"
 # --- A state file from before workspaces had sessions -------------------------------
 
 reset
-printf 'local\t~\nhomelab\t~/Workspace/nixos\ndev\t~/openrep\nhomelab\t~/Workspace/nixos\n' >"$state"
+printf 'local\t~\nhomelab\t~/Workspace/nixos\ndev\t~/openrep\nhomelab\t~/Workspace/nixos\ndev\t~/openrep\t~/openrep\n' >"$state"
 tmux-workspace start
-[[ $(saved_sessions) == "local:- homelab:~/Workspace/nixos dev:~/openrep homelab:~/Workspace/nixos+2" ]] ||
+[[ $(saved_sessions) == "local:- homelab:~/Workspace/nixos dev:~/openrep+2 homelab:~/Workspace/nixos+2 dev:~/openrep" ]] ||
   fail "sessions given to remembered workspaces: '$(saved_sessions)'"
 wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 2))' "a shell for each homelab workspace"
 [[ $(sessions homelab) == "~/Workspace/nixos ~/Workspace/nixos+2" ]] || fail "homelab sessions: '$(sessions homelab)'"

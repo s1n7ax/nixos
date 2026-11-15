@@ -78,12 +78,14 @@ home_pattern() {
 # a URL (see reported_dir): pane_path, set by the shell's OSC 7. The tmux
 # session on an SSH host keeps the OSC 7 to itself and sends the URL as its
 # terminal title instead (see remote_script), so there pane_title wins when it
-# looks like a URL. ':' ends a tmux modifier, so the pattern avoids it.
+# is a file URL; a plain shell's own title (a host without tmux) may hold any
+# other URL, of a command it runs. ':' ends a tmux modifier, so the pattern
+# avoids it.
 url_format() {
   if [[ $1 == local ]]; then
     echo '#{pane_path}'
   else
-    echo '#{?#{m:*//*/*,#{pane_title}},#{pane_title},#{pane_path}}'
+    echo '#{?#{m:file?//*/*,#{pane_title}},#{pane_title},#{pane_path}}'
   fi
 }
 
@@ -240,15 +242,25 @@ save() {
   ) 9>"$state.lock"
 }
 
+# Splits a state file line, "<host> <session> <dir>" or, from before
+# workspaces had sessions, "<host> <dir>", tab separated, into the caller's
+# host, remote ("-" for no session) and dir.
+read_entry() {
+  host=${1%%$'\t'*} dir=${1#*$'\t'} remote=-
+  if [[ $dir == *$'\t'* ]]; then
+    remote=${dir%%$'\t'*} dir=${dir#*$'\t'}
+  fi
+}
+
 # Rebuilds the session from the state file when it is missing. Of several
 # starts racing (kitty windows opening at once), only the one whose
 # new-session wins adds the other workspaces.
 #
 # A remote workspace remembered without a session (a state file from before
-# workspaces had one) gets the first session of its folder that no earlier
-# line has, without asking the host.
+# workspaces had one) gets the first session of its folder that no other line
+# has, without asking the host.
 start() {
-  local entries=() entry host rest remote dir n first=1
+  local entries=() entry host remote dir n first=1
   local -A taken=()
   if tmux has-session -t "=$session" 2>/dev/null; then
     return 0
@@ -260,18 +272,18 @@ start() {
     entries=($'local\t-\t~')
   fi
   for entry in "${entries[@]}"; do
-    host=${entry%%$'\t'*} rest=${entry#*$'\t'} remote=-
-    if [[ $rest == *$'\t'* ]]; then
-      remote=${rest%%$'\t'*} rest=${rest#*$'\t'}
-    fi
-    dir=$rest
+    read_entry "$entry"
+    taken["$host $remote"]=1
+  done
+  for entry in "${entries[@]}"; do
+    read_entry "$entry"
     if [[ $host != local && $remote == - ]]; then
       remote=$(session_base "$dir") n=1
       while [[ -n ${taken["$host $remote"]:-} ]]; do
         remote=${remote%+*}+$((++n))
       done
+      taken["$host $remote"]=1
     fi
-    taken["$host $remote"]=1
     if ((first)); then
       create_window "$host" "$dir" "$remote" new-session -s "$session" >/dev/null 2>&1 || return 0
       first=0
@@ -309,10 +321,14 @@ close() {
 # The shell runs in the tmux session $2, created in the folder when it is not
 # running yet, on a tmux server of its own, so the host's other tmux sessions
 # and its tmux config stay untouched. That tmux is invisible: no status line
-# and no keys or mouse bindings of its own, so this machine's tmux keeps every
-# key, and it passes extended keys and the mouse on to the programs. Its
-# config is read once, when the server starts: unbind-key -a fails the second
-# time and would drop the commands after it.
+# and no prefix key, so this machine's tmux keeps every key, and it passes
+# extended keys and the mouse on to the programs. It keeps tmux's mouse
+# bindings and the scrollback: this machine's tmux only sees the session's
+# screen, so the wheel scrolls back, and a drag copies, in the session, the
+# way they do in a local workspace (emacs keys, as tmux picks here). The copy
+# reaches this machine's clipboard through its tmux, which needs
+# set-clipboard on for that (see tmux.nix). The config is read when the
+# server starts.
 #
 # The exit status tells run what happened: 0 when the session is gone (the
 # shell exited), whatever the shell's last status was, and 255, like a lost
@@ -328,9 +344,8 @@ if command -v tmux >/dev/null 2>&1 && mkdir -p "$state"; then
   cat >"$state/tmux.conf" <<"CONF"
 set -g status off
 set -g prefix None
-unbind-key -a
-unbind-key -a -T root
 set -g mouse on
+set -g mode-keys emacs
 set -s escape-time 0
 set -s extended-keys on
 set -g default-terminal tmux-256color
