@@ -5,7 +5,7 @@
   ...
 }:
 let
-  startupTabGroups = config.features.web.firefox.startupTabGroups.enable;
+  startupTabs = config.features.web.firefox.startupTabs.enable;
 in
 {
   imports = [
@@ -34,9 +34,9 @@ in
 
   programs.firefox = {
     enable = config.features.web.enable;
-    package = lib.mkIf startupTabGroups (
+    package = lib.mkIf startupTabs (
       pkgs.firefox.override {
-        extraPrefsFiles = [ "${./startup-tab-groups.js}" ];
+        extraPrefsFiles = [ "${./startup-tabs.js}" ];
       }
     );
     configPath = "${config.xdg.configHome}/mozilla/firefox";
@@ -89,7 +89,7 @@ in
       };
       Homepage = {
         Locked = true;
-        StartPage = if startupTabGroups then "none" else "previous-session";
+        StartPage = if startupTabs then "none" else "previous-session";
       };
       HttpAllowlist = [ "192.168.1.110" ];
       HttpsOnlyMode = "force_enabled";

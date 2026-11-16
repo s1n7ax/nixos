@@ -1,14 +1,20 @@
 /**
- * Opens one tab group per project, each with its pull requests, issues and
- * Claude Code, in the first browser window after Firefox starts.
+ * Opens each project's pull requests and Claude Code as plain tabs in the
+ * first browser window after Firefox starts.
  */
 (() => {
-  const groups = [
-    { label: "NixOS", color: "blue", repo: "s1n7ax/nixos" },
-    { label: "riya-mandiya", color: "orange", repo: "Syntxio/riya-mandiya" },
-    { label: "openrep", color: "green", repo: "s1n7ax/openrep" },
+  /**
+   * Each startup tab opens `url`, unless a tab whose URL starts with `openAs`
+   * is already open. Claude redirects a restored tab to its login page or a
+   * session, so any Claude tab counts.
+   */
+  const startupTabs = [
+    { url: "https://github.com/s1n7ax/nixos/pulls" },
+    { url: "https://github.com/Syntxio/riya-mandiya/pulls" },
+    { url: "https://github.com/s1n7ax/openrep/pulls" },
+    { url: "https://claude.ai/code", openAs: "https://claude.ai/" },
   ];
-  const labels = new Set(groups.map(({ label }) => label));
+  const oldGroupLabels = new Set(["NixOS", "riya-mandiya", "openrep"]);
 
   const blankURLs = new Set([
     "about:blank",
@@ -26,16 +32,32 @@
   });
 
   /**
-   * Forgets the saved copies of the project groups. Firefox saves the groups
-   * that were open when it last quit, so without this the saved groups list
-   * gains a copy of every project group on each restart.
+   * Removes the project tab groups that earlier versions of this script
+   * opened: forgets their saved copies and ungroups any a restored session
+   * brought back, keeping their tabs.
    */
-  const forgetSavedGroups = () =>
+  const removeOldGroups = (windows) => {
     lazy.SessionStore.getSavedTabGroups()
-      .filter(({ name }) => labels.has(name))
+      .filter(({ name }) => oldGroupLabels.has(name))
       .forEach(({ id }) => lazy.SessionStore.forgetSavedTabGroup(id));
+    windows
+      .flatMap((win) => win.gBrowser.tabGroups)
+      .filter(({ label }) => oldGroupLabels.has(label))
+      .forEach((group) => group.ungroupTabs());
+  };
 
-  const openGroups = (window) => {
+  /**
+   * The URLs a tab shows or is about to show. A restored tab that has not
+   * loaded yet still reports about:blank, so its session entry is read too.
+   */
+  const tabURLs = (tab) => {
+    const { entries = [], index = entries.length } = JSON.parse(
+      lazy.SessionStore.getTabState(tab),
+    );
+    return [tab.linkedBrowser.currentURI.spec, entries[index - 1]?.url];
+  };
+
+  const openTabs = (window) => {
     const { gBrowser } = window;
     const triggeringPrincipal =
       Services.scriptSecurityManager.getSystemPrincipal();
@@ -47,31 +69,25 @@
           tab.linkedBrowser.userTypedValue ?? "about:blank",
         ].every((url) => blankURLs.has(url)),
     );
-    const existingLabels = new Set(
-      [...Services.wm.getEnumerator("navigator:browser")].flatMap((win) =>
-        win.gBrowser.tabGroups.map((group) => group.label),
-      ),
-    );
+    const windows = [...Services.wm.getEnumerator("navigator:browser")];
+    const openURLs = windows
+      .flatMap((win) => win.gBrowser.tabs.flatMap(tabURLs))
+      .filter(Boolean);
 
-    forgetSavedGroups();
+    removeOldGroups(windows);
 
-    const groupTabs = groups
-      .filter(({ label }) => !existingLabels.has(label))
-      .map(({ label, color, repo }) => {
-        const tabs = [
-          `https://github.com/${repo}/pulls`,
-          `https://github.com/${repo}/issues`,
-          "https://claude.ai/code",
-        ].map((url) => gBrowser.addTab(url, { triggeringPrincipal }));
-        gBrowser.addTabGroup(tabs, { label, color });
-        return tabs;
-      });
+    const tabs = startupTabs
+      .filter(
+        ({ url, openAs = url }) =>
+          !openURLs.some((openURL) => openURL.startsWith(openAs)),
+      )
+      .map(({ url }) => gBrowser.addTab(url, { triggeringPrincipal }));
 
-    if (!groupTabs.length) {
+    if (!tabs.length) {
       return;
     }
     if (blankTabs.includes(gBrowser.selectedTab)) {
-      gBrowser.selectedTab = groupTabs[0][0];
+      gBrowser.selectedTab = tabs[0];
     }
     blankTabs.forEach((tab) => gBrowser.removeTab(tab));
   };
@@ -82,7 +98,7 @@
   /**
    * Resolves once the window no longer shows Firefox's restore prompt, which
    * replaces the automatic restore after repeated crashes. The crashed session
-   * already holds the groups, so opening them next to the prompt would
+   * already holds the tabs, so opening them next to the prompt would
    * duplicate them when the user restores it.
    */
   const leftRestorePrompt = ({ gBrowser }) =>
@@ -109,13 +125,12 @@
   const startupTopic = "browser-delayed-startup-finished";
 
   /**
-   * Opens the groups once the first window has started up, Firefox has
+   * Opens the tabs once the first window has started up, Firefox has
    * restored whatever session state it brings into that window, the user has
    * answered the restore prompt if Firefox showed one, and the window has gone
    * idle. Firefox restores state even after a clean quit (the previous
-   * session's groups, pinned and closed tabs), and tabs added before that
-   * restore and idle are never attached to the tab strip, so their groups are
-   * dropped.
+   * session's pinned and closed tabs), and tabs added before that restore
+   * and idle are never attached to the tab strip.
    */
   const onStartup = (window) => {
     Services.obs.removeObserver(onStartup, startupTopic);
@@ -123,7 +138,7 @@
       .then(() => whenIdle(window))
       .then(() => leftRestorePrompt(window))
       .then(() => whenIdle(window))
-      .then(() => openGroups(window));
+      .then(() => openTabs(window));
   };
   Services.obs.addObserver(onStartup, startupTopic);
 })();
