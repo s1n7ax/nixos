@@ -6,7 +6,8 @@
 #   tmux-workspace attach              attach to the session, rebuilding it first
 #   tmux-workspace start               rebuild the session if it is missing
 #   tmux-workspace add <host> <dir>    open a workspace and switch to it
-#   tmux-workspace run <host> <dir>    the command every workspace window runs
+#   tmux-workspace run <host> <dir> <session>
+#                                      the command every workspace window runs
 #   tmux-workspace close <window-id>   forget a workspace and close its window
 #   tmux-workspace save                write the current workspaces to the state file
 #   tmux-workspace projects <host>     list the folders the picker offers on a host
@@ -17,6 +18,14 @@
 # <dir> is relative to the home directory, written "~" or "~/<path>", so one
 # entry works on hosts whose home paths differ. A folder outside home is
 # written as its absolute path.
+#
+# A workspace on an SSH host outlives this machine: its shell runs in a tmux
+# session on the host (<session>, "-" for a local workspace), so what runs in
+# it keeps running while this machine is off, asleep or disconnected, and the
+# workspace attaches to it again when it reconnects or is rebuilt. Closing the
+# workspace leaves the session running, and opening the same folder again
+# brings it back; only `exit` in its shell ends it. A host without tmux gets
+# a plain shell that ends with the connection.
 #
 # A workspace follows its shell: when the shell reports a new folder (OSC 7,
 # as fish does on every prompt), the window is renamed after it, and the
@@ -41,7 +50,7 @@ state=$state_dir/$session
 self=$(readlink -f "$0")
 
 usage() {
-  echo "usage: tmux-workspace attach|start|save|switch|list|pick [<host>...]|add <host> <dir>|run <host> <dir>|close <window-id>|projects <host>" >&2
+  echo "usage: tmux-workspace attach|start|save|switch|list|pick [<host>...]|add <host> <dir>|run <host> <dir> <session>|close <window-id>|projects <host>" >&2
   exit 2
 }
 
@@ -65,14 +74,30 @@ home_pattern() {
   fi
 }
 
+# The tmux format of the folder the shell of a workspace on $1 last reported,
+# a URL (see reported_dir): pane_path, set by the shell's OSC 7. The tmux
+# session on an SSH host keeps the OSC 7 to itself and sends the URL as its
+# terminal title instead (see remote_script), so there pane_title wins when it
+# is a file URL; a plain shell's own title (a host without tmux) may hold any
+# other URL, of a command it runs. ':' ends a tmux modifier, so the pattern
+# avoids it.
+url_format() {
+  if [[ $1 == local ]]; then
+    echo '#{pane_path}'
+  else
+    echo '#{?#{m:file?//*/*,#{pane_title}},#{pane_title},#{pane_path}}'
+  fi
+}
+
 # The window name format of a workspace on $1: window_name's rule applied to
-# the folder its shell last reported (pane_path, a URL; see reported_dir), or the
-# name it was opened with until the shell reports one. tmux cannot decode the
-# URL, so the name may hold %-escapes; its change is what triggers a save,
-# which works out the real folder. ':' ends a tmux modifier, so the patterns
-# avoid it.
+# the folder its shell last reported (see url_format), or the name it was
+# opened with until the shell reports one. tmux cannot decode the URL, so the
+# name may hold %-escapes; its change is what triggers a save, which works out
+# the real folder. ':' ends a tmux modifier, so the patterns avoid it.
 name_format() {
-  local prefix='' reported='#{pane_path}' path='#{s|^[^/]*//[^/]*||:pane_path}' home
+  local prefix='' reported path home
+  reported=$(url_format "$1")
+  path="#{s|^[^/]*//[^/]*||:$reported}"
   if [[ $1 == local ]]; then
     reported="#{m:*//$(uname -n)/*,#{pane_path}}"
   else
@@ -85,11 +110,12 @@ name_format() {
 # Runs a tmux command that creates a workspace window (new-session or
 # new-window, with its own flags) and prints the window's id.
 create_window() {
-  local host=$1 dir=$2 id
-  shift 2
+  local host=$1 dir=$2 remote=$3 id
+  shift 3
   id=$(PATH=$user_path "$tmux_bin" "$@" -d -P -F '#{window_id}' -n "$(window_name "$host" "$dir")" -c "$HOME" \
-    -- "$self" run "$host" "$dir") || return 1
+    -- "$self" run "$host" "$dir" "$remote") || return 1
   tmux set-option -w -t "$id" @ws_host "$host" \; set-option -w -t "$id" @ws_dir "$dir" \; \
+    set-option -w -t "$id" @ws_session "$remote" \; \
     set-option -w -t "$id" automatic-rename-format "$(name_format "$host")" \; \
     set-option -w -t "$id" automatic-rename on \; \
     set-hook -w -t "$id" window-renamed "run-shell -b '$self save'"
@@ -123,7 +149,62 @@ reported_dir() {
 }
 
 open_window() {
-  create_window "$1" "$2" new-window -a -t "=$session:{end}"
+  create_window "$1" "$2" "$3" new-window -a -t "=$session:{end}"
+}
+
+# The name of the first tmux session on an SSH host for a workspace opened in
+# the folder $1: the folder itself, with every byte outside [A-Za-z0-9/~-]
+# written as _XX (hex). tmux rewrites "." and ":" in a session name, and the
+# name is single-quoted in remote_command; this keeps it the same everywhere.
+# Further workspaces on the folder get "+2", "+3", ... appended, which the
+# encoding never produces.
+session_base() {
+  local LC_ALL=C dir=$1 name='' char i
+  for ((i = 0; i < ${#dir}; i++)); do
+    char=${dir:i:1}
+    if [[ $char != [A-Za-z0-9/~-] ]]; then
+      printf -v char '_%02X' "'$char"
+    fi
+    name+=$char
+  done
+  echo "$name"
+}
+
+# Where the tmux server holding a host's workspace sessions lives, as sh code
+# for the host. Outside /run/user/<uid>, which a host without linger removes
+# at logout, taking the socket (and the way back to the sessions) with it.
+# shellcheck disable=SC2016
+remote_state='${XDG_STATE_HOME:-$HOME/.local/state}/tmux-workspace'
+
+# Lists the workspace sessions running on host $1, in the order they were
+# numbered. Fails when the host cannot be reached.
+remote_sessions() {
+  ssh -o ConnectTimeout=5 "$1" sh -s 2>/dev/null \
+    <<<"tmux -S \"$remote_state/tmux.sock\" list-sessions -F \"#{session_name}\" 2>/dev/null; exit 0" |
+    sort -t+ -k2,2n
+}
+
+# The session a new workspace in the folder $2 on host $1 attaches to: the
+# first one of that folder still running on the host with no workspace open
+# on it (a closed workspace, which comes back this way), or else the first
+# one no workspace is open on: by then every running one of the folder is
+# open, so it is a new one, unless the host could not be asked.
+free_session() {
+  local host=$1 base open running name n=1
+  base=$(session_base "$2")
+  open=$(tmux list-windows -t "=$session" -F '#{@ws_host} #{@ws_session}' 2>/dev/null) || true
+  running=$(remote_sessions "$host") || true
+  while read -r name; do
+    if [[ $name == "$base" || $name == "$base"+* ]] && ! grep -qxF "$host $name" <<<"$open"; then
+      echo "$name"
+      return 0
+    fi
+  done <<<"$running"
+  name=$base
+  while grep -qxF "$host $name" <<<"$open"; do
+    name=$base+$((++n))
+  done
+  echo "$name"
 }
 
 # Writes the session's workspaces to the state file, leaving out windows
@@ -134,37 +215,54 @@ open_window() {
 # folder its shell last reported, which also becomes its @ws_dir, or else the
 # one it was opened in.
 # Fields are space separated because tmux prints a tab as "_" without a UTF-8
-# locale; the folder comes last, so spaces inside it survive.
+# locale; the folder comes last, so spaces inside it survive. A line of the
+# state file is "<host> <session> <dir>", tab separated.
 save() {
-  local windows id host dir url reported
+  local windows id host remote dir url reported
   if [[ -n ${1:-} ]]; then
     tmux set-option -w -u -t "$1" @ws_host
   fi
   mkdir -p "$state_dir"
   (
     flock 9
-    windows=$(tmux list-windows -t "=$session" -F '#{window_id} #{?@ws_host,#{@ws_host},-} #{@ws_dir}' 2>/dev/null) || exit 0
+    windows=$(tmux list-windows -t "=$session" \
+      -F '#{window_id} #{?@ws_host,#{@ws_host},-} #{?@ws_session,#{@ws_session},-} #{@ws_dir}' 2>/dev/null) || exit 0
     tmp=$(mktemp "$state.XXXXXX")
-    while read -r id host dir; do
+    while read -r id host remote dir; do
       if [[ $host != - ]]; then
-        url=$(tmux display-message -p -t "$id" '#{pane_path}' 2>/dev/null) || true
+        url=$(tmux display-message -p -t "$id" "$(url_format "$host")" 2>/dev/null) || true
         reported=$(reported_dir "$host" "$url")
         if [[ -n $reported && $reported != "$dir" ]]; then
           dir=$reported
           tmux set-option -w -t "$id" @ws_dir "$dir" 2>/dev/null || true
         fi
-        printf '%s\t%s\n' "$host" "$dir"
+        printf '%s\t%s\t%s\n' "$host" "$remote" "$dir"
       fi
     done <<<"$windows" >"$tmp"
     mv -f "$tmp" "$state"
   ) 9>"$state.lock"
 }
 
+# Splits a state file line, "<host> <session> <dir>" or, from before
+# workspaces had sessions, "<host> <dir>", tab separated, into the caller's
+# host, remote ("-" for no session) and dir.
+read_entry() {
+  host=${1%%$'\t'*} dir=${1#*$'\t'} remote=-
+  if [[ $dir == *$'\t'* ]]; then
+    remote=${dir%%$'\t'*} dir=${dir#*$'\t'}
+  fi
+}
+
 # Rebuilds the session from the state file when it is missing. Of several
 # starts racing (kitty windows opening at once), only the one whose
 # new-session wins adds the other workspaces.
+#
+# A remote workspace remembered without a session (a state file from before
+# workspaces had one) gets the first session of its folder that no other line
+# has, without asking the host.
 start() {
-  local entries=() entry
+  local entries=() entry host remote dir n first=1
+  local -A taken=()
   if tmux has-session -t "=$session" 2>/dev/null; then
     return 0
   fi
@@ -172,12 +270,27 @@ start() {
     mapfile -t entries <"$state"
   fi
   if ((${#entries[@]} == 0)); then
-    entries=($'local\t~')
+    entries=($'local\t-\t~')
   fi
-  entry=${entries[0]}
-  create_window "${entry%%$'\t'*}" "${entry#*$'\t'}" new-session -s "$session" >/dev/null 2>&1 || return 0
-  for entry in "${entries[@]:1}"; do
-    open_window "${entry%%$'\t'*}" "${entry#*$'\t'}" >/dev/null
+  for entry in "${entries[@]}"; do
+    read_entry "$entry"
+    taken["$host $remote"]=1
+  done
+  for entry in "${entries[@]}"; do
+    read_entry "$entry"
+    if [[ $host != local && $remote == - ]]; then
+      remote=$(session_base "$dir") n=1
+      while [[ -n ${taken["$host $remote"]:-} ]]; do
+        remote=${remote%+*}+$((++n))
+      done
+      taken["$host $remote"]=1
+    fi
+    if ((first)); then
+      create_window "$host" "$dir" "$remote" new-session -s "$session" >/dev/null 2>&1 || return 0
+      first=0
+    else
+      open_window "$host" "$dir" "$remote" >/dev/null
+    fi
   done
   save
 }
@@ -188,8 +301,11 @@ attach() {
 }
 
 add() {
-  local id
-  id=$(open_window "$1" "$2")
+  local id remote=-
+  if [[ $1 != local ]]; then
+    remote=$(free_session "$1" "$2")
+  fi
+  id=$(open_window "$1" "$2" "$remote")
   tmux select-window -t "$id"
   save
 }
@@ -199,24 +315,121 @@ close() {
   tmux kill-window -t "$1"
 }
 
-# The shell a remote workspace runs in the folder $1 (relative to home, or
-# absolute), as one command line for the host's login shell. Only
-# single-quoted words, so fish and POSIX shells read it the same. It ends with
-# `exit 0` whatever the shell's last status was, so an exit 255 from ssh always
-# means a lost connection.
+# What a remote workspace runs on its host, as sh code without a single quote
+# (see remote_command): $1 is its folder (relative to home, or absolute), $2
+# its session and $3 the TERM of this machine's pane.
+#
+# The shell runs in the tmux session $2, created in the folder when it is not
+# running yet, on a tmux server of its own, so the host's other tmux sessions
+# and its tmux config stay untouched. That tmux is invisible: no status line
+# and no prefix key, so this machine's tmux keeps every key, and it passes
+# extended keys and the mouse on to the programs. It keeps tmux's mouse
+# bindings and the scrollback: this machine's tmux only sees the session's
+# screen, so the wheel scrolls back, and a drag copies, in the session, the
+# way they do in a local workspace (emacs keys, as tmux picks here). The copy
+# reaches this machine's clipboard through its tmux, which needs
+# set-clipboard on for that (see tmux.nix). The config is read when the
+# server starts.
+#
+# Alt+Shift+Tab is sent on by a key binding: this machine's tmux hands it to
+# the session's client as an extended key, and tmux (3.7b) then sends nothing
+# to a program that did not ask for extended keys, where a program in a local
+# workspace gets Shift+Tab. send-keys delivers it as tmux does a typed one.
+#
+# The shell gets the variables tmux sets for a pane (TERM, COLORTERM,
+# TERM_PROGRAM, TMUX and the like) as the connection's login shell has them
+# instead, so programs see the terminal they saw before workspaces had
+# sessions, and a tmux command typed in the workspace still reaches the
+# host's own tmux server, not this one. env wants what it unsets before what
+# it sets. The tmux client itself runs with $3 as its TERM: a host may force
+# a TERM of its own on every login (these do, see system/nixos/core/env.nix),
+# and the client would then misread the keys this machine's tmux sends, such
+# as Home and End.
+#
+# Apart from those, a session's shell gets the environment of the connection
+# that started the server, so the variables that differ from one connection
+# to the next are taken from the one creating the session (update-environment).
+#
+# A note for the user (the folder is gone) is printed in the session, where
+# the client's screen does not cover it.
+#
+# The exit status tells run what happened: 0 when the session is gone (the
+# shell exited), whatever the shell's last status was, and 255, like a lost
+# connection, when it is still running (it was detached by hand), so the
+# workspace attaches again. A host without tmux, or where tmux fails, gets a
+# plain shell.
+remote_script=$(
+  cat <<'EOF'
+case $1 in /*) ;; *) set -- "$HOME/$1" "$2" "$3" ;; esac
+note=
+cd -- "$1" 2>/dev/null || { note="$1 is gone, starting in ~"; cd; }
+session=$2 term=${3:-$TERM}
+plain() {
+  [ -z "$note" ] || echo "$note"
+  echo "$1: what runs in this workspace ends with the connection."
+  "$SHELL" -l
+}
+state=REMOTE_STATE
+if command -v tmux >/dev/null 2>&1 && mkdir -p "$state"; then
+  cat >"$state/tmux.conf" <<"CONF"
+set -g status off
+set -g prefix None
+set -g mouse on
+set -g mode-keys emacs
+set -s escape-time 0
+set -s extended-keys on
+set -g default-terminal tmux-256color
+set -as terminal-features ",*:RGB"
+set -g history-limit 50000
+set -g set-titles on
+set -g set-titles-string "#{pane_path}"
+set -ga update-environment SSH_CLIENT
+set -ga update-environment SSH_TTY
+set -ga update-environment XDG_SESSION_ID
+bind -n M-BTab send-keys M-BTab
+CONF
+  set --
+  for name in TERM COLORTERM TERM_PROGRAM TERM_PROGRAM_VERSION TMUX TMUX_PANE; do
+    if eval "[ -n \"\${$name+set}\" ]"; then
+      eval "set -- \"\$@\" \"$name=\$$name\""
+    else
+      set -- -u "$name" "$@"
+    fi
+  done
+  TERM=$term tmux -S "$state/tmux.sock" -f "$state/tmux.conf" new-session -A -s "$session" -- \
+    env "$@" sh -c "[ -z \"\$1\" ] || echo \"\$1\"; exec \"\$0\" -l" "$SHELL" "$note"
+  status=$?
+  if tmux -S "$state/tmux.sock" has-session -t "=$session" 2>/dev/null; then
+    exit 255
+  fi
+  if [ "$status" -ne 0 ]; then
+    plain "tmux failed here"
+  fi
+else
+  plain "No tmux here"
+fi
+exit 0
+EOF
+)
+remote_script=${remote_script/REMOTE_STATE/$remote_state}
+
+# remote_script for the folder $1 and the session $2, as one command line for
+# the host's login shell. Only single-quoted words, so fish and POSIX shells
+# read it the same.
 remote_command() {
-  printf '%s' "exec sh -c 'case \$1 in /*) ;; *) set -- \"\$HOME/\$1\" ;; esac; cd -- \"\$1\" 2>/dev/null || { echo \"\$1 is gone, starting in ~\"; cd; }; \"\$SHELL\" -l; exit 0' sh '$1'"
+  printf '%s' "exec sh -c '$remote_script' sh '$1' '$2' '${TERM//\'/}'"
 }
 
 # Runs the workspace's shell. A local shell runs once; a remote one is
-# reconnected while ssh fails to connect or loses the connection (exit 255).
+# reconnected, to its session when the host still has it, while ssh fails to
+# connect or loses the connection (exit 255).
 #
 # When the shell ends on its own (`exit`), the workspace is forgotten. When
 # tmux killed the window or itself, on_hangup ends this script first, and the
 # pane lookup in forget_self fails as a second guard, so nothing is written.
 # Ctrl-C only cuts the reconnect wait short.
 run() {
-  local host=$1 dir=$2 rel status shell_pid=
+  local host=$1 dir=$2 remote=$3 rel status shell_pid=
   case $dir in
   \~ | \~/*) rel=${dir#\~} rel=${rel#/} ;;
   *) rel=$dir ;;
@@ -236,7 +449,7 @@ run() {
     while :; do
       status=0
       run_shell ssh -t -o ConnectTimeout=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-        "$host" "$(remote_command "$rel")" || status=$?
+        "$host" "$(remote_command "$rel" "$remote")" || status=$?
       if ((status != 255)); then
         break
       fi
@@ -335,9 +548,13 @@ case ${1:-} in
 attach | start | save | switch | list)
   "$1"
   ;;
-add | run)
+add)
   (($# == 3)) || usage
-  "$1" "$2" "$3"
+  add "$2" "$3"
+  ;;
+run)
+  (($# == 4)) || usage
+  run "$2" "$3" "$4"
   ;;
 close | projects)
   (($# == 2)) || usage

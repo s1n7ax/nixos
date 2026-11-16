@@ -13,6 +13,7 @@
   coreutils,
   findutils,
   fzf,
+  gnugrep,
   gnused,
   tmux,
   util-linux,
@@ -25,6 +26,7 @@ writeShellApplication {
         coreutils
         findutils
         fzf
+        gnugrep
         gnused
         tmux
         util-linux
