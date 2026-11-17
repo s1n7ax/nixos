@@ -6,7 +6,7 @@ The base URL comes from the Frigate integration's config entry.
 from __future__ import annotations
 
 import contextlib
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Iterable, Mapping
 from typing import Any
 
 import aiohttp
@@ -103,6 +103,19 @@ class FrigateClient:
         if not isinstance(event, dict):
             raise FrigateError(f"api/events/{event_id} is not an object")
         return event
+
+    async def events(self, camera: str, labels: Iterable[str], limit: int) -> list[Any]:
+        """The camera's newest `limit` events with one of `labels`, newest first."""
+        path = "api/events"
+        params = {"cameras": camera, "labels": ",".join(sorted(labels)), "limit": limit}
+        body, _ = await self._get(path, params)
+        try:
+            events = json_loads(body)
+        except ValueError as err:
+            raise FrigateError(f"{path} is not JSON: {err}") from err
+        if not isinstance(events, list):
+            raise FrigateError(f"{path} is not a list")
+        return events
 
     async def _event_snapshot(
         self, event_id: str, *, bbox: int, crop: int
