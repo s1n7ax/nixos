@@ -12,7 +12,7 @@ import logging
 import math
 import time
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import time as dt_time
 from datetime import timedelta
@@ -83,6 +83,7 @@ from .const import (
 from .core.burst import BurstWindow
 from .core.decide import SENT, Decision, decide
 from .core.geometry import Box, Size, scale_box, square_crop, thumbnail_crop
+from .core.parked import HISTORY_EVENTS, VEHICLES, Point, is_parked
 from .core.policy import (
     DETECTION,
     DOOR,
@@ -142,6 +143,7 @@ class AlertEvent:
     snapshot_box: Box | None = None
     clip_start: float | None = None
     clip_end: float | None = None
+    parked: bool = False
 
 
 @dataclass
@@ -547,6 +549,7 @@ class SecurityAlerts:
             burst=self.burst,
             pushes=self.pushes,
             now=now,
+            parked=event.parked,
         )
         if record and decision.rings:
             self.burst.record(event.type, now)
@@ -1015,9 +1018,14 @@ class SecurityAlerts:
         event_id: str,
         start_time: float,
         snapshot: tuple[float, Box] | None,
+        box: Box | None = None,
+        path: Sequence[Point] = (),
     ) -> None:
+        """Alert one Frigate detection; `box` is where the object is now, in detect
+        pixels, and `path` Frigate's path points so far."""
         self._pending_ends[event_id] = _PendingEnd()
         try:
+            parked = await self._async_parked(camera, label, event_id, start_time, box, path)
             event = AlertEvent(
                 kind=DETECTION,
                 type=label,
@@ -1029,12 +1037,46 @@ class SecurityAlerts:
                 snapshot_time=snapshot[0] if snapshot else None,
                 snapshot_box=snapshot[1] if snapshot else None,
                 clip_start=start_time - CLIP_PRE_SECONDS,
+                parked=parked,
             )
             await self.async_handle(event)
         finally:
             pending = self._pending_ends.pop(event_id, None)
         if pending is not None and (pending.end is not None or pending.snapshot is not None):
             await self._async_apply_end(event_id, pending.end, pending.snapshot)
+
+    async def _async_parked(
+        self,
+        camera: str,
+        label: str,
+        event_id: str,
+        start_time: float,
+        box: Box | None,
+        path: Sequence[Point],
+    ) -> bool:
+        """Whether a detection is a parked vehicle that Frigate found again."""
+        size = self.frigate.detect_size(camera)
+        if box is None or size is None:
+            return False
+
+        async def earlier() -> list[Any] | None:
+            try:
+                return await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
+            except FrigateError as err:
+                _LOGGER.warning(
+                    "Could not read Frigate's earlier events, alerting as usual: %s", err
+                )
+                return None
+
+        return await is_parked(
+            label=label,
+            box=scale_box(box, size, (1, 1)),
+            path=path,
+            event_id=event_id,
+            start_time=start_time,
+            now=time.time(),
+            earlier=earlier,
+        )
 
     async def async_detection_ended(
         self, event_id: str, end_time: float | None, snapshot: tuple[float, Box] | None

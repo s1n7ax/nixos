@@ -1,11 +1,12 @@
 """Turn an event's base level into one delivery.
 
-Order: base level, Pause, Snooze, Do-not-disturb, quiet after restart, burst,
+Order: base level, parked vehicle, Pause, Snooze, Do-not-disturb, quiet after restart, burst,
 repeat, daily push limit. Each step can only make the delivery quieter, so the
 quietest wins.
 
 A base of review_only is logged for the review view and never sent, so it skips
-every step after the base: no quieting changes it and it never rings.
+every step after the base: no quieting changes it and it never rings. A parked
+vehicle that Frigate found again is review only the same way.
 """
 
 from __future__ import annotations
@@ -32,7 +33,8 @@ class Decision:
     """How one event is delivered.
 
     `delivery` is none (not an alert at all), review_only (logged for the review
-    view, not sent: its level, a repeat, or the day's pushes are used up), paused
+    view, not sent: its level, a parked vehicle, a repeat, or the day's pushes are
+    used up), paused
     (logged, not sent, marked paused), silent, regular, popup (a critical burst
     repeat that pops up without ringing) or critical.
     `rings` says the burst window restarts for this type.
@@ -67,6 +69,7 @@ def decide(
     burst: BurstWindow,
     pushes: PushBudget,
     now: float,
+    parked: bool = False,
 ) -> Decision:
     """Return the delivery for one event. Does not record the ring or the push."""
     if base not in LEVELS:
@@ -75,6 +78,9 @@ def decide(
     if base in (NONE, REVIEW_ONLY):
         # Nothing is sent, so no quiet entry or burst window applies.
         return Decision(base, base, "; ".join(steps))
+    if parked:
+        steps.append("parked vehicle: review only")
+        return Decision(REVIEW_ONLY, base, "; ".join(steps))
 
     entry = strongest(quiet_entries, event_type, camera, now)
     quiet_id = entry.id if entry else None
