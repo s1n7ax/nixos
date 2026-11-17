@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from core.burst import BurstWindow
@@ -12,6 +14,7 @@ from core.parked import (
     Sighting,
     ended_here,
     iou,
+    is_parked,
     path_points,
     seen_for_a_while,
     sightings,
@@ -167,3 +170,54 @@ def test_a_parked_vehicle_is_review_only_even_when_paused():
 
 def test_a_vehicle_that_is_not_parked_alerts_as_before():
     assert run(CRITICAL, parked=False).delivery == CRITICAL
+
+
+def check(label="motorcycle", box=FOUND_AGAIN_BOX, path=FOUND_AGAIN_PATH, events=(PARKED_BIKE,)):
+    """is_parked for the 01:31 detection; `events` None means Frigate could not be read."""
+    calls = []
+
+    async def earlier():
+        calls.append(True)
+        return None if events is None else list(events)
+
+    parked = asyncio.run(
+        is_parked(
+            label=label,
+            box=box,
+            path=path,
+            event_id=FOUND_AGAIN_ID,
+            start_time=FOUND_AGAIN_START,
+            now=FOUND_AGAIN_AT,
+            earlier=earlier,
+        )
+    )
+    return parked, len(calls)
+
+
+def test_is_parked_for_the_bike_found_again():
+    assert check() == (True, 1)
+
+
+def test_is_parked_alerts_as_usual_when_frigate_cannot_be_read():
+    assert check(events=None) == (False, 1)
+
+
+def test_is_parked_never_for_a_person_at_the_same_place():
+    assert check(label="person") == (False, 0)
+
+
+def test_is_parked_not_without_an_earlier_vehicle_there():
+    assert check(events=()) == (False, 1)
+
+
+def test_is_parked_does_not_ask_frigate_for_a_moving_vehicle():
+    assert check(box=PARKED_CAR_BOX, path=ARRIVING_CAR_PATH) == (False, 0)
+
+
+def test_a_vehicle_moving_up_from_below_is_not_still():
+    # Wheeled in from the bottom of the frame: its first point is a third of its
+    # height below where it stands now.
+    x1, y1, x2, y2 = FOUND_AGAIN_BOX
+    path = [((x1 + x2) / 2, y2 + (y2 - y1) / 3), ((x1 + x2) / 2, y2)]
+    assert not still(FOUND_AGAIN_BOX, path)
+    assert check(path=path) == (False, 0)

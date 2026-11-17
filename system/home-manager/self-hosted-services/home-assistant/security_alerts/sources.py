@@ -103,16 +103,17 @@ class SnapshotMemory:
 def _snapshot(after: dict[str, Any]) -> tuple[float, Box] | None:
     snapshot = after.get("snapshot") or {}
     frame_time = snapshot.get("frame_time")
-    box = snapshot.get("box")
-    if not isinstance(frame_time, int | float) or not isinstance(box, list) or len(box) != 4:
+    box = _box(snapshot.get("box"))
+    if not isinstance(frame_time, int | float) or box is None:
         return None
-    return float(frame_time), (float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+    return float(frame_time), box
 
 
 def _box(box: Any) -> Box | None:
+    """Four numbers from a Frigate payload as a box; None for anything else."""
     if not isinstance(box, list) or len(box) != 4:
         return None
-    if not all(isinstance(v, int | float) for v in box):
+    if not all(isinstance(v, int | float) and not isinstance(v, bool) for v in box):
         return None
     return (float(box[0]), float(box[1]), float(box[2]), float(box[3]))
 

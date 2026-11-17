@@ -13,7 +13,7 @@ Frigate's path points are the bottom centre of the box.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,8 +31,10 @@ MEMORY_SECONDS = 24 * 60 * 60
 SAME_PLACE_IOU = 0.5
 # A parked vehicle's box flickers; its points may fall this share outside it.
 POINT_GROWTH = 0.1
-# A still vehicle's path points stay this share of its box's width and height
-# from where it stands now; a flickering box moves its bottom up by a third.
+# A still vehicle's path points stay this share of its box's width to either side
+# of where it stands now, and this share of its height above it: a flickering box
+# keeps only the vehicle's top, which lifts its bottom by up to a third. Below it,
+# only POINT_GROWTH.
 STILL_WIDTH_SHARE = 0.4
 STILL_HEIGHT_SHARE = 0.5
 # How many of the camera's newest vehicle events to look through.
@@ -71,7 +73,8 @@ def still(box: Box, path: Iterable[Point]) -> bool:
     x, y = (box[0] + box[2]) / 2, box[3]
     width, height = box[2] - box[0], box[3] - box[1]
     return all(
-        abs(px - x) <= width * STILL_WIDTH_SHARE and abs(py - y) <= height * STILL_HEIGHT_SHARE
+        abs(px - x) <= width * STILL_WIDTH_SHARE
+        and -height * STILL_HEIGHT_SHARE <= py - y <= height * POINT_GROWTH
         for px, py in path
     )
 
@@ -129,3 +132,30 @@ def sightings(events: Iterable[Any], event_id: str, start_time: float) -> list[S
         x, y, w, h = box
         found.append(Sighting((x, y, x + w, y + h), points[-1], ended))
     return found
+
+
+async def is_parked(
+    *,
+    label: str,
+    box: Box | None,
+    path: Iterable[Point],
+    event_id: str,
+    start_time: float,
+    now: float,
+    earlier: Callable[[], Awaitable[Iterable[Any] | None]],
+) -> bool:
+    """Whether a detection is a parked vehicle that Frigate found again.
+
+    `box` is where it is now, as fractions of the frame. `earlier` fetches the
+    camera's newest vehicle events from Frigate's `api/events`, or None when they
+    cannot be read; the detection then alerts as usual. It is only called for a
+    still vehicle first seen just now.
+    """
+    if label not in VEHICLES or box is None or not still(box, path):
+        return False
+    if seen_for_a_while(start_time, now):
+        return True
+    events = await earlier()
+    if events is None:
+        return False
+    return any(ended_here(s, box, now) for s in sightings(events, event_id, start_time))

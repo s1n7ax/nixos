@@ -83,15 +83,7 @@ from .const import (
 from .core.burst import BurstWindow
 from .core.decide import SENT, Decision, decide
 from .core.geometry import Box, Size, scale_box, square_crop, thumbnail_crop
-from .core.parked import (
-    HISTORY_EVENTS,
-    VEHICLES,
-    Point,
-    ended_here,
-    seen_for_a_while,
-    sightings,
-    still,
-)
+from .core.parked import HISTORY_EVENTS, VEHICLES, Point, is_parked
 from .core.policy import (
     DETECTION,
     DOOR,
@@ -1064,20 +1056,27 @@ class SecurityAlerts:
     ) -> bool:
         """Whether a detection is a parked vehicle that Frigate found again."""
         size = self.frigate.detect_size(camera)
-        if label not in VEHICLES or box is None or size is None:
+        if box is None or size is None:
             return False
-        here = scale_box(box, size, (1, 1))
-        if not still(here, path):
-            return False
-        now = time.time()
-        if seen_for_a_while(start_time, now):
-            return True
-        try:
-            events = await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
-        except FrigateError as err:
-            _LOGGER.warning("Could not read Frigate's earlier events, alerting as usual: %s", err)
-            return False
-        return any(ended_here(s, here, now) for s in sightings(events, event_id, start_time))
+
+        async def earlier() -> list[Any] | None:
+            try:
+                return await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
+            except FrigateError as err:
+                _LOGGER.warning(
+                    "Could not read Frigate's earlier events, alerting as usual: %s", err
+                )
+                return None
+
+        return await is_parked(
+            label=label,
+            box=scale_box(box, size, (1, 1)),
+            path=path,
+            event_id=event_id,
+            start_time=start_time,
+            now=time.time(),
+            earlier=earlier,
+        )
 
     async def async_detection_ended(
         self, event_id: str, end_time: float | None, snapshot: tuple[float, Box] | None
