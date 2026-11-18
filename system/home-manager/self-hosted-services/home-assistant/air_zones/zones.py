@@ -47,9 +47,11 @@ FAN_HIGH = "high"
 FAN_LOW = "low"
 HOLD = timedelta(hours=1)
 DWELL = timedelta(minutes=2)
-# The AC reports a command back through its cloud a few seconds later; until then a state
-# that differs from the command is the old state, not someone's hand.
-GRACE = timedelta(seconds=45)
+# The AC reports a command back through its cloud, a few seconds later and one setting at
+# a time. Before RESEND a command not reported yet is not sent again; within REPORT_WINDOW
+# a report made only of the old and the commanded values is that command arriving.
+RESEND = timedelta(seconds=45)
+REPORT_WINDOW = timedelta(minutes=2)
 
 
 @dataclass(frozen=True)
@@ -142,13 +144,20 @@ def is_manual(
     before: tuple[str, str, str] | None,
     after: tuple[str, str, str] | None,
     expected: tuple[str, str, str] | None,
+    sent_over: tuple[str, str, str] | None,
     last_command: datetime | None,
     now: datetime,
 ) -> bool:
     """Whether a reported change of (fan, vertical, horizontal) came from someone's hand.
 
-    `None` means the AC was off or unreachable: coming back is not a change.
+    `expected` is the last command, `sent_over` what the AC reported when it was sent.
+    `None` means the AC was off or unreachable: coming back is not a change. A hand that
+    puts a setting back to its old value within REPORT_WINDOW of a command is missed.
     """
     if before is None or after is None or after == before or after == expected:
         return False
-    return last_command is None or now - last_command >= GRACE
+    if expected is None or sent_over is None or last_command is None:
+        return True
+    if now - last_command >= REPORT_WINDOW:
+        return True
+    return any(a not in (old, new) for a, old, new in zip(after, sent_over, expected, strict=True))

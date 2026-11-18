@@ -137,28 +137,40 @@ def test_tuned_aims_are_used():
 NOW = at(20, 12)
 OLD = ("high", "V1", "H5")
 NEW = ("high", "V3", "H1")
+LONG_AGO = NOW - timedelta(minutes=5)
+JUST_NOW = NOW - timedelta(seconds=10)
 
 
 def test_change_long_after_a_command_is_manual():
-    assert is_manual(OLD, NEW, OLD, NOW - timedelta(minutes=5), NOW)
+    assert is_manual(OLD, ("low", "V1", "H5"), NEW, OLD, LONG_AGO, NOW)
 
 
 def test_change_with_no_command_yet_is_manual():
-    assert is_manual(OLD, NEW, None, None, NOW)
+    assert is_manual(OLD, NEW, None, None, None, NOW)
 
 
 def test_report_of_the_command_is_not_manual():
-    assert not is_manual(OLD, NEW, NEW, NOW - timedelta(minutes=5), NOW)
+    assert not is_manual(OLD, NEW, NEW, OLD, LONG_AGO, NOW)
 
 
-def test_change_right_after_a_command_is_not_manual():
-    assert not is_manual(OLD, ("high", "V3", "H5"), NEW, NOW - timedelta(seconds=10), NOW)
+def test_half_reported_command_is_not_manual():
+    assert not is_manual(OLD, ("high", "V3", "H5"), NEW, OLD, JUST_NOW, NOW)
+
+
+def test_late_half_report_within_the_window_is_not_manual():
+    late = NOW - timedelta(seconds=90)
+    assert not is_manual(OLD, ("high", "V3", "H5"), NEW, OLD, late, NOW)
+
+
+def test_hand_change_right_after_a_command_is_manual():
+    assert is_manual(OLD, ("high", "V5", "H5"), NEW, OLD, JUST_NOW, NOW)
+    assert is_manual(OLD, ("low", "V3", "H1"), NEW, OLD, JUST_NOW, NOW)
 
 
 def test_coming_back_on_or_online_is_not_manual():
-    assert not is_manual(None, NEW, OLD, None, NOW)
-    assert not is_manual(OLD, None, OLD, None, NOW)
+    assert not is_manual(None, NEW, OLD, OLD, None, NOW)
+    assert not is_manual(OLD, None, OLD, OLD, None, NOW)
 
 
 def test_unchanged_setting_is_not_manual():
-    assert not is_manual(OLD, OLD, NEW, None, NOW)
+    assert not is_manual(OLD, OLD, NEW, OLD, None, NOW)

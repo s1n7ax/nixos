@@ -96,6 +96,7 @@ class AirZones:
         self.temperature_due = False
         # What was last sent to the AC, and when; in memory only.
         self.expected: tuple[str, str, str] | None = None
+        self.sent_over: tuple[str, str, str] | None = None
         self.last_command: datetime | None = None
         self.plan: zones.Plan | None = None
 
@@ -138,7 +139,7 @@ class AirZones:
         before = _setting(event.data["old_state"])
         after = _setting(event.data["new_state"])
         now = dt_util.now()
-        if zones.is_manual(before, after, self.expected, self.last_command, now):
+        if zones.is_manual(before, after, self.expected, self.sent_over, self.last_command, now):
             _LOGGER.info("Manual AC change to %s; holding until %s", after, now + zones.HOLD)
             self.hold_until = now + zones.HOLD
             self._save()
@@ -201,10 +202,11 @@ class AirZones:
             return
         target = {"entity_id": self.climate}
         if self.temperature_due:
-            if state.attributes.get("temperature") != zones.TEMPERATURE:
-                await self._call("set_temperature", {**target, "temperature": zones.TEMPERATURE})
-            self.temperature_due = False
-            self._save()
+            if state.attributes.get("temperature") == zones.TEMPERATURE or await self._call(
+                "set_temperature", {**target, "temperature": zones.TEMPERATURE}
+            ):
+                self.temperature_due = False
+                self._save()
         if self.hold_until is not None or self.plan is None:
             return
         wanted = self.plan.setting
@@ -213,10 +215,11 @@ class AirZones:
         if current == wanted or (
             wanted == self.expected
             and self.last_command is not None
-            and now - self.last_command < zones.GRACE
+            and now - self.last_command < zones.RESEND
         ):
             return
         self.expected = wanted
+        self.sent_over = current
         self.last_command = now
         fan, vertical, horizontal = wanted
         if current is None or current[0] != fan:
@@ -228,11 +231,13 @@ class AirZones:
                 "set_swing_horizontal_mode", {**target, "swing_horizontal_mode": horizontal}
             )
 
-    async def _call(self, service: str, data: dict) -> None:
+    async def _call(self, service: str, data: dict) -> bool:
         try:
             await self.hass.services.async_call("climate", service, data, blocking=True)
         except Exception:  # The MirAIe cloud drops out often; the next interval retries.
             _LOGGER.warning("climate.%s %s failed", service, data, exc_info=True)
+            return False
+        return True
 
     def status(self) -> str:
         """One word for the status sensor."""

@@ -19,13 +19,13 @@ async def async_setup_platform(
 
 
 class StatusSensor(AirZonesEntity, SensorEntity):
-    _attr_name = "Status"
+    platform_name = "sensor"
     _attr_icon = "mdi:air-conditioner"
     _attr_device_class = "enum"
     _attr_options = ["ac_off", "paused", "holding", "idle", "aimed", "sweeping"]
 
     def __init__(self, controller) -> None:
-        super().__init__(controller, "status")
+        super().__init__(controller, "status", "status")
 
     @property
     def native_value(self) -> str:

@@ -21,11 +21,11 @@ async def async_setup_platform(
 
 
 class AutomationSwitch(AirZonesEntity, SwitchEntity):
-    _attr_name = "Automation"
+    platform_name = "switch"
     _attr_icon = "mdi:robot"
 
     def __init__(self, controller) -> None:
-        super().__init__(controller, "automation")
+        super().__init__(controller, "automation", "automation")
 
     @property
     def is_on(self) -> bool:
@@ -39,12 +39,12 @@ class AutomationSwitch(AirZonesEntity, SwitchEntity):
 
 
 class SpotSwitch(AirZonesEntity, SwitchEntity):
+    platform_name = "switch"
     _attr_icon = "mdi:account"
 
     def __init__(self, controller, spot: str) -> None:
-        super().__init__(controller, spot)
+        super().__init__(controller, spot, NAMES[spot])
         self.spot = spot
-        self._attr_name = NAMES[spot]
 
     @property
     def is_on(self) -> bool:

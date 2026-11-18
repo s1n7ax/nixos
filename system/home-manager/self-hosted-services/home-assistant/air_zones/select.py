@@ -22,15 +22,15 @@ async def async_setup_platform(
 
 
 class AimSelect(AirZonesEntity, SelectEntity):
+    platform_name = "select"
     _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:air-filter"
 
     def __init__(self, controller, aim: str, axis: int) -> None:
         key, label, options = AXES[axis]
-        super().__init__(controller, f"{aim}_{key}")
+        super().__init__(controller, f"{aim}_{key}", f"{NAMES[aim]} {label.lower()}")
         self.aim = aim
         self.axis = axis
-        self._attr_name = f"{NAMES[aim]} {label.lower()}"
         self._attr_options = list(options)
 
     @property
