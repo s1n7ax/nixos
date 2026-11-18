@@ -18,6 +18,8 @@ from homeassistant.helpers.typing import ConfigType
 
 DOMAIN = "home_dashboard"
 FRONTEND_URL = "/home_dashboard_frontend"
+# The 3D house card this integration replaced; its resource would 404 on every page load.
+OLD_URL = "/house_model_frontend/"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 CARD_FILE = "frequent-card.js"
 
@@ -26,10 +28,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if DOMAIN not in config:
         return True
     version = await hass.async_add_executor_job(_version)
-    # No long cache: the card imports its modules without a version, so the browser
-    # must revalidate them after a deploy.
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(FRONTEND_URL, str(FRONTEND_DIR), cache_headers=False)]
+        [StaticPathConfig(FRONTEND_URL, str(FRONTEND_DIR), cache_headers=True)]
     )
     await _async_load_card(hass, f"{FRONTEND_URL}/{CARD_FILE}?v={version}")
     return True
@@ -55,6 +55,8 @@ async def _async_load_card(hass: HomeAssistant, url: str) -> None:
         return
     resources = lovelace.resources
     await resources.async_get_info()  # Loads the collection from storage.
+    for old in [i for i in resources.async_items() if i["url"].startswith(OLD_URL)]:
+        await resources.async_delete_item(old["id"])
     path = url.partition("?")[0]
     item = next((i for i in resources.async_items() if i["url"].partition("?")[0] == path), None)
     if item is None:

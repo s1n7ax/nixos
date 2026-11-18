@@ -96,8 +96,8 @@ class AirZones:
         self.temperature_due = False
         # What was last sent to the AC, and when; in memory only.
         self.expected: tuple[str, str, str] | None = None
-        self.sent_over: tuple[str, str, str] | None = None
         self.last_command: datetime | None = None
+        self.commands: list[zones.Command] = []
         self.plan: zones.Plan | None = None
 
     async def async_load(self) -> None:
@@ -139,7 +139,8 @@ class AirZones:
         before = _setting(event.data["old_state"])
         after = _setting(event.data["new_state"])
         now = dt_util.now()
-        if zones.is_manual(before, after, self.expected, self.sent_over, self.last_command, now):
+        self.commands = [c for c in self.commands if now - c[0] < zones.REPORT_WINDOW]
+        if zones.is_manual(before, after, self.commands, now):
             _LOGGER.info("Manual AC change to %s; holding until %s", after, now + zones.HOLD)
             self.hold_until = now + zones.HOLD
             self._save()
@@ -147,6 +148,7 @@ class AirZones:
         elif before is None and after is not None:
             # Turned on or back online: aim it now, not at the next interval.
             self.expected = None
+            self.commands.append((now, None, None))
             self.hass.async_create_task(self.async_update())
 
     async def async_set_spot(self, spot: str, on: bool) -> None:
@@ -219,8 +221,8 @@ class AirZones:
         ):
             return
         self.expected = wanted
-        self.sent_over = current
         self.last_command = now
+        self.commands.append((now, current, wanted))
         fan, vertical, horizontal = wanted
         if current is None or current[0] != fan:
             await self._call("set_fan_mode", {**target, "fan_mode": fan})

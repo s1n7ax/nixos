@@ -49,7 +49,8 @@ HOLD = timedelta(hours=1)
 DWELL = timedelta(minutes=2)
 # The AC reports a command back through its cloud, a few seconds later and one setting at
 # a time. Before RESEND a command not reported yet is not sent again; within REPORT_WINDOW
-# a report made only of the old and the commanded values is that command arriving.
+# a report made only of values from before or after a recent command is that command
+# arriving. Turning on or coming back online also reports for a while, one setting at a time.
 RESEND = timedelta(seconds=45)
 REPORT_WINDOW = timedelta(minutes=2)
 
@@ -72,7 +73,7 @@ class Plan:
     fan: str
 
     @property
-    def setting(self) -> tuple[str, str, str]:
+    def setting(self) -> Setting:
         return (self.fan, self.vertical, self.horizontal)
 
 
@@ -140,24 +141,25 @@ def plan(
     return Plan(targets, target, vertical, horizontal, fan)
 
 
+Setting = tuple[str, str, str]
+# (when, what the AC reported then, what was sent). A None setting stands for any value:
+# the AC turning on or coming back online, whose reports can say anything for a while.
+Command = tuple[datetime, Setting | None, Setting | None]
+
+
 def is_manual(
-    before: tuple[str, str, str] | None,
-    after: tuple[str, str, str] | None,
-    expected: tuple[str, str, str] | None,
-    sent_over: tuple[str, str, str] | None,
-    last_command: datetime | None,
-    now: datetime,
+    before: Setting | None, after: Setting | None, commands: list[Command], now: datetime
 ) -> bool:
     """Whether a reported change of (fan, vertical, horizontal) came from someone's hand.
 
-    `expected` is the last command, `sent_over` what the AC reported when it was sent.
     `None` means the AC was off or unreachable: coming back is not a change. A hand that
-    puts a setting back to its old value within REPORT_WINDOW of a command is missed.
+    sets a value a command of the last REPORT_WINDOW also had is missed.
     """
-    if before is None or after is None or after == before or after == expected:
+    if before is None or after is None or after == before:
         return False
-    if expected is None or sent_over is None or last_command is None:
-        return True
-    if now - last_command >= REPORT_WINDOW:
-        return True
-    return any(a not in (old, new) for a, old, new in zip(after, sent_over, expected, strict=True))
+    if commands and after == commands[-1][2]:
+        return False
+    recent = [(old, new) for at, old, new in commands if now - at < REPORT_WINDOW]
+    if any(old is None or new is None for old, new in recent):
+        return False
+    return any(all(a not in (old[i], new[i]) for old, new in recent) for i, a in enumerate(after))

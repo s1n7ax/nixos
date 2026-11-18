@@ -20,6 +20,7 @@ const SPOTS = {
 const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [44, 30] };
 const AIM_NAMES = { my_desk: "My desk", bed: "Bed", bed_sleep: "Bed asleep", wife_desk: "Wife's desk" };
 const AC_AT = [54, 56];
+// The MirAIe AC's modes; the AC's own lists win when it reports them. "off" is not a fan speed.
 const FANS = ["low", "medium", "high", "auto"];
 const VERTICAL = ["V0", "V1", "V2", "V3", "V4", "V5"];
 const HORIZONTAL = ["H0", "H1", "H2", "H3", "H4", "H5"];
@@ -159,6 +160,9 @@ class FrequentCard extends HTMLElement {
     const seg = (action, modes, current, label = (m) => m) => modes.map((m) =>
       `<button class="${m === current ? "sel" : ""}" data-action="${action}" data-mode="${m}" ${on || action === "aim" ? "" : "disabled"}>${label(m)}</button>`).join("");
     const aim = (axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state;
+    const fans = (attrs.fan_modes ?? FANS).filter((m) => m !== "off");
+    const vertical = attrs.swing_modes ?? VERTICAL;
+    const horizontal = attrs.swing_horizontal_modes ?? HORIZONTAL;
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
       <div class="page">
         <header>
@@ -175,9 +179,9 @@ class FrequentCard extends HTMLElement {
         <section class="panel ac-panel">
           <div class="row"><span>Automation</span>
             <button class="toggle ${auto ? "on" : ""}" data-action="auto" role="switch" aria-checked="${auto}"><i></i></button></div>
-          <div class="row col"><span>Fan</span><div class="seg">${seg("fan", FANS, attrs.fan_mode)}</div></div>
-          <div class="row col"><span>Up · down</span><div class="seg">${seg("v", VERTICAL, attrs.swing_mode, louver)}</div></div>
-          <div class="row col"><span>Left · right</span><div class="seg">${seg("h", HORIZONTAL, attrs.swing_horizontal_mode, louver)}</div></div>
+          <div class="row col"><span>Fan</span><div class="seg">${seg("fan", fans, attrs.fan_mode)}</div></div>
+          <div class="row col"><span>Up · down</span><div class="seg">${seg("v", vertical, attrs.swing_mode, louver)}</div></div>
+          <div class="row col"><span>Left · right</span><div class="seg">${seg("h", horizontal, attrs.swing_horizontal_mode, louver)}</div></div>
           ${auto ? `<p class="hint">A change here holds for an hour, then the automation takes over.</p>` : ""}
         </section>
         <section class="panel aim-panel">
