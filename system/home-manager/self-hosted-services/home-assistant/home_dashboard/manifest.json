@@ -1,6 +1,6 @@
 {
-  "domain": "house_model",
-  "name": "House model",
+  "domain": "home_dashboard",
+  "name": "Home dashboard",
   "codeowners": [],
   "config_flow": false,
   "dependencies": ["frontend", "http", "lovelace"],

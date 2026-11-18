@@ -1,8 +1,8 @@
-"""House model: serves the 3D house dashboard card and loads it on dashboards.
+"""Home dashboard: serves the Frequent card (AC and office lights on the room plan).
 
-Set up from a bare `house_model:` line in configuration.yaml. The card holds no data;
-it reads the house from Home Assistant's states. Use it as the only card of a panel
-view: `type: custom:house-dashboard-card`.
+Set up from a bare `home_dashboard:` line in configuration.yaml. The card holds no data;
+it reads the AC, the air_zones entities and the lights from Home Assistant. Use it as
+the only card of a panel view: `type: custom:frequent-card`.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ from homeassistant.components.lovelace.const import LOVELACE_DATA, MODE_STORAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-DOMAIN = "house_model"
-FRONTEND_URL = "/house_model_frontend"
+DOMAIN = "home_dashboard"
+FRONTEND_URL = "/home_dashboard_frontend"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
-CARD_FILE = "house-dashboard-card.js"
+CARD_FILE = "frequent-card.js"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

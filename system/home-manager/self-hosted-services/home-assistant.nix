@@ -30,8 +30,10 @@ with lib;
         # The security_alerts integration, read-only from this repo. A new store
         # path changes the unit, so a deploy that changes it restarts HA.
         "${./home-assistant/security_alerts}:/config/custom_components/security_alerts:ro"
-        # The house_model integration: serves the 3D house dashboard card.
-        "${./home-assistant/house_model}:/config/custom_components/house_model:ro"
+        # The home_dashboard integration: serves the Frequent dashboard card.
+        "${./home-assistant/home_dashboard}:/config/custom_components/home_dashboard:ro"
+        # The air_zones integration: aims the AC at whoever needs cooling.
+        "${./home-assistant/air_zones}:/config/custom_components/air_zones:ro"
         # The energy_meters integration: keeps the Energy dashboard's device list in sync.
         "${./home-assistant/energy_meters}:/config/custom_components/energy_meters:ro"
       ];
