@@ -12,12 +12,12 @@ const LIGHTS = [
 ];
 // Spots on the plan (viewBox 0 0 100 64): their outline, where the air lands, and their switch.
 const SPOTS = {
-  my_desk: { name: "My desk", rect: [3, 3, 37, 12], air: [21, 10] },
-  bed: { name: "Bed", rect: [24, 19, 72, 22], air: [62, 30] },
-  wife_desk: { name: "Wife's desk", rect: [3, 46, 40, 14], air: [17, 52] },
+  my_desk: { name: "My desk", rect: [3, 3, 37, 12], air: [24, 12] },
+  bed: { name: "Bed", rect: [24, 19, 72, 22], air: [62, 33] },
+  wife_desk: { name: "Wife's desk", rect: [3, 46, 34, 14], air: [26, 49] },
 };
 // The bed's aim while s1n7ax sleeps: left and middle, away from the pillows.
-const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [44, 30] };
+const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [44, 33] };
 const AIM_NAMES = { my_desk: "My desk", bed: "Bed", bed_sleep: "Bed asleep", wife_desk: "Wife's desk" };
 const AC_AT = [54, 56];
 // The MirAIe AC's modes; the AC's own lists win when it reports them. "off" is not a fan speed.
@@ -104,7 +104,7 @@ class FrequentCard extends HTMLElement {
 
   statusLine(status, ac) {
     const a = status?.attributes ?? {};
-    const names = (a.targets ?? []).map((t) => AIM_NAMES[t]);
+    const names = (a.targets ?? []).map((t) => SPOTS[t === "bed_sleep" ? "bed" : t].name);
     switch (status?.state) {
       case "ac_off": return ac?.state === "unavailable" ? "AC unreachable" : "AC is off";
       case "paused": return "Automation off · you're steering";
@@ -118,13 +118,16 @@ class FrequentCard extends HTMLElement {
 
   plan(states, status) {
     const a = status?.attributes ?? {};
-    const target = this.acOn() ? a.target : null;
+    // The air is drawn only while the automation steers: on hold or paused the louvers are someone's.
+    const target = this.acOn() && ["aimed", "sweeping"].includes(status?.state) ? a.target : null;
     const fan = states[AC]?.attributes.fan_mode;
     const spots = Object.entries(SPOTS).map(([k, s]) => {
       const on = states[`switch.air_zones_${k}`]?.state === "on";
       const [x, y, w, h] = s.rect;
       return `<g class="spot ${on ? "on" : ""}" data-action="spot" data-spot="${k}">
         <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>
+        ${k === "bed" ? "" : `<rect class="desk" x="${x + 2}" y="${y + 1.5}" width="${w - 4}" height="2.4" rx=".6"/>
+        <circle class="chair" cx="${x + w - 5}" cy="${y + h / 2 + 1}" r="2"/>`}
         <text x="${x + w / 2}" y="${y + h / 2 + 1.4}">${s.name}</text></g>`;
     }).join("");
     let air = "";
@@ -140,12 +143,15 @@ class FrequentCard extends HTMLElement {
     return `<svg class="plan" viewBox="0 0 100 64" role="img" aria-label="Office plan">
       <rect class="room" x="1" y="1" width="98" height="62" rx="1.5"/>
       <path class="door" d="M99 6 V18"/>
-      <text class="label" x="96" y="24" text-anchor="end">door</text>
+      <path class="swing" d="M99 6 L89 6 A10 10 0 0 1 99 16"/>
+      <text class="label" x="88" y="10" text-anchor="end">door</text>
       ${spots}
+      <path class="blanket" d="M30 20 V40"/>
       <g class="pillows"><rect x="91" y="21.5" width="3.2" height="7" rx="1"/><rect x="91" y="31.5" width="3.2" height="7" rx="1"/></g>
       ${air}
       <g class="ac ${this.acOn() ? "on" : ""}" data-action="power"><rect x="38" y="56.5" width="32" height="5" rx="1.5"/>
-        <text x="54" y="60.2">AC</text></g>
+        <path class="vent" d="M41 57.8 H48 M60 57.8 H67"/>
+        <text x="54" y="60.6">AC</text></g>
     </svg>`;
   }
 
@@ -234,6 +240,11 @@ const CSS = `
   .plan { width: 100%; display: block; background: rgba(255,255,255,.015); border: 1px solid var(--line); border-radius: 16px; }
   .room { fill: none; stroke: #39404a; stroke-width: .6; }
   .door { stroke: var(--bg); stroke-width: 1.4; }
+  .swing { fill: none; stroke: #39404a; stroke-width: .3; stroke-dasharray: 1 1; }
+  .desk { fill: #2a3038; stroke: none; } .chair { fill: none; stroke: #4a525c; stroke-width: .3; }
+  .spot.on .desk { fill: rgba(124,199,255,.35); }
+  .blanket { stroke: #3a4149; stroke-width: .3; }
+  .vent { stroke: #4a525c; stroke-width: .3; } .ac.on .vent { stroke: var(--cool); }
   .label { fill: var(--muted); font-size: 2.4px; }
   .spot rect { fill: rgba(255,255,255,.03); stroke: #3a4149; stroke-width: .4; transition: fill .3s, stroke .3s; }
   .spot text, .ac text { fill: var(--muted); font-size: 3px; text-anchor: middle; pointer-events: none; }

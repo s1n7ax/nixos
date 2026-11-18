@@ -149,12 +149,13 @@ class AirZones:
             _LOGGER.info("Manual AC change to %s; holding until %s", after, now + zones.HOLD)
             self.hold_until = now + zones.HOLD
             self._save()
-            async_dispatcher_send(self.hass, SIGNAL)
         elif before is None and after is not None:
             # Turned on or back online: aim it now, not at the next interval.
             self.expected = None
             self.commands.append((now, None, None))
             self.hass.async_create_task(self.async_update())
+        # The status follows the AC at once, e.g. "ac_off", not at the next interval.
+        async_dispatcher_send(self.hass, SIGNAL)
 
     async def async_set_spot(self, spot: str, on: bool) -> None:
         (self.spots.add if on else self.spots.discard)(spot)
@@ -168,7 +169,9 @@ class AirZones:
         aim_now = list(self.aims[aim])
         aim_now[axis] = mode
         self.aims[aim] = tuple(aim_now)
-        await self._changed_by_user()
+        # Tuning where a spot's air goes is not steering the AC: a hold stays.
+        self._save()
+        await self.async_update()
 
     async def _changed_by_user(self) -> None:
         """A tap on the dashboard: act on it now, ending any hold."""
