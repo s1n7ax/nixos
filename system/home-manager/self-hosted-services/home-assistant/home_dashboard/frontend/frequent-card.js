@@ -157,8 +157,9 @@ class FrequentCard extends HTMLElement {
     const room = Number(states[ROOM_TEMP]?.state);
     const on = this.acOn();
     const attrs = ac?.attributes ?? {};
-    const seg = (action, modes, current, label = (m) => m) => modes.map((m) =>
-      `<button class="${m === current ? "sel" : ""}" data-action="${action}" data-mode="${m}" ${on || action === "aim" ? "" : "disabled"}>${label(m)}</button>`).join("");
+    // The AC's own controls are disabled while it is off; the aims are not.
+    const seg = (action, modes, current, label = (m) => m, attrs = on ? "" : "disabled") => modes.map((m) =>
+      `<button class="${m === current ? "sel" : ""}" data-action="${action}" data-mode="${m}" ${attrs}>${label(m)}</button>`).join("");
     const aim = (axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state;
     const fans = (attrs.fan_modes ?? FANS).filter((m) => m !== "off");
     const vertical = attrs.swing_modes ?? VERTICAL;
@@ -187,8 +188,8 @@ class FrequentCard extends HTMLElement {
         <section class="panel aim-panel">
           <div class="row col"><span>Aim for</span><div class="seg tabs">${Object.entries(AIM_NAMES).map(([k, n]) =>
             `<button class="${k === this.tuning ? "sel" : ""}" data-action="tune" data-aim="${k}">${n}</button>`).join("")}</div></div>
-          <div class="row col"><span>Up · down</span><div class="seg">${seg("aim", VERTICAL, aim("vertical"), louver).replaceAll('data-mode', 'data-axis="vertical" data-mode')}</div></div>
-          <div class="row col"><span>Left · right</span><div class="seg">${seg("aim", HORIZONTAL, aim("horizontal"), louver).replaceAll('data-mode', 'data-axis="horizontal" data-mode')}</div></div>
+          <div class="row col"><span>Up · down</span><div class="seg">${seg("aim", VERTICAL, aim("vertical"), louver, 'data-axis="vertical"')}</div></div>
+          <div class="row col"><span>Left · right</span><div class="seg">${seg("aim", HORIZONTAL, aim("horizontal"), louver, 'data-axis="horizontal"')}</div></div>
         </section>
         <section class="lights">${LIGHTS.map((l) => this.lightHtml(l, states[l.entity])).join("")}</section>
       </div>`;

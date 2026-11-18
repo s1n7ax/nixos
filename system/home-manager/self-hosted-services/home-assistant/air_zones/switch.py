@@ -7,24 +7,30 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from . import DOMAIN
+from . import DOMAIN, AirZones
 from .entity import NAMES, AirZonesEntity
 from .zones import SPOTS
 
 
 async def async_setup_platform(
-    hass: HomeAssistant, _config, add: AddEntitiesCallback, _info=None
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     controller = hass.data[DOMAIN]
-    add([AutomationSwitch(controller), *(SpotSwitch(controller, spot) for spot in SPOTS)])
+    async_add_entities(
+        [AutomationSwitch(controller), *(SpotSwitch(controller, spot) for spot in SPOTS)]
+    )
 
 
 class AutomationSwitch(AirZonesEntity, SwitchEntity):
     platform_name = "switch"
     _attr_icon = "mdi:robot"
 
-    def __init__(self, controller) -> None:
+    def __init__(self, controller: AirZones) -> None:
         super().__init__(controller, "automation", "automation")
 
     @property
@@ -42,7 +48,7 @@ class SpotSwitch(AirZonesEntity, SwitchEntity):
     platform_name = "switch"
     _attr_icon = "mdi:account"
 
-    def __init__(self, controller, spot: str) -> None:
+    def __init__(self, controller: AirZones, spot: str) -> None:
         super().__init__(controller, spot, NAMES[spot])
         self.spot = spot
 

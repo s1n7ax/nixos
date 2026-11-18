@@ -55,6 +55,13 @@ RESEND = timedelta(seconds=45)
 REPORT_WINDOW = timedelta(minutes=2)
 
 
+# (fan, vertical, horizontal), as the AC reports it.
+Setting = tuple[str, str, str]
+# (when, what the AC reported then, what was sent). A None setting stands for any value:
+# the AC turning on or coming back online, whose reports can say anything for a while.
+Command = tuple[datetime, Setting | None, Setting | None]
+
+
 @dataclass(frozen=True)
 class Step:
     key: str
@@ -139,12 +146,6 @@ def plan(
     vertical, horizontal = aims.get(target, DEFAULT_AIMS[target])
     fan = FAN_LOW if asleep and now >= since + GENTLE_AFTER else FAN_HIGH
     return Plan(targets, target, vertical, horizontal, fan)
-
-
-Setting = tuple[str, str, str]
-# (when, what the AC reported then, what was sent). A None setting stands for any value:
-# the AC turning on or coming back online, whose reports can say anything for a while.
-Command = tuple[datetime, Setting | None, Setting | None]
 
 
 def is_manual(

@@ -6,8 +6,9 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from . import DOMAIN
+from . import DOMAIN, AirZones
 from .entity import NAMES, AirZonesEntity
 from .zones import AIMS, HORIZONTAL, VERTICAL
 
@@ -15,10 +16,15 @@ AXES = (("vertical", "Vertical", VERTICAL), ("horizontal", "Horizontal", HORIZON
 
 
 async def async_setup_platform(
-    hass: HomeAssistant, _config, add: AddEntitiesCallback, _info=None
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     controller = hass.data[DOMAIN]
-    add(AimSelect(controller, aim, axis) for aim in AIMS for axis in range(len(AXES)))
+    async_add_entities(
+        AimSelect(controller, aim, axis) for aim in AIMS for axis in range(len(AXES))
+    )
 
 
 class AimSelect(AirZonesEntity, SelectEntity):
@@ -26,7 +32,7 @@ class AimSelect(AirZonesEntity, SelectEntity):
     _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:air-filter"
 
-    def __init__(self, controller, aim: str, axis: int) -> None:
+    def __init__(self, controller: AirZones, aim: str, axis: int) -> None:
         key, label, options = AXES[axis]
         super().__init__(controller, f"{aim}_{key}", f"{NAMES[aim]} {label.lower()}")
         self.aim = aim

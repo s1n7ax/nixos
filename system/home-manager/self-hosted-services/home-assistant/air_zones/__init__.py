@@ -66,9 +66,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-def _setting(state: State | None) -> tuple[str, str, str] | None:
+def _is_off(state: State | None) -> bool:
+    """Off or unreachable."""
+    return state is None or state.state in OFF_STATES
+
+
+def _setting(state: State | None) -> zones.Setting | None:
     """The AC's (fan, vertical, horizontal), or None while it is off or unreachable."""
-    if state is None or state.state in OFF_STATES:
+    if _is_off(state):
         return None
     a = state.attributes
     return (a.get("fan_mode"), a.get("swing_mode"), a.get("swing_horizontal_mode"))
@@ -95,7 +100,7 @@ class AirZones:
         # 29 °C is set once per step, when the AC is on.
         self.temperature_due = False
         # What was last sent to the AC, and when; in memory only.
-        self.expected: tuple[str, str, str] | None = None
+        self.expected: zones.Setting | None = None
         self.last_command: datetime | None = None
         self.commands: list[zones.Command] = []
         self.plan: zones.Plan | None = None
@@ -200,7 +205,8 @@ class AirZones:
 
     async def _async_command(self, now: datetime) -> None:
         state = self.hass.states.get(self.climate)
-        if not self.enabled or state is None or state.state in OFF_STATES:
+        current = _setting(state)
+        if not self.enabled or current is None:
             return
         target = {"entity_id": self.climate}
         if self.temperature_due:
@@ -212,7 +218,6 @@ class AirZones:
         if self.hold_until is not None or self.plan is None:
             return
         wanted = self.plan.setting
-        current = _setting(state)
         # Give the AC time to report the last command back before sending it again.
         if current == wanted or (
             wanted == self.expected
@@ -224,11 +229,11 @@ class AirZones:
         self.last_command = now
         self.commands.append((now, current, wanted))
         fan, vertical, horizontal = wanted
-        if current is None or current[0] != fan:
+        if current[0] != fan:
             await self._call("set_fan_mode", {**target, "fan_mode": fan})
-        if current is None or current[1] != vertical:
+        if current[1] != vertical:
             await self._call("set_swing_mode", {**target, "swing_mode": vertical})
-        if current is None or current[2] != horizontal:
+        if current[2] != horizontal:
             await self._call(
                 "set_swing_horizontal_mode", {**target, "swing_horizontal_mode": horizontal}
             )
@@ -243,8 +248,7 @@ class AirZones:
 
     def status(self) -> str:
         """One word for the status sensor."""
-        state = self.hass.states.get(self.climate)
-        if state is None or state.state in OFF_STATES:
+        if _is_off(self.hass.states.get(self.climate)):
             return "ac_off"
         if not self.enabled:
             return "paused"
