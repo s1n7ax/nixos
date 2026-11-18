@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 DOMAIN = "security_alerts"
+# Fired for every Frigate detection that got a clip, with whether it is a parked
+# vehicle found again; the detection lights automation skips parked ones.
+EVENT_DETECTION = "security_alerts_detection"
 
 CONF_NOTIFY_SERVICE = "notify_service"
 CONF_MODES = "modes"

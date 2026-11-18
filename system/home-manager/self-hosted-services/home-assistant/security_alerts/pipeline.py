@@ -68,6 +68,7 @@ from .const import (
     CONF_SOUND,
     CONF_TOP_FLOORS,
     CROP,
+    EVENT_DETECTION,
     FFMPEG_TIMEOUT_SECONDS,
     FRAME_TIME_TOLERANCE,
     FULL,
@@ -1026,6 +1027,10 @@ class SecurityAlerts:
         self._pending_ends[event_id] = _PendingEnd()
         try:
             parked = await self._async_parked(camera, label, event_id, start_time, box, path)
+            self.hass.bus.async_fire(
+                EVENT_DETECTION,
+                {"camera": camera, "label": label, "event_id": event_id, "parked": parked},
+            )
             event = AlertEvent(
                 kind=DETECTION,
                 type=label,
