@@ -125,6 +125,9 @@ CLIP_END_CHECK_INTERVAL = timedelta(minutes=5)
 # recording frame is cached only once the recording should exist, so an early
 # look does not stick.
 FULL_FALLBACK_CACHE_AFTER_SECONDS = 10 * 60
+# The parked check waits this long for Frigate's earlier events, so a slow Frigate
+# delays a vehicle's alert and its lights by no more than this.
+HISTORY_TIMEOUT_SECONDS = 3
 
 
 @dataclass
@@ -1066,10 +1069,11 @@ class SecurityAlerts:
 
         async def earlier() -> list[Any] | None:
             try:
-                return await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
-            except FrigateError as err:
+                async with asyncio.timeout(HISTORY_TIMEOUT_SECONDS):
+                    return await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
+            except (FrigateError, TimeoutError) as err:
                 _LOGGER.warning(
-                    "Could not read Frigate's earlier events, alerting as usual: %s", err
+                    "Could not read Frigate's earlier events, alerting as usual: %r", err
                 )
                 return None
 
