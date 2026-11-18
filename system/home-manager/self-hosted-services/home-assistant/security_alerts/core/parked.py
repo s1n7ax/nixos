@@ -98,21 +98,23 @@ def seen_for_a_while(start_time: float, now: float) -> bool:
     return now - start_time >= SEEN_FOR_SECONDS
 
 
+def _recent(sighting: Sighting, now: float) -> bool:
+    return sighting.end_time is None or now - sighting.end_time <= MEMORY_SECONDS
+
+
 def ended_here(sighting: Sighting, box: Box, now: float) -> bool:
     """Whether an earlier vehicle event stopped being tracked in this box: it was lost
     where it stood, rather than driving off."""
-    if sighting.end_time is not None and now - sighting.end_time > MEMORY_SECONDS:
-        return False
-    return iou(sighting.box, box) >= SAME_PLACE_IOU and _inside(
-        sighting.last_point, box, POINT_GROWTH
+    return (
+        _recent(sighting, now)
+        and iou(sighting.box, box) >= SAME_PLACE_IOU
+        and _inside(sighting.last_point, box, POINT_GROWTH)
     )
 
 
 def parked_spot(sighting: Sighting, now: float) -> bool:
     """Whether an earlier vehicle event stood still in its place, in the last day."""
-    if sighting.end_time is not None and now - sighting.end_time > MEMORY_SECONDS:
-        return False
-    return sighting.stood_still
+    return _recent(sighting, now) and sighting.stood_still
 
 
 def _number(value: Any) -> bool:
