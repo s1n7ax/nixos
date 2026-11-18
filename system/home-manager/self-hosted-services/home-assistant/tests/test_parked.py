@@ -10,6 +10,7 @@ from core.burst import BurstWindow
 from core.decide import decide
 from core.parked import (
     MEMORY_SECONDS,
+    RECENT_SECONDS,
     VEHICLES,
     Sighting,
     ended_here,
@@ -18,6 +19,7 @@ from core.parked import (
     on_spots,
     parked_spot,
     path_points,
+    same_place,
     seen_for_a_while,
     sightings,
     still,
@@ -93,7 +95,7 @@ def test_an_earlier_vehicle_somewhere_else_did_not_end_here():
 def test_an_earlier_vehicle_that_drove_off_did_not_end_here():
     # Same box, but its last point is far away: it was tracked leaving.
     (left,) = sightings([PARKED_BIKE], FOUND_AGAIN_ID, FOUND_AGAIN_START)
-    drove_off = Sighting(left.box, (0.8, 0.3), left.end_time)
+    drove_off = Sighting(left.box, (0.8, 0.3), left.end_time, True, left.start_time)
     assert not ended_here(drove_off, FOUND_AGAIN_BOX, FOUND_AGAIN_AT)
 
 
@@ -123,6 +125,7 @@ def test_sightings_skip_this_event_later_ones_and_malformed_ones():
             (0.3438, 0.85),
             PARKED_BIKE["end_time"],
             stood_still=True,
+            start_time=PARKED_BIKE["start_time"],
         )
     ]
 
@@ -303,3 +306,43 @@ def test_a_vehicle_arriving_past_parked_ones_is_not_on_spots():
     spots = [RIGHT_BIKE_BOX, sightings([LEFT_BIKE], SWAP_ID, SWAP_START)[0].box]
     assert on_spots(SWAP_PATH, spots)
     assert not on_spots([(0.8, 0.3), (0.6, 0.6), *SWAP_PATH], spots)
+
+
+# The car driving onto the veranda on 2026-11-16 20:44 (event 1794842048.205673-4ijkq2),
+# 0.9 s after Frigate first saw it at the gate: one still-looking point so far.
+GATE_BOX = (0.78, 0.181, 0.834, 0.347)
+GATE_PATH = [(0.806, 0.289), (0.806, 0.292)]
+
+
+def lost_at_gate(ended_ago, stood_for):
+    """An earlier vehicle event that stood still at the gate for `stood_for` seconds
+    and ended `ended_ago` seconds before the car came."""
+    end = FOUND_AGAIN_AT - ended_ago
+    return {
+        "id": "gate",
+        "start_time": end - stood_for,
+        "end_time": end,
+        "data": {
+            "box": [0.78, 0.181, 0.054, 0.166],
+            "path_data": [[[0.806, 0.345], end - stood_for], [[0.806, 0.345], end]],
+        },
+    }
+
+
+def test_a_vehicle_lost_at_the_gate_hours_ago_does_not_quiet_one_coming_in():
+    # Vehicles get lost where they come in; only a recent one, or one that stood
+    # there a while, says something is parked there.
+    arriving = dict(box=GATE_BOX, path=GATE_PATH)
+    assert check(**arriving, events=[lost_at_gate(282 * 60, 3)]) == (False, 1)
+    assert check(**arriving, events=[lost_at_gate(RECENT_SECONDS - 60, 3)]) == (True, 1)
+    assert check(**arriving, events=[lost_at_gate(282 * 60, 600)]) == (True, 1)
+
+
+def test_a_box_with_only_the_top_of_a_parked_scooter_is_the_same_place():
+    # Live boxes on 2026-11-19 01:24 (640x360): the scooter on the left, and its box
+    # flickering to only its top part.
+    whole = (27 / 640, 180 / 360, 151 / 640, 331 / 360)
+    top = (63 / 640, 180 / 360, 151 / 640, 283 / 360)
+    assert iou(whole, top) < 0.5
+    assert same_place(whole, top)
+    assert not same_place(whole, (200 / 640, 180 / 360, 300 / 640, 331 / 360))

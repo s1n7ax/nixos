@@ -27,10 +27,18 @@ VEHICLES = frozenset({"bicycle", "bus", "car", "motorcycle", "truck"})
 # A vehicle still in its first place this long after Frigate first saw it was
 # already standing there.
 SEEN_FOR_SECONDS = 60
-# How long ago an earlier event may have ended in the same place.
+# How long ago an earlier event may have ended in the same place, when the vehicle
+# stood there for SEEN_FOR_SECONDS or more: parked, rather than lost at the gate
+# or the frame's edge on its way in.
 MEMORY_SECONDS = 24 * 60 * 60
+# Any earlier vehicle event that ended this recently still shows where a vehicle
+# is: parked ones next to each other are lost and found every minute or two.
+RECENT_SECONDS = 30 * 60
 # Boxes that overlap this much are the same place.
 SAME_PLACE_IOU = 0.5
+# Or one lies this much inside the other: a flickering box keeps only the top of
+# a parked vehicle.
+SAME_PLACE_INSIDE = 0.9
 # A parked vehicle's box flickers; its points may fall this share outside it.
 POINT_GROWTH = 0.1
 # A still vehicle's path points stay this share of its box's width to either side
@@ -52,6 +60,7 @@ class Sighting:
     end_time: float | None
     # Every path point stayed where the vehicle stood: it never moved.
     stood_still: bool = False
+    start_time: float = 0.0
 
 
 def iou(a: Box, b: Box) -> float:
@@ -98,23 +107,49 @@ def seen_for_a_while(start_time: float, now: float) -> bool:
     return now - start_time >= SEEN_FOR_SECONDS
 
 
-def _recent(sighting: Sighting, now: float) -> bool:
-    return sighting.end_time is None or now - sighting.end_time <= MEMORY_SECONDS
+def _settled(sighting: Sighting, now: float) -> bool:
+    """Whether an earlier vehicle event still tells where a vehicle stands: it is
+    still tracked or ended a short while ago, or it stood still for a while in the
+    last day."""
+    if sighting.end_time is None or now - sighting.end_time <= RECENT_SECONDS:
+        return True
+    return (
+        now - sighting.end_time <= MEMORY_SECONDS
+        and sighting.stood_still
+        and seen_for_a_while(sighting.start_time, sighting.end_time)
+    )
+
+
+def _overlap_of_smaller(a: Box, b: Box) -> float:
+    width = min(a[2], b[2]) - max(a[0], b[0])
+    height = min(a[3], b[3]) - max(a[1], b[1])
+    if width <= 0 or height <= 0:
+        return 0.0
+    smaller = min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1]))
+    return width * height / smaller if smaller > 0 else 0.0
+
+
+def same_place(a: Box, b: Box) -> bool:
+    return iou(a, b) >= SAME_PLACE_IOU or _overlap_of_smaller(a, b) >= SAME_PLACE_INSIDE
 
 
 def ended_here(sighting: Sighting, box: Box, now: float) -> bool:
     """Whether an earlier vehicle event stopped being tracked in this box: it was lost
-    where it stood, rather than driving off."""
+    where it stood, rather than driving off. Its last point is in this box or in its
+    own: when Frigate swaps between vehicles side by side, they can differ."""
     return (
-        _recent(sighting, now)
-        and iou(sighting.box, box) >= SAME_PLACE_IOU
-        and _inside(sighting.last_point, box, POINT_GROWTH)
+        _settled(sighting, now)
+        and same_place(sighting.box, box)
+        and (
+            _inside(sighting.last_point, box, POINT_GROWTH)
+            or _inside(sighting.last_point, sighting.box, POINT_GROWTH)
+        )
     )
 
 
 def parked_spot(sighting: Sighting, now: float) -> bool:
-    """Whether an earlier vehicle event stood still in its place, in the last day."""
-    return _recent(sighting, now) and sighting.stood_still
+    """Whether an earlier vehicle event stood still in its place."""
+    return _settled(sighting, now) and sighting.stood_still
 
 
 def _number(value: Any) -> bool:
@@ -155,7 +190,7 @@ def sightings(events: Iterable[Any], event_id: str, start_time: float) -> list[S
             continue
         x, y, w, h = box
         sighted = (x, y, x + w, y + h)
-        found.append(Sighting(sighted, points[-1], ended, still(sighted, points)))
+        found.append(Sighting(sighted, points[-1], ended, still(sighted, points), began))
     return found
 
 
