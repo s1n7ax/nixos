@@ -1,7 +1,9 @@
-// The Frequent tab: the office on a plan, with the air drawn from the AC to the spot it
-// is cooling, the spots to tap on and off, the AC's fan and louvers, each spot's aim and
-// the two office lights, and the water pump. The room under the plan is drawn in 3D by
-// room-3d.js. Look: Night — dark, quiet, warm light and cool air.
+// The Frequent tab: the office drawn in 3D (room-3d.js) with everything for the AC on it, the
+// way a car shows its climate: the air streams from the AC to where it lands and is dragged to
+// aim it, the spots light up and are tapped on and off, and the fan, swing, settings and
+// automation sit in the room's bar under the AC. Settings turns the same room into setting each
+// profile's aim. The ceiling lights are tapped on the room too, and their cards stay below.
+// Look: Night — dark, quiet, warm light and cool air.
 
 const AC = "climate.panasonic_ac_panasonic_ac";
 const STATUS = "sensor.air_zones_status";
@@ -14,61 +16,58 @@ const LIGHTS = [
   { entity: "light.b_office_srinesh", name: "Srinesh" },
   { entity: "light.b_office_nidu", name: "Nidu" },
 ];
-// Spots on the plan (viewBox 0 0 100 64, the room in room-3d.js): their outline around the
-// furniture, where the air lands, and their switch.
+// The room in plan units (5 cm), as room-3d.js draws it, and the spots' tap areas around their
+// furniture.
+const PLAN = [103.6, 67.1];
 const SPOTS = {
-  my_desk: { name: "My desk", rect: [3, 2.5, 36, 25], air: [21, 20] },
-  bed: { name: "Bed", rect: [50, 16, 47, 30], air: [76, 33] },
-  wife_desk: { name: "Wife's desk", rect: [3, 36.5, 36, 25], air: [19, 45] },
+  my_desk: { name: "My desk", rect: [3, 2.5, 36, 25] },
+  bed: { name: "Bed", rect: [56, 19, 46, 29] },
+  wife_desk: { name: "Wife's desk", rect: [3, 41, 36, 24] },
 };
-// The bed's aim while s1n7ax sleeps: left and middle, away from the pillows.
-const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [64, 33] };
+// The profiles the automation aims with; the bed has its own while s1n7ax sleeps.
 const AIM_NAMES = { my_desk: "My desk", bed: "Bed", bed_sleep: "Bed asleep", wife_desk: "Wife's desk" };
-const AC_AT = [54, 59];
+// Ceiling lights, where room-3d.js hangs them.
+const LIGHT_AT = { "light.b_office_srinesh": [51.8, 12], "light.b_office_nidu": [51.8, 55] };
+const AC_AT = [54, 62];
+// Where the air lands for a louver position: left/right picks a column (5 far left … 1 far
+// right, as the louver icons draw it), up/down a row (1 level, reaching the far wall … 5 straight
+// down, by the AC). 0 is the AC's own swing across that axis.
+const COLUMNS = [94, 73, 52, 31, 10];
+const ROWS = [9, 20.5, 32, 43.5, 55];
+const landing = (v, h) => [COLUMNS[(h || 3) - 1], ROWS[(v || 3) - 1]];
+const nearest = (list, value) => list.reduce((best, x, i) => (Math.abs(x - value) < Math.abs(list[best] - value) ? i : best), 0) + 1;
+const curve = ([x, y]) => {
+  const [ax, ay] = AC_AT;
+  return `M${ax} ${ay} Q ${(ax + x) / 2 + (x < ax ? 8 : -8)} ${(ay + y) / 2} ${x} ${y}`;
+};
 // The MirAIe AC's modes; the AC's own lists win when it reports them. "off" is not a fan speed.
 const FANS = ["low", "medium", "high", "auto"];
-const VERTICAL = ["V0", "V1", "V2", "V3", "V4", "V5"];
-const HORIZONTAL = ["H0", "H1", "H2", "H3", "H4", "H5"];
-// Each louver position drawn as the way the air leaves: up/down seen from the side (1 level,
-// 5 straight down), left/right seen from above as on the plan (1 right, 3 ahead, 5 left), and
-// 0, the AC's own swing, as a sweeping arc.
+// The AC's own swing on an axis, drawn as a sweeping arc: up/down seen from the side, left/right
+// seen from above as on the plan.
 const AT = { V: { ac: '<rect x="1.5" y="3" width="6" height="4" rx="1"/>', from: [8, 6], swing: [0, 90] },
   H: { ac: '<rect x="7" y="18.5" width="10" height="3.5" rx="1"/>', from: [12, 17], swing: [-140, -40] } };
 const pt = ([x, y], deg, r) => [x + r * Math.cos((deg * Math.PI) / 180), y + r * Math.sin((deg * Math.PI) / 180)].map((v) => +v.toFixed(2));
 // An arrowhead at `tip`, pointing along `deg`.
 const head = (tip, deg) => `M${pt(tip, deg + 145, 4.5)} L${tip} L${pt(tip, deg - 145, 4.5)}`;
-const LOUVER_ICON = (axis, n) => {
+const swingIcon = (axis) => {
   const { ac, from, swing } = AT[axis];
-  if (n === 0) {
-    const [a, b] = swing.map((d) => pt(from, d, 13));
-    return `${ac}<path d="M${a} A13 13 0 0 1 ${b} ${head(a, swing[0] - 90)} ${head(b, swing[1] + 90)}"/>`;
-  }
-  // Up/down: 1 level to 5 straight down. Left/right, as on the plan: 1 far right, 3 ahead, 5 far left.
-  const deg = axis === "V" ? 8 + (n - 1) * 18 : -90 + (3 - n) * 27;
-  const tip = pt(from, deg, 13);
-  return `${ac}<path d="M${from} L${tip} ${head(tip, deg)}"/>`;
+  const [a, b] = swing.map((d) => pt(from, d, 13));
+  return `<svg class="louver" viewBox="0 0 24 24" aria-hidden="true">${ac}<path d="M${a} A13 13 0 0 1 ${b} ${head(a, swing[0] - 90)} ${head(b, swing[1] + 90)}"/></svg>`;
 };
-// A mode the drawings don't know (not V/H 0–5) keeps its own name as the label.
+// A louver mode the plan knows: V/H 0–5.
 const known = (m) => /^[VH][0-5]$/.test(m);
-const louver = (m) => {
-  if (!known(m)) return escape(m);
-  const n = Number(m.slice(1));
-  return `<svg class="louver" viewBox="0 0 24 24" aria-hidden="true">${LOUVER_ICON(m[0], n)}</svg>`;
-};
-const louverName = (m) => {
-  if (!known(m)) return escape(m);
-  const n = Number(m.slice(1));
-  if (n === 0) return "Swing";
-  return m[0] === "V" ? ["Level", "Slightly down", "Down", "Further down", "Straight down"][n - 1]
-    : ["Far right", "Right", "Ahead", "Left", "Far left"][n - 1];
-};
 
 const ICON = {
+  gear: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8m0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4m7.43-1.02a7.6 7.6 0 0 0 0-1.96l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.3 7.3 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.58-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.49.49 0 0 0 .12.64l2.11 1.65a7.9 7.9 0 0 0 0 1.96l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64z"/></svg>`,
+  check: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`,
+  auto: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16m.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`,
   bulb: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>`,
   pump: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2s-6 6.6-6 10.8a6 6 0 0 0 12 0c0-4.2-6-10.8-6-10.8m0 15.3a4.5 4.5 0 0 1-4.5-4.5h2a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
   power: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 3h-2v10h2zm4.83 2.17-1.42 1.42A6.92 6.92 0 0 1 19 12a7 7 0 1 1-11.42-5.42L6.17 5.17A9 9 0 1 0 21 12a8.94 8.94 0 0 0-3.17-6.83"/></svg>`,
 };
 
+// A light's colour while it is on, or null.
+const lightColor = (st) => (st?.state === "on" ? (st.attributes.rgb_color ?? [255, 181, 77]) : null);
 const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const clock = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -83,7 +82,12 @@ class FrequentCard extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this.tuning = "my_desk";
+    this.setup = false;
     this.shadowRoot.addEventListener("click", (ev) => this.onClick(ev));
+    this.shadowRoot.addEventListener("pointerdown", (ev) => this.dragStart(ev));
+    this.shadowRoot.addEventListener("pointermove", (ev) => this.dragMove(ev));
+    this.shadowRoot.addEventListener("pointerup", (ev) => this.dragEnd(ev, true));
+    this.shadowRoot.addEventListener("pointercancel", (ev) => this.dragEnd(ev, false));
     this.shadowRoot.addEventListener("change", (ev) => this.onChange(ev));
     // From auto the slider sits on the lowest speed, and picking that fires no change (nor, on a
     // touch screen, a click), so letting go of it sends the speed unless change just did.
@@ -117,10 +121,16 @@ class FrequentCard extends HTMLElement {
     const box = this.shadowRoot.querySelector(".room3d");
     if (!this.room3d || !box || !box.clientWidth) return;
     if (this.room3d.canvas.parentNode !== box) box.replaceChildren(this.room3d.canvas);
-    const look = `${box.clientWidth}|${window.devicePixelRatio}|${this.acOn()}`;
+    const states = this._hass.states;
+    const shown = {
+      acOn: this.acOn(),
+      spots: Object.keys(SPOTS).filter((k) => states[`switch.air_zones_${k}`]?.state === "on"),
+      lights: Object.fromEntries(LIGHTS.map(({ entity }) => [entity, lightColor(states[entity])])),
+    };
+    const look = JSON.stringify([box.clientWidth, window.devicePixelRatio, shown]);
     if (look !== this.room3d.look) {
       this.room3d.look = look;
-      this.room3d.draw(box.clientWidth, this.acOn());
+      this.room3d.draw(box.clientWidth, shown);
     }
     this.shadowRoot.querySelector(".plan-box").classList.add("solid");
   }
@@ -142,7 +152,9 @@ class FrequentCard extends HTMLElement {
     }).join(",");
     if (key !== this.key) {
       this.key = key;
-      this.render();
+      // A render mid-drag would drop the stream being dragged; it waits for the drop.
+      if (this.drag) this.drag.stale = true;
+      else this.render();
     }
   }
 
@@ -164,16 +176,81 @@ class FrequentCard extends HTMLElement {
       case "pump": return this.pump();
       case "confirm-yes": { const run = this.confirming.run; this.confirming = null; this.render(); return run(); }
       case "confirm-no": this.confirming = null; return this.render();
-      case "spot": return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
+      case "spot":
+        if (!this.setup) return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
+        this.tuning = d.spot;
+        return this.render();
+      case "setup": this.setup = !this.setup; return this.render();
       case "power": return this.call("climate", this.acOn() ? "turn_off" : "turn_on", { entity_id: AC });
       case "auto": return this.call("switch", "toggle", { entity_id: AUTOMATION });
       case "fan": return this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: d.mode });
-      case "v": return this.call("climate", "set_swing_mode", { entity_id: AC, swing_mode: d.mode });
-      case "h": return this.call("climate", "set_swing_horizontal_mode", { entity_id: AC, swing_horizontal_mode: d.mode });
+      case "swing": {
+        // Swing on an axis is its 0; off goes back to the middle of it.
+        const [v, h] = this.aim();
+        return this.aimAt(d.axis === "V" ? (v ? 0 : 3) : v, d.axis === "H" ? (h ? 0 : 3) : h);
+      }
       case "tune": this.tuning = d.aim; return this.render();
-      case "aim": return this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_${d.axis}`, option: d.mode });
       case "light": return this.call("light", "toggle", { entity_id: d.entity });
     }
+  }
+
+  // The louver positions shown: the AC's own, or in settings the profile's. A mode the drawings
+  // don't know (not V/H 0–5) is drawn at the middle.
+  aim() {
+    const states = this._hass.states;
+    const modes = this.setup
+      ? ["vertical", "horizontal"].map((axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state)
+      : [states[AC]?.attributes.swing_mode, states[AC]?.attributes.swing_horizontal_mode];
+    return modes.map((m) => (m && known(m) ? Number(m.slice(1)) : 3));
+  }
+
+  // Sends only the axes that change: each is its own call, and the AC answers each.
+  aimAt(v, h) {
+    const [cv, ch] = this.aim();
+    if (this.setup) {
+      if (v !== cv) this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_vertical`, option: `V${v}` });
+      if (h !== ch) this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_horizontal`, option: `H${h}` });
+      return;
+    }
+    if (v !== cv) this.call("climate", "set_swing_mode", { entity_id: AC, swing_mode: `V${v}` });
+    if (h !== ch) this.call("climate", "set_swing_horizontal_mode", { entity_id: AC, swing_horizontal_mode: `H${h}` });
+  }
+
+  // Dragging the air's landing point snaps it to the nearest louver position and sends it on drop.
+  dragStart(ev) {
+    const handle = ev.target.closest?.(".handle");
+    if (!handle || (!this.setup && !this.acOn())) return;
+    ev.preventDefault();
+    handle.setPointerCapture(ev.pointerId);
+    const svg = handle.ownerSVGElement;
+    this.drag = { id: ev.pointerId, svg, aim: this.aim() };
+    svg.classList.add("dragging");
+    this.dragMove(ev);
+  }
+
+  dragMove(ev) {
+    const drag = this.drag;
+    if (!drag || ev.pointerId !== drag.id) return;
+    const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(drag.svg.getScreenCTM().inverse());
+    const x = Math.min(Math.max(p.x, 0), PLAN[0]);
+    const y = Math.min(Math.max(p.y, 0), PLAN[1]);
+    drag.aim = [nearest(ROWS, y), nearest(COLUMNS, x)];
+    const air = drag.svg.querySelector(".air");
+    const at = landing(...drag.aim);
+    air.classList.remove("sweep");
+    for (const path of air.querySelectorAll("path")) path.setAttribute("d", curve(at));
+    air.querySelectorAll("animate").forEach((a) => a.remove());
+    for (const c of air.querySelectorAll("circle")) c.setAttribute("cx", at[0]), c.setAttribute("cy", at[1]);
+    const handle = drag.svg.querySelector(".handle");
+    handle.setAttribute("transform", `translate(${at[0]} ${at[1]})`);
+  }
+
+  dragEnd(ev, drop) {
+    const drag = this.drag;
+    if (!drag || ev.pointerId !== drag.id) return;
+    this.drag = null;
+    if (drop) this.aimAt(...drag.aim);
+    this.render();
   }
 
   setSpeed(input) {
@@ -247,58 +324,100 @@ class FrequentCard extends HTMLElement {
     }
   }
 
-  plan(states, status) {
-    const a = status?.attributes ?? {};
-    // The air is drawn only while the automation steers: on hold or paused the louvers are someone's.
-    const target = this.acOn() && ["aimed", "sweeping"].includes(status?.state) ? a.target : null;
+  // The air from the AC to where it lands: an animated stream, a landing ring and the handle to
+  // drag it by. A swinging axis sweeps the stream across its row or column.
+  air(fan) {
+    const [v, h] = this.aim();
+    const steps = (n) => (n ? [n] : [1, 2, 3, 4, 5, 4, 3, 2]);
+    const vs = steps(v);
+    const hs = steps(h);
+    const frames = Array.from({ length: Math.max(vs.length, hs.length) }, (_, i) => landing(vs[i % vs.length], hs[i % hs.length]));
+    const at = landing(v, h);
+    const sweep = frames.length > 1;
+    const loop = [...frames, frames[0]];
+    const anim = (attr, values) => (sweep ? `<animate attributeName="${attr}" dur="${frames.length * 1.4}s" repeatCount="indefinite" values="${values.join(";")}"/>` : "");
+    const d = anim("d", loop.map(curve));
+    const width = { low: 0.6, medium: 0.9, high: 1.3 }[fan] ?? 1;
+    const ring = `<circle cx="${at[0]}" cy="${at[1]}" r="3.2">${anim("cx", loop.map((p) => p[0]))}${anim("cy", loop.map((p) => p[1]))}</circle>`;
+    const grid = ROWS.flatMap((y) => COLUMNS.map((x) => `<circle cx="${x}" cy="${y}" r=".7"/>`)).join("");
+    return `<g class="grid">${grid}</g>
+      <g class="air ${fan === "low" ? "slow" : ""} ${sweep ? "sweep" : ""} ${this.setup ? "setup" : ""}" style="--w:${width}">
+        <path d="${curve(at)}">${d}</path><path d="${curve(at)}" class="b">${d}</path><path d="${curve(at)}" class="c">${d}</path>${ring}</g>
+      <g class="handle" transform="translate(${at[0]} ${at[1]})" role="slider" aria-label="Drag to aim the air"><circle class="hit" r="7"/><circle class="knob" r="2.4"/></g>`;
+  }
+
+  plan(states) {
+    const on = this.acOn();
     const fan = states[AC]?.attributes.fan_mode;
     const spots = Object.entries(SPOTS).map(([k, s]) => {
-      const on = states[`switch.air_zones_${k}`]?.state === "on";
+      const active = states[`switch.air_zones_${k}`]?.state === "on";
+      const picked = this.setup && (this.tuning === k || (k === "bed" && this.tuning === "bed_sleep"));
       const [x, y, w, h] = s.rect;
-      return `<g class="spot ${on ? "on" : ""}" data-action="spot" data-spot="${k}">
+      return `<g class="spot ${active ? "on" : ""} ${picked ? "picked" : ""}" data-action="spot" data-spot="${k}" role="button" aria-label="${s.name}" aria-pressed="${active}">
         <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>
         <text x="${x + 1.8}" y="${y + 4}">${s.name}</text></g>`;
     }).join("");
-    let air = "";
-    if (target && AIRS[target]) {
-      const [x, y] = AIRS[target];
-      const [ax, ay] = AC_AT;
-      const width = { low: 0.6, medium: 0.9, high: 1.3 }[fan] ?? 1;
-      const path = `M${ax} ${ay} Q ${(ax + x) / 2 + (x < ax ? 8 : -8)} ${(ay + y) / 2} ${x} ${y}`;
-      air = `<g class="air ${fan === "low" ? "slow" : ""}" style="--w:${width}">
-        <path d="${path}"/><path d="${path}" class="b"/><path d="${path}" class="c"/>
-        <circle cx="${x}" cy="${y}" r="3.2"/></g>`;
-    }
-    return `<div class="plan-box"><div class="room3d"></div>
-      <svg class="plan" viewBox="0 0 100 64" role="img" aria-label="Office plan">
-      <rect class="room" x="1" y="1" width="98" height="62" rx="1.5"/>
+    const lights = LIGHTS.map(({ entity, name }) => {
+      const [x, y] = LIGHT_AT[entity];
+      const lit = states[entity]?.state === "on";
+      return `<g class="ceiling ${lit ? "on" : ""}" data-action="light" data-entity="${entity}" role="button" aria-label="Toggle ${name} light" aria-pressed="${lit}">
+        <circle cx="${x}" cy="${y}" r="5.5"/><text x="${x + 6}" y="${y + 1}">${name}</text></g>`;
+    }).join("");
+    // In settings the profile's air shows whether or not the AC runs; live, only while it runs.
+    const air = this.setup || on ? this.air(fan) : "";
+    return `<div class="plan-box ${this.setup ? "setup" : ""}"><div class="room3d"></div>
+      <svg class="plan" viewBox="0 0 ${PLAN.join(" ")}" role="img" aria-label="Office plan">
+      <rect class="room" x="1" y="1" width="${PLAN[0] - 2}" height="${PLAN[1] - 2}" rx="1.5"/>
       ${spots}
+      ${lights}
+      <g class="ac ${on ? "on" : ""}" data-action="power" role="button" aria-label="AC power"><rect x="43" y="60" width="22" height="7" rx="1.5"/>
+        <text x="67" y="65">AC</text></g>
       ${air}
-      <g class="ac ${this.acOn() ? "on" : ""}" data-action="power"><rect x="43" y="56" width="22" height="7" rx="1.5"/>
-        <text x="67" y="61">AC</text></g>
     </svg></div>`;
+  }
+
+  // The bar under the room, beside the AC: fan and swing for what the room shows, then settings
+  // and the automation.
+  bar(states) {
+    const on = this.acOn();
+    const attrs = states[AC]?.attributes ?? {};
+    const auto = states[AUTOMATION]?.state === "on";
+    const [v, h] = this.aim();
+    // Live the AC's controls are disabled while it is off; a profile is set either way.
+    const off = this.setup || on ? "" : "disabled";
+    const swing = (axis, value, label) =>
+      `<button class="chip icon ${value === 0 ? "sel" : ""}" data-action="swing" data-axis="${axis}" aria-pressed="${value === 0}" aria-label="Swing ${label}" title="Swing ${label}" ${off}>${swingIcon(axis)}</button>`;
+    // The slider runs through the AC's speeds; auto sits beside it, as it is not a speed.
+    const speeds = (attrs.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
+    const fanAuto = attrs.fan_mode === "auto";
+    const speed = speeds.indexOf(attrs.fan_mode);
+    const fan = this.setup
+      ? `<div class="profiles">${Object.entries(AIM_NAMES).map(([k, n]) =>
+          `<button class="${k === this.tuning ? "sel" : ""}" data-action="tune" data-aim="${k}" aria-pressed="${k === this.tuning}">${n}</button>`).join("")}</div>`
+      : `<div class="fan ${fanAuto ? "auto" : ""}">
+          <div class="slider"><input type="range" min="0" max="${speeds.length - 1}" step="1" value="${Math.max(speed, 0)}" data-action="fan-speed" aria-label="Fan speed" ${off}>
+            <div class="ticks">${speeds.map((m) => `<span class="${m === attrs.fan_mode ? "sel" : ""}">${m}</span>`).join("")}</div></div>
+          <button class="chip ${fanAuto ? "sel" : ""}" data-action="fan" data-mode="auto" ${off}>Auto</button></div>`;
+    return `<div class="bar">
+      ${fan}
+      <div class="tools">
+        ${swing("V", v, "up and down")}${swing("H", h, "left and right")}
+        <span class="gap"></span>
+        <button class="chip icon ${this.setup ? "sel" : ""}" data-action="setup" aria-pressed="${this.setup}" aria-label="${this.setup ? "Done setting profiles" : "Set each profile's aim"}" title="${this.setup ? "Done" : "Profiles"}">${this.setup ? ICON.check : ICON.gear}</button>
+        <button class="automation ${auto ? "on" : ""}" data-action="auto" role="switch" aria-checked="${auto}" aria-label="Automation">${ICON.auto}<i></i></button>
+      </div>
+    </div>`;
   }
 
   render() {
     const states = this._hass.states;
     const ac = states[AC];
     const status = states[STATUS];
-    const auto = states[AUTOMATION]?.state === "on";
     const room = Number(states[ROOM_TEMP]?.state);
     const on = this.acOn();
     const pump = states[PUMP];
     const ask = this.confirming;
     const attrs = ac?.attributes ?? {};
-    // The AC's own controls are disabled while it is off; the aims are not.
-    const seg = (action, modes, current, attrs = on ? "" : "disabled") => modes.map((m) =>
-      `<button class="${m === current ? "sel" : ""}" data-action="${action}" data-mode="${m}" title="${louverName(m)}" aria-label="${louverName(m)}" ${attrs}>${louver(m)}</button>`).join("");
-    const aim = (axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state;
-    // The slider runs through the AC's speeds; auto sits beside it, as it is not a speed.
-    const speeds = (attrs.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
-    const fanAuto = attrs.fan_mode === "auto";
-    const speed = speeds.indexOf(attrs.fan_mode);
-    const vertical = attrs.swing_modes ?? VERTICAL;
-    const horizontal = attrs.swing_horizontal_modes ?? HORIZONTAL;
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
       <div class="page">
         <header>
@@ -317,25 +436,10 @@ class FrequentCard extends HTMLElement {
             </div>
           </div>
         </header>
-        <section class="plan-wrap">${this.plan(states, status)}<p class="hint">Tap a spot to cool it, tap the AC to switch it.</p></section>
-        <section class="panel ac-panel">
-          <div class="row"><span>Automation</span>
-            <button class="toggle ${auto ? "on" : ""}" data-action="auto" role="switch" aria-checked="${auto}"><i></i></button></div>
-          <div class="row col"><span>Fan</span><div class="fan ${fanAuto ? "auto" : ""}">
-            <div class="slider"><input type="range" min="0" max="${speeds.length - 1}" step="1" value="${Math.max(speed, 0)}" data-action="fan-speed" aria-label="Fan speed" ${on ? "" : "disabled"}>
-              <div class="ticks">${speeds.map((m) => `<span class="${m === attrs.fan_mode ? "sel" : ""}">${m}</span>`).join("")}</div></div>
-            <button class="chip ${fanAuto ? "sel" : ""}" data-action="fan" data-mode="auto" ${on ? "" : "disabled"}>Auto</button></div></div>
-          <div class="row col"><span>Up · down</span><div class="seg">${seg("v", vertical, attrs.swing_mode)}</div></div>
-          <div class="row col"><span>Left · right</span><div class="seg">${seg("h", horizontal, attrs.swing_horizontal_mode)}</div></div>
-          ${auto ? `<p class="hint">A change here holds for an hour, then the automation takes over.</p>` : ""}
-        </section>
-        <section class="panel aim-panel">
-          <div class="row col"><span>Aim for</span><div class="seg tabs">${Object.entries(AIM_NAMES).map(([k, n]) =>
-            `<button class="${k === this.tuning ? "sel" : ""}" data-action="tune" data-aim="${k}">${n}</button>`).join("")}</div></div>
-          <div class="row col"><span>Up · down</span><div class="seg">${seg("aim", VERTICAL, aim("vertical"), 'data-axis="vertical"')}</div></div>
-          <div class="row col"><span>Left · right</span><div class="seg">${seg("aim", HORIZONTAL, aim("horizontal"), 'data-axis="horizontal"')}</div></div>
-          <p class="hint">Where the automation points the air when it cools ${AIM_NAMES[this.tuning].toLowerCase()}.</p>
-        </section>
+        <section class="plan-wrap"><div class="frame">${this.plan(states)}${this.bar(states)}</div>
+          <p class="hint">${this.setup ? `Drag the air to where it should land for ${AIM_NAMES[this.tuning].toLowerCase()}. Tap ✓ when done.`
+            : states[AUTOMATION]?.state === "on" ? "Tap a spot to cool it, drag the air to aim it — your aim holds for an hour."
+            : "Tap a spot to cool it, drag the air to aim it, tap the AC to switch it."}</p></section>
         <section class="lights">${LIGHTS.map((l) => this.lightHtml(l, states[l.entity])).join("")}</section>
       </div>
       ${ask ? `<div class="scrim" data-action="confirm-no"><div class="dialog" data-action="dialog" role="alertdialog" aria-modal="true" aria-label="${escape(ask.title)}">
@@ -348,8 +452,7 @@ class FrequentCard extends HTMLElement {
   lightHtml(l, st) {
     const on = st?.state === "on";
     const pct = on ? Math.round(((st.attributes.brightness ?? 255) / 255) * 100) : 0;
-    const rgb = st?.attributes.rgb_color;
-    const glow = on ? `rgb(${(rgb ?? [255, 181, 77]).join(",")})` : "";
+    const glow = on ? `rgb(${lightColor(st).join(",")})` : "";
     return `<div class="light ${on ? "on" : ""} ${st && st.state !== "unavailable" ? "" : "gone"}" style="${glow ? `--glow:${glow}` : ""}">
       <button data-action="light" data-entity="${l.entity}" aria-label="Toggle ${l.name}">
         <i>${ICON.bulb}</i><b>${l.name}</b><small>${on ? `${pct}%` : st?.state === "unavailable" ? "Unavailable" : "Off"}</small></button>
@@ -370,7 +473,7 @@ const CSS = `
   button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
   button:disabled { opacity: .35; cursor: default; }
   .page { max-width: 1180px; margin: 0 auto; padding: 20px 16px 32px; display: grid; gap: 14px;
-    grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "plan" "lights" "ac" "aim"; }
+    grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "plan" "lights"; }
   header { grid-area: head; display: flex; justify-content: space-between; align-items: flex-start; }
   h1 { margin: 0; font-size: 44px; font-weight: 300; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
   h1 small { font-size: 13px; color: var(--muted); letter-spacing: 0; margin-left: 8px; font-weight: 400; }
@@ -390,17 +493,28 @@ const CSS = `
   .power.on { color: #0d0f11; background: var(--cool); border-color: var(--cool); box-shadow: 0 0 24px rgba(124,199,255,.35); }
   .setpoint { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .plan-wrap { grid-area: plan; }
-  .plan-box { position: relative; aspect-ratio: 100 / 64; border-radius: 6px; overflow: hidden; }
+  .frame { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .plan-box { position: relative; aspect-ratio: 103.6 / 67.1; overflow: hidden; }
   .room3d canvas { width: 100%; height: 100%; display: block; }
   .plan { position: absolute; inset: 0; width: 100%; height: 100%; }
   .room { fill: rgba(255,255,255,.015); stroke: #39404a; stroke-width: .6; }
   .solid .room { display: none; }
   .spot rect { fill: rgba(124,199,255,0); stroke: rgba(255,255,255,.07); stroke-width: .3; stroke-dasharray: 1.2 1; transition: fill .3s, stroke .3s; }
+  /* With the room drawn, the furniture itself lights up; the outlines are only for the flat plan. */
+  .solid .spot rect { stroke: none; }
+  .ceiling { cursor: pointer; }
+  .ceiling circle { fill: transparent; }
+  .ceiling text { fill: var(--muted); font-size: 2.2px; pointer-events: none;
+    paint-order: stroke; stroke: rgba(13,15,17,.85); stroke-width: .8px; stroke-linejoin: round; }
+  .ceiling.on text { fill: var(--warm); }
+  .plan-box:not(.solid) .ceiling circle { stroke: #39404a; stroke-width: .3; }
+  .plan-box:not(.solid) .ceiling.on circle { fill: rgba(255,181,77,.25); stroke: var(--warm); }
   .spot text, .ac text { fill: var(--muted); font-size: 2.6px; font-weight: 500; letter-spacing: .02em; pointer-events: none;
     paint-order: stroke; stroke: rgba(13,15,17,.85); stroke-width: .8px; stroke-linejoin: round; }
   .ac text { font-size: 2.2px; }
   .spot { cursor: pointer; }
-  .spot.on rect { fill: rgba(124,199,255,.10); stroke: var(--cool); stroke-dasharray: none; stroke-width: .4; }
+  .plan-box:not(.solid) .spot.on rect { fill: rgba(124,199,255,.10); stroke: var(--cool); stroke-dasharray: none; stroke-width: .4; }
+  .setup .spot.picked text { fill: var(--warm); }
   .spot.on text { fill: var(--cool); }
   .ac rect { fill: transparent; cursor: pointer; }
   .ac.on text { fill: var(--cool); }
@@ -408,21 +522,36 @@ const CSS = `
   .air path.b { opacity: .45; transform: translate(-1.5px, 1px); animation-delay: -.4s; }
   .air path.c { opacity: .3; transform: translate(1.5px, -1px); animation-delay: -.8s; }
   .air.slow path { animation-duration: 2.6s; }
+  .air.setup path { stroke: var(--warm); }
+  .air.setup circle { fill: rgba(255,181,77,.18); stroke: var(--warm); }
+  .handle { cursor: grab; touch-action: none; }
+  .dragging .handle { cursor: grabbing; }
+  .handle .hit { fill: transparent; }
+  .handle .knob { fill: var(--ink); stroke: var(--cool); stroke-width: .6; filter: drop-shadow(0 0 1.2px rgba(124,199,255,.9)); }
+  .setup .handle .knob { stroke: var(--warm); }
+  .grid circle { fill: var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .dragging .grid circle { opacity: .35; }
+  .profiles { flex: 1 1 300px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .profiles button { padding: 7px 10px; border-radius: 999px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); }
+  .profiles button.sel { color: #0d0f11; background: var(--warm); border-color: var(--warm); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  .bar .fan { flex: 1 1 260px; }
+  .tools { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; }
+  .tools .gap { flex: 1; }
+  .chip.icon { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; }
+  .chip.icon svg { width: 22px; }
+  .chip.icon .louver { width: 24px; height: 24px; }
+  .automation { height: 40px; padding: 0 6px 0 10px; border-radius: 999px; border: 1px solid var(--line); display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .automation svg { width: 20px; }
+  .automation i { width: 36px; height: 22px; border-radius: 999px; background: #2a2f36; position: relative; transition: background .2s; }
+  .automation i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #9aa3ad; transition: transform .2s, background .2s; }
+  .automation.on { color: var(--cool); border-color: rgba(124,199,255,.4); }
+  .automation.on i { background: rgba(124,199,255,.35); } .automation.on i::after { transform: translateX(14px); background: var(--cool); }
   .air circle { fill: rgba(124,199,255,.18); stroke: var(--cool); stroke-width: .3; animation: land 2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
   @keyframes flow { to { stroke-dashoffset: -14; } }
   @keyframes land { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .air path, .air circle { animation: none; } }
   .hint { color: var(--muted); font-size: 12px; margin: 8px 2px 0; }
-  .panel { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 12px; }
-  .ac-panel { grid-area: ac; } .aim-panel { grid-area: aim; }
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .row.col { flex-direction: column; align-items: stretch; gap: 6px; }
-  .row > span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-  .seg { display: flex; gap: 4px; }
-  .seg button { flex: 1; min-width: 0; padding: 10px 2px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; text-transform: capitalize; white-space: nowrap; }
-  .seg button.sel { color: #0d0f11; background: var(--cool); border-color: var(--cool); }
-  .seg.tabs button.sel { background: var(--ink); border-color: var(--ink); }
-  .seg button:has(.louver) { padding: 6px 2px; display: grid; place-items: center; }
   .louver { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .louver rect { fill: currentColor; stroke: none; opacity: .5; }
   .fan { display: flex; align-items: flex-start; gap: 12px; }
@@ -433,9 +562,6 @@ const CSS = `
   .ticks span.sel { color: var(--cool); }
   .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
   .chip.sel { color: #0d0f11; background: var(--cool); border-color: var(--cool); }
-  .toggle { width: 48px; height: 28px; border-radius: 999px; background: #2a2f36; position: relative; transition: background .2s; }
-  .toggle i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #9aa3ad; transition: transform .2s, background .2s; }
-  .toggle.on { background: rgba(124,199,255,.35); } .toggle.on i { transform: translateX(20px); background: var(--cool); }
   .lights { grid-area: lights; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .light { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; transition: box-shadow .3s, border-color .3s; }
   .light button { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; text-align: left; align-items: center; }
@@ -447,8 +573,7 @@ const CSS = `
   .light.gone { opacity: .45; }
   .light input { width: 100%; accent-color: var(--warm); }
   @media (min-width: 900px) {
-    .page { padding: 32px 32px 40px; gap: 18px; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
-      grid-template-areas: "head head" "plan ac" "plan aim" "lights aim"; align-items: start; }
+    .page { max-width: 1040px; padding: 32px 32px 40px; gap: 18px; }
     h1 { font-size: 56px; }
   }`;
 
