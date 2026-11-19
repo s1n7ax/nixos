@@ -17,20 +17,20 @@ const LIGHTS = [
 ];
 // The room in plan units (5 cm), as room-3d.js draws it, and the spots' tap areas around their
 // furniture.
-const PLAN = [67.1, 103.6];
+const PLAN = [67.1, 89.5];
 const SPOTS = {
   my_desk: { name: "My desk", rect: [2.5, 2.5, 31, 25] },
-  bed: { name: "Bed", rect: [20, 37, 45, 30] },
-  wife_desk: { name: "Wife's desk", rect: [2.5, 77, 31, 24] },
+  bed: { name: "Bed", rect: [20, 30.5, 45, 28.5] },
+  wife_desk: { name: "Wife's desk", rect: [2.5, 63, 31, 24] },
 };
 // Ceiling lights, where room-3d.js hangs them.
-const LIGHT_AT = { "light.b_office_srinesh": [33.5, 12], "light.b_office_nidu": [33.5, 91.6] };
-const AC_AT = [46, 99];
+const LIGHT_AT = { "light.b_office_srinesh": [33.5, 12], "light.b_office_nidu": [33.5, 77.5] };
+const AC_AT = [33.5, 84.9];
 // Where the air lands for a louver position: left/right picks a column (5 far left … 1 far
 // right, as the louver icons draw it), up/down a row (1 level, reaching the far wall … 5 straight
 // down, by the AC). 0 is the AC's own swing across that axis.
 const COLUMNS = [60, 47, 33.5, 20, 7];
-const ROWS = [9, 29.5, 50, 70.5, 91];
+const ROWS = [8, 25.5, 43, 60.5, 78];
 const landing = (v, h) => [COLUMNS[(h || 3) - 1], ROWS[(v || 3) - 1]];
 const nearest = (list, value) => list.reduce((best, x, i) => (Math.abs(x - value) < Math.abs(list[best] - value) ? i : best), 0) + 1;
 const curve = ([x, y]) => {
@@ -485,7 +485,7 @@ const CSS = `
   .setpoint { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .plan-wrap { grid-area: plan; }
   .frame { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-  .plan-box { position: relative; aspect-ratio: 67.1 / 103.6; overflow: hidden; }
+  .plan-box { position: relative; aspect-ratio: 67.1 / 89.5; overflow: hidden; }
   .room3d canvas { width: 100%; height: 100%; display: block; }
   .plan { position: absolute; inset: 0; width: 100%; height: 100%; }
   .room { fill: rgba(255,255,255,.015); stroke: #39404a; stroke-width: .6; }
@@ -558,7 +558,7 @@ const CSS = `
   .light input { width: 100%; accent-color: var(--warm); }
   @media (min-width: 900px) {
     .page { max-width: 1040px; padding: 32px 32px 40px; gap: 18px; align-items: start;
-      grid-template-columns: min(calc((100dvh - 330px) * 67.1 / 103.6), 60%) minmax(260px, 1fr); grid-template-areas: "head head" "plan lights"; }
+      grid-template-columns: min(calc((100dvh - 330px) * 67.1 / 89.5), 60%) minmax(260px, 1fr); grid-template-areas: "head head" "plan lights"; }
     .lights { grid-template-columns: 1fr; }
     h1 { font-size: 56px; }
   }`;
