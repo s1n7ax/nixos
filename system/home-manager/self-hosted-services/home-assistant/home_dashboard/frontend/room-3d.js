@@ -185,7 +185,7 @@ const MODELS = {
 export const FURNITURE = [
   { type: "desk", at: [17, 8.5], size: [1.5, 0.65, 0.75], rotation: 0, spot: "my_desk" },
   { type: "office_chair", at: [17, 22], size: [0.6, 0.6, 1.05], rotation: 180, spot: "my_desk" },
-  { type: "desk", at: [13.5, 81.5], size: [1.15, 0.6, 0.75], rotation: 180, spot: "wife_desk" },
+  { type: "desk", at: [13.5, 81.5], size: [1.1, 0.6, 0.75], rotation: 180, spot: "wife_desk" },
   { type: "office_chair", at: [13.5, 68.5], size: [0.6, 0.6, 1.05], rotation: 0, spot: "wife_desk" },
   { type: "bed", at: [43.1, 44.7], size: [1.3, 2.2, 0.9], rotation: 90, spot: "bed" },
   { type: "ac_unit", at: [33.5, 86.8], size: [0.9, 0.22, 0.3], rotation: 180, ac: true },

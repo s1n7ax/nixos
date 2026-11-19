@@ -19,9 +19,9 @@ const LIGHTS = [
 // furniture.
 const PLAN = [67.1, 89.5];
 const SPOTS = {
-  my_desk: { name: "My desk", rect: [2.5, 2.5, 31, 25] },
+  my_desk: { name: "My desk", rect: [2, 2, 31, 26] },
   bed: { name: "Bed", rect: [20, 30.5, 45, 28.5] },
-  wife_desk: { name: "Wife's desk", rect: [2.5, 63, 31, 24] },
+  wife_desk: { name: "Wife's desk", rect: [2, 62.5, 31.5, 25] },
 };
 // Ceiling lights, where room-3d.js hangs them.
 const LIGHT_AT = { "light.b_office_srinesh": [33.5, 12], "light.b_office_nidu": [33.5, 77.5] };
@@ -365,8 +365,8 @@ class FrequentCard extends HTMLElement {
       <rect class="room" x="1" y="1" width="${PLAN[0] - 2}" height="${PLAN[1] - 2}" rx="1.5"/>
       ${spots}
       ${lights}
-      <g class="ac ${on ? "on" : ""}" data-action="power" role="button" aria-label="AC power"><rect x="35" y="97" width="22" height="7" rx="1.5"/>
-        <text x="58" y="102">AC</text></g>
+      <g class="ac ${on ? "on" : ""}" data-action="power" role="button" aria-label="AC power"><rect x="24.5" y="84" width="18" height="5" rx="1.5"/>
+        <text x="44" y="88">AC</text></g>
       ${air}
     </svg></div>`;
   }
