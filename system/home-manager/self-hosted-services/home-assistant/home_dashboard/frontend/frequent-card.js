@@ -1,6 +1,7 @@
 // The Frequent tab: the office on a plan, with the air drawn from the AC to the spot it
 // is cooling, the spots to tap on and off, the AC's fan and louvers, each spot's aim and
-// the two office lights, and the water pump. Look: Night — dark, quiet, warm light and cool air.
+// the two office lights, and the water pump. The room under the plan is drawn in 3D by
+// room-3d.js. Look: Night — dark, quiet, warm light and cool air.
 
 const AC = "climate.panasonic_ac_panasonic_ac";
 const STATUS = "sensor.air_zones_status";
@@ -13,16 +14,17 @@ const LIGHTS = [
   { entity: "light.b_office_srinesh", name: "Srinesh" },
   { entity: "light.b_office_nidu", name: "Nidu" },
 ];
-// Spots on the plan (viewBox 0 0 100 64): their outline, where the air lands, and their switch.
+// Spots on the plan (viewBox 0 0 100 64, the room in room-3d.js): their outline around the
+// furniture, where the air lands, and their switch.
 const SPOTS = {
-  my_desk: { name: "My desk", rect: [3, 3, 37, 12], air: [24, 12] },
-  bed: { name: "Bed", rect: [52, 18, 44, 26], air: [78, 37] },
-  wife_desk: { name: "Wife's desk", rect: [3, 46, 34, 14], air: [26, 49] },
+  my_desk: { name: "My desk", rect: [3, 2.5, 36, 25], air: [21, 20] },
+  bed: { name: "Bed", rect: [50, 16, 47, 30], air: [76, 33] },
+  wife_desk: { name: "Wife's desk", rect: [3, 36.5, 36, 25], air: [19, 45] },
 };
 // The bed's aim while s1n7ax sleeps: left and middle, away from the pillows.
-const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [64, 37] };
+const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [64, 33] };
 const AIM_NAMES = { my_desk: "My desk", bed: "Bed", bed_sleep: "Bed asleep", wife_desk: "Wife's desk" };
-const AC_AT = [54, 56];
+const AC_AT = [54, 59];
 // The MirAIe AC's modes; the AC's own lists win when it reports them. "off" is not a fan speed.
 const FANS = ["low", "medium", "high", "auto"];
 const VERTICAL = ["V0", "V1", "V2", "V3", "V4", "V5"];
@@ -73,6 +75,22 @@ class FrequentCard extends HTMLElement {
     this.tuning = "my_desk";
     this.shadowRoot.addEventListener("click", (ev) => this.onClick(ev));
     this.shadowRoot.addEventListener("change", (ev) => this.onChange(ev));
+    // The room in 3D under the plan; without WebGL the plan stays flat.
+    // At the card's own version, as the files are served with long cache headers.
+    import(`./room-3d.js${new URL(import.meta.url).search}`).then(({ Room3D }) => {
+      this.room3d = new Room3D();
+      new ResizeObserver(() => this.drawRoom()).observe(this);
+      this.drawRoom();
+    }).catch((err) => console.warn("frequent-card: no 3D room", err));
+  }
+
+  // A render replaces the plan's box, so the canvas moves into the new one.
+  drawRoom() {
+    const box = this.shadowRoot.querySelector(".room3d");
+    if (!this.room3d || !box || !box.clientWidth) return;
+    if (this.room3d.canvas.parentNode !== box) box.replaceChildren(this.room3d.canvas);
+    this.room3d.draw(box.clientWidth, this.acOn());
+    this.shadowRoot.querySelector(".plan-box").classList.add("solid");
   }
 
   setConfig(config) {
@@ -202,9 +220,7 @@ class FrequentCard extends HTMLElement {
       const [x, y, w, h] = s.rect;
       return `<g class="spot ${on ? "on" : ""}" data-action="spot" data-spot="${k}">
         <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>
-        ${k === "bed" ? "" : `<rect class="desk" x="${x + 2}" y="${y + 1.5}" width="${w - 4}" height="2.4" rx=".6"/>
-        <circle class="chair" cx="${x + w - 5}" cy="${y + h / 2 + 1}" r="2"/>`}
-        <text x="${x + w / 2}" y="${y + h / 2 + 1.4}">${s.name}</text></g>`;
+        <text x="${x + 1.8}" y="${y + 4}">${s.name}</text></g>`;
     }).join("");
     let air = "";
     if (target && AIRS[target]) {
@@ -216,19 +232,14 @@ class FrequentCard extends HTMLElement {
         <path d="${path}"/><path d="${path}" class="b"/><path d="${path}" class="c"/>
         <circle cx="${x}" cy="${y}" r="3.2"/></g>`;
     }
-    return `<svg class="plan" viewBox="0 0 100 64" role="img" aria-label="Office plan">
+    return `<div class="plan-box"><div class="room3d"></div>
+      <svg class="plan" viewBox="0 0 100 64" role="img" aria-label="Office plan">
       <rect class="room" x="1" y="1" width="98" height="62" rx="1.5"/>
-      <path class="door" d="M99 6 V18"/>
-      <path class="swing" d="M99 6 L89 6 A10 10 0 0 1 99 16"/>
-      <text class="label" x="88" y="10" text-anchor="end">door</text>
       ${spots}
-      <path class="blanket" d="M58 19 V43"/>
-      <g class="pillows"><rect x="91" y="22.5" width="3.2" height="8" rx="1"/><rect x="91" y="32" width="3.2" height="8" rx="1"/></g>
       ${air}
-      <g class="ac ${this.acOn() ? "on" : ""}" data-action="power"><rect x="38" y="56.5" width="32" height="5" rx="1.5"/>
-        <path class="vent" d="M41 57.8 H48 M60 57.8 H67"/>
-        <text x="54" y="60.6">AC</text></g>
-    </svg>`;
+      <g class="ac ${this.acOn() ? "on" : ""}" data-action="power"><rect x="43" y="56" width="22" height="7" rx="1.5"/>
+        <text x="54" y="55">AC</text></g>
+    </svg></div>`;
   }
 
   render() {
@@ -294,6 +305,7 @@ class FrequentCard extends HTMLElement {
         <h2>${escape(ask.title)}</h2><p>${escape(ask.text)}</p>
         <div class="actions"><button data-action="confirm-no">Cancel</button><button class="yes" data-action="confirm-yes">${escape(ask.yes)}</button></div>
       </div></div>` : ""}`;
+    this.drawRoom();
   }
 
   lightHtml(l, st) {
@@ -341,23 +353,19 @@ const CSS = `
   .power.on { color: #0d0f11; background: var(--cool); border-color: var(--cool); box-shadow: 0 0 24px rgba(124,199,255,.35); }
   .setpoint { font-size: 12px; color: var(--muted); }
   .plan-wrap { grid-area: plan; }
-  .plan { width: 100%; display: block; }
+  .plan-box { position: relative; aspect-ratio: 100 / 64; border-radius: 6px; overflow: hidden; }
+  .room3d canvas { width: 100%; height: 100%; display: block; }
+  .plan { position: absolute; inset: 0; width: 100%; height: 100%; }
   .room { fill: rgba(255,255,255,.015); stroke: #39404a; stroke-width: .6; }
-  .door { stroke: var(--bg); stroke-width: 1.4; }
-  .swing { fill: none; stroke: #39404a; stroke-width: .3; stroke-dasharray: 1 1; }
-  .desk { fill: #2a3038; stroke: none; } .chair { fill: none; stroke: #4a525c; stroke-width: .3; }
-  .spot.on .desk { fill: rgba(124,199,255,.35); }
-  .blanket { stroke: #3a4149; stroke-width: .3; }
-  .vent { stroke: #4a525c; stroke-width: .3; } .ac.on .vent { stroke: var(--cool); }
-  .label { fill: var(--muted); font-size: 2.4px; }
-  .spot rect { fill: rgba(255,255,255,.03); stroke: #3a4149; stroke-width: .4; transition: fill .3s, stroke .3s; }
-  .spot text, .ac text { fill: var(--muted); font-size: 3px; text-anchor: middle; pointer-events: none; }
+  .solid .room { display: none; }
+  .spot rect { fill: rgba(124,199,255,0); stroke: rgba(255,255,255,.07); stroke-width: .3; stroke-dasharray: 1.2 1; transition: fill .3s, stroke .3s; }
+  .spot text, .ac text { fill: var(--muted); font-size: 2.6px; font-weight: 500; letter-spacing: .02em; pointer-events: none;
+    paint-order: stroke; stroke: rgba(13,15,17,.85); stroke-width: .8px; stroke-linejoin: round; }
+  .ac text { text-anchor: middle; font-size: 2.2px; }
   .spot { cursor: pointer; }
-  .spot.on rect { fill: rgba(124,199,255,.12); stroke: var(--cool); }
-  .spot.on text { fill: var(--ink); }
-  .pillows rect { fill: #2a3038; stroke: #4a525c; stroke-width: .3; }
-  .ac rect { fill: #1d2126; stroke: #4a525c; stroke-width: .4; cursor: pointer; }
-  .ac.on rect { stroke: var(--cool); fill: rgba(124,199,255,.18); }
+  .spot.on rect { fill: rgba(124,199,255,.10); stroke: var(--cool); stroke-dasharray: none; stroke-width: .4; }
+  .spot.on text { fill: var(--cool); }
+  .ac rect { fill: transparent; cursor: pointer; }
   .ac.on text { fill: var(--cool); }
   .air path { fill: none; stroke: var(--cool); stroke-width: calc(var(--w) * 1px); stroke-linecap: round; stroke-dasharray: 2 5; opacity: .85; animation: flow 1.1s linear infinite; }
   .air path.b { opacity: .45; transform: translate(-1.5px, 1px); animation-delay: -.4s; }
