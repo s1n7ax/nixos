@@ -89,7 +89,8 @@ class FrequentCard extends HTMLElement {
     // touch screen, a click), so letting go of it sends the speed unless change just did.
     this.shadowRoot.addEventListener("pointerup", (ev) => {
       const t = ev.target;
-      if (t.dataset?.action !== "fan-speed") return;
+      // A disabled slider (AC off) still gets pointerup.
+      if (t.dataset?.action !== "fan-speed" || t.disabled) return;
       setTimeout(() => {
         const sent = Date.now() - (this.fanSentAt ?? 0) < 1000;
         if (!sent && this._hass.states[AC]?.attributes.fan_mode === "auto") this.setSpeed(t);
