@@ -508,6 +508,7 @@ const CSS = `
   .spot.on text { fill: var(--cool); }
   .ac rect { fill: transparent; cursor: pointer; }
   .ac.on text { fill: var(--cool); }
+  .air { pointer-events: none; }
   .air path { fill: none; stroke: var(--cool); stroke-width: calc(var(--w) * 1px); stroke-linecap: round; stroke-dasharray: 2 5; opacity: .85; animation: flow 1.1s linear infinite; }
   .air path.b { opacity: .45; transform: translate(-1.5px, 1px); animation-delay: -.4s; }
   .air path.c { opacity: .3; transform: translate(1.5px, -1px); animation-delay: -.8s; }
