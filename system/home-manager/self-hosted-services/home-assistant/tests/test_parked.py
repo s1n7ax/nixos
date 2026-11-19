@@ -10,12 +10,16 @@ from core.burst import BurstWindow
 from core.decide import decide
 from core.parked import (
     MEMORY_SECONDS,
+    RECENT_SECONDS,
     VEHICLES,
     Sighting,
     ended_here,
     iou,
     is_parked,
+    on_spots,
+    parked_spot,
     path_points,
+    same_place,
     seen_for_a_while,
     sightings,
     still,
@@ -91,7 +95,7 @@ def test_an_earlier_vehicle_somewhere_else_did_not_end_here():
 def test_an_earlier_vehicle_that_drove_off_did_not_end_here():
     # Same box, but its last point is far away: it was tracked leaving.
     (left,) = sightings([PARKED_BIKE], FOUND_AGAIN_ID, FOUND_AGAIN_START)
-    drove_off = Sighting(left.box, (0.8, 0.3), left.end_time)
+    drove_off = Sighting(left.box, (0.8, 0.3), left.end_time, True, left.start_time)
     assert not ended_here(drove_off, FOUND_AGAIN_BOX, FOUND_AGAIN_AT)
 
 
@@ -120,6 +124,8 @@ def test_sightings_skip_this_event_later_ones_and_malformed_ones():
             (0.2609375, 0.21666666666666667, 0.4390625, 0.8555555555555555),
             (0.3438, 0.85),
             PARKED_BIKE["end_time"],
+            stood_still=True,
+            start_time=PARKED_BIKE["start_time"],
         )
     ]
 
@@ -210,8 +216,8 @@ def test_is_parked_not_without_an_earlier_vehicle_there():
     assert check(events=()) == (False, 1)
 
 
-def test_is_parked_does_not_ask_frigate_for_a_moving_vehicle():
-    assert check(box=PARKED_CAR_BOX, path=ARRIVING_CAR_PATH) == (False, 0)
+def test_is_parked_not_for_a_vehicle_driving_in():
+    assert check(box=PARKED_CAR_BOX, path=ARRIVING_CAR_PATH) == (False, 1)
 
 
 def test_a_vehicle_moving_up_from_below_is_not_still():
@@ -220,4 +226,123 @@ def test_a_vehicle_moving_up_from_below_is_not_still():
     x1, y1, x2, y2 = FOUND_AGAIN_BOX
     path = [((x1 + x2) / 2, y2 + (y2 - y1) / 3), ((x1 + x2) / 2, y2)]
     assert not still(FOUND_AGAIN_BOX, path)
-    assert check(path=path) == (False, 0)
+    assert check(path=path) == (False, 1)
+
+
+# Two bikes parked side by side on the veranda on 2026-11-18 evening; Frigate kept
+# losing them and swapping its track between them, ~150 alerts in six hours. At
+# 21:00:31 (event 1795015417.825836-cjr7gk) it stood on the right one, its path
+# hopping between both.
+SWAP_ID = "1795015417.825836-cjr7gk"
+SWAP_START = 1795015417.825836
+SWAP_AT = 1795015431.3719614
+RIGHT_BIKE_BOX = (264 / 640, 187 / 360, 319 / 640, 357 / 360)
+SWAP_PATH = [(0.1656, 0.7889), (0.4609, 0.9861), (0.1672, 0.8), (0.1406, 0.9111)]
+LEFT_BIKE = {
+    "id": "left",
+    "start_time": 1795015070.807349,
+    "end_time": 1795015074.312521,
+    "data": {
+        "box": [0.0437, 0.5028, 0.1922, 0.4139],
+        "path_data": [[[0.1391, 0.9167], 1795015071.0], [[0.1672, 0.7611], 1795015072.0]],
+    },
+}
+RIGHT_BIKE = {
+    "id": "right",
+    "start_time": 1795015101.954169,
+    "end_time": 1795015138.964182,
+    "data": {
+        "box": [0.4125, 0.5167, 0.0859, 0.475],
+        "path_data": [[[0.4547, 0.9917], 1795015102.0], [[0.4547, 0.9917], 1795015110.0]],
+    },
+}
+
+
+def check_swap(path=SWAP_PATH, events=(LEFT_BIKE, RIGHT_BIKE)):
+    async def earlier():
+        return list(events)
+
+    return asyncio.run(
+        is_parked(
+            label="motorcycle",
+            box=RIGHT_BIKE_BOX,
+            path=path,
+            event_id=SWAP_ID,
+            start_time=SWAP_START,
+            now=SWAP_AT,
+            earlier=earlier,
+        )
+    )
+
+
+def test_a_track_jumping_between_bikes_parked_side_by_side_is_parked():
+    assert not still(RIGHT_BIKE_BOX, SWAP_PATH)
+    assert check_swap()
+
+
+def test_a_jump_to_a_place_no_vehicle_stood_still_is_not_parked():
+    # Without the left bike's earlier event, nothing ever stood where half the path is.
+    assert not check_swap(events=(RIGHT_BIKE,))
+
+
+def test_a_vehicle_that_moved_is_no_parked_spot():
+    left = sightings([LEFT_BIKE], SWAP_ID, SWAP_START)[0]
+    assert parked_spot(left, SWAP_AT)
+    moved = {
+        **LEFT_BIKE,
+        "data": {**LEFT_BIKE["data"], "path_data": [[[0.9, 0.3], 1.0], [[0.1391, 0.9167], 2.0]]},
+    }
+    (drove_in,) = sightings([moved], SWAP_ID, SWAP_START)
+    assert not parked_spot(drove_in, SWAP_AT)
+    assert not check_swap(events=(moved, RIGHT_BIKE))
+
+
+def test_a_parked_spot_is_forgotten_after_a_day():
+    (left,) = sightings([LEFT_BIKE], SWAP_ID, SWAP_START)
+    assert not parked_spot(left, left.end_time + MEMORY_SECONDS + 1)
+
+
+def test_a_vehicle_arriving_past_parked_ones_is_not_on_spots():
+    spots = [RIGHT_BIKE_BOX, sightings([LEFT_BIKE], SWAP_ID, SWAP_START)[0].box]
+    assert on_spots(SWAP_PATH, spots)
+    assert not on_spots([(0.8, 0.3), (0.6, 0.6), *SWAP_PATH], spots)
+
+
+# The car driving onto the veranda on 2026-11-16 20:44 (event 1794842048.205673-4ijkq2),
+# 0.9 s after Frigate first saw it at the gate: one still-looking point so far.
+GATE_BOX = (0.78, 0.181, 0.834, 0.347)
+GATE_PATH = [(0.806, 0.289), (0.806, 0.292)]
+
+
+def lost_at_gate(ended_ago, stood_for):
+    """An earlier vehicle event that stood still at the gate for `stood_for` seconds
+    and ended `ended_ago` seconds before the car came."""
+    end = FOUND_AGAIN_AT - ended_ago
+    return {
+        "id": "gate",
+        "start_time": end - stood_for,
+        "end_time": end,
+        "data": {
+            "box": [0.78, 0.181, 0.054, 0.166],
+            "path_data": [[[0.806, 0.345], end - stood_for], [[0.806, 0.345], end]],
+        },
+    }
+
+
+def test_a_vehicle_lost_at_the_gate_hours_ago_does_not_quiet_one_coming_in():
+    # Vehicles get lost where they come in; only a recent one, or one that stood
+    # there a while, says something is parked there.
+    arriving = dict(box=GATE_BOX, path=GATE_PATH)
+    assert check(**arriving, events=[lost_at_gate(282 * 60, 3)]) == (False, 1)
+    assert check(**arriving, events=[lost_at_gate(RECENT_SECONDS - 60, 3)]) == (True, 1)
+    assert check(**arriving, events=[lost_at_gate(282 * 60, 600)]) == (True, 1)
+
+
+def test_a_box_with_only_the_top_of_a_parked_scooter_is_the_same_place():
+    # Live boxes on 2026-11-19 01:24 (640x360): the scooter on the left, and its box
+    # flickering to only its top part.
+    whole = (27 / 640, 180 / 360, 151 / 640, 331 / 360)
+    top = (63 / 640, 180 / 360, 151 / 640, 283 / 360)
+    assert iou(whole, top) < 0.5
+    assert same_place(whole, top)
+    assert not same_place(whole, (200 / 640, 180 / 360, 300 / 640, 331 / 360))

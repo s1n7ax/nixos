@@ -68,6 +68,7 @@ from .const import (
     CONF_SOUND,
     CONF_TOP_FLOORS,
     CROP,
+    EVENT_DETECTION,
     FFMPEG_TIMEOUT_SECONDS,
     FRAME_TIME_TOLERANCE,
     FULL,
@@ -124,6 +125,9 @@ CLIP_END_CHECK_INTERVAL = timedelta(minutes=5)
 # recording frame is cached only once the recording should exist, so an early
 # look does not stick.
 FULL_FALLBACK_CACHE_AFTER_SECONDS = 10 * 60
+# The parked check waits this long for Frigate's earlier events, so a slow Frigate
+# delays a vehicle's alert and its lights by no more than this.
+HISTORY_TIMEOUT_SECONDS = 3
 
 
 @dataclass
@@ -1026,6 +1030,10 @@ class SecurityAlerts:
         self._pending_ends[event_id] = _PendingEnd()
         try:
             parked = await self._async_parked(camera, label, event_id, start_time, box, path)
+            self.hass.bus.async_fire(
+                EVENT_DETECTION,
+                {"camera": camera, "label": label, "event_id": event_id, "parked": parked},
+            )
             event = AlertEvent(
                 kind=DETECTION,
                 type=label,
@@ -1061,10 +1069,11 @@ class SecurityAlerts:
 
         async def earlier() -> list[Any] | None:
             try:
-                return await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
-            except FrigateError as err:
+                async with asyncio.timeout(HISTORY_TIMEOUT_SECONDS):
+                    return await self.frigate.events(camera, VEHICLES, HISTORY_EVENTS)
+            except (FrigateError, TimeoutError) as err:
                 _LOGGER.warning(
-                    "Could not read Frigate's earlier events, alerting as usual: %s", err
+                    "Could not read Frigate's earlier events, alerting as usual: %r", err
                 )
                 return None
 
