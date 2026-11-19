@@ -384,7 +384,8 @@ class FrequentCard extends HTMLElement {
     }).join("");
     // In settings the profile's air shows whether or not the AC runs; live, only while it runs.
     const air = this.setup || on ? this.air(fan) : "";
-    return `<div class="plan-box ${this.setup ? "setup" : ""}"><div class="room3d"></div>
+    // Marked solid as it is built once the room is drawn, so the flat outlines never flash in.
+    return `<div class="plan-box ${this.setup ? "setup" : ""} ${this.room3d ? "solid" : ""}"><div class="room3d"></div>
       <svg class="plan" viewBox="0 0 ${PLAN.join(" ")}" role="img" aria-label="Office plan">
       <rect class="room" x="1" y="1" width="${PLAN[0] - 2}" height="${PLAN[1] - 2}" rx="1.5"/>
       ${spots}
