@@ -1,11 +1,14 @@
 // The Frequent tab: the office on a plan, with the air drawn from the AC to the spot it
 // is cooling, the spots to tap on and off, the AC's fan and louvers, each spot's aim and
-// the two office lights. Look: Night — dark, quiet, warm light and cool air.
+// the two office lights, and the water pump. Look: Night — dark, quiet, warm light and cool air.
 
 const AC = "climate.panasonic_ac_panasonic_ac";
 const STATUS = "sensor.air_zones_status";
 const AUTOMATION = "switch.air_zones_automation";
 const ROOM_TEMP = "sensor.t_office_tempeture_sensor_temperature";
+// Fills the tank in about 30 minutes; an HA automation turns it off after 30.
+const PUMP = "switch.p_water_pump";
+const PUMP_MINUTES = 30;
 const LIGHTS = [
   { entity: "light.b_office_srinesh", name: "Srinesh" },
   { entity: "light.b_office_nidu", name: "Nidu" },
@@ -56,6 +59,7 @@ const louverName = (m) => {
 
 const ICON = {
   bulb: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>`,
+  pump: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2s-6 6.6-6 10.8a6 6 0 0 0 12 0c0-4.2-6-10.8-6-10.8m0 15.3a4.5 4.5 0 0 1-4.5-4.5h2a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
   power: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 3h-2v10h2zm4.83 2.17-1.42 1.42A6.92 6.92 0 0 1 19 12a7 7 0 1 1-11.42-5.42L6.17 5.17A9 9 0 1 0 21 12a8.94 8.94 0 0 0-3.17-6.83"/></svg>`,
 };
 
@@ -93,7 +97,7 @@ class FrequentCard extends HTMLElement {
   }
 
   watched() {
-    return [AC, STATUS, AUTOMATION, ROOM_TEMP, ...LIGHTS.map((l) => l.entity), ...Object.keys(SPOTS).map((k) => `switch.air_zones_${k}`),
+    return [AC, STATUS, AUTOMATION, ROOM_TEMP, PUMP, ...LIGHTS.map((l) => l.entity), ...Object.keys(SPOTS).map((k) => `switch.air_zones_${k}`),
       ...Object.keys(AIM_NAMES).flatMap((k) => [`select.air_zones_${k}_vertical`, `select.air_zones_${k}_horizontal`])];
   }
 
@@ -106,6 +110,10 @@ class FrequentCard extends HTMLElement {
     if (!t) return;
     const d = t.dataset;
     switch (d.action) {
+      case "all-power": return this.allPower();
+      case "pump": return this.pump();
+      case "confirm-yes": { const run = this.confirming.run; this.confirming = null; this.render(); return run(); }
+      case "confirm-no": this.confirming = null; return this.render();
       case "spot": return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
       case "power": return this.call("climate", this.acOn() ? "turn_off" : "turn_on", { entity_id: AC });
       case "auto": return this.call("switch", "toggle", { entity_id: AUTOMATION });
@@ -126,6 +134,43 @@ class FrequentCard extends HTMLElement {
     } else if (t.dataset.action === "brightness") {
       this.call("light", "turn_on", { entity_id: t.dataset.entity, brightness_pct: Number(t.value) });
     }
+  }
+
+  // Off takes the office lights with it; on brings back only the AC.
+  allPower() {
+    if (!this.acOn()) return this.call("climate", "turn_on", { entity_id: AC });
+    this.call("climate", "turn_off", { entity_id: AC });
+    this.call("light", "turn_off", { entity_id: LIGHTS.map((l) => l.entity) });
+  }
+
+  // Stopping the pump early, or filling a tank that was filled in the last day, is asked first.
+  async pump() {
+    if (this._hass.states[PUMP]?.state === "on") {
+      return this.ask("Turn off the water pump?", "The tank may not be full yet.", "Turn off", () => this.call("switch", "turn_off", { entity_id: PUMP }));
+    }
+    let ran;
+    try {
+      ran = await this.lastPumpRun();
+    } catch {
+      return this.ask("Turn on the water pump?", "Couldn't check when it last ran.", "Turn on", () => this.call("switch", "turn_on", { entity_id: PUMP }));
+    }
+    if (!ran) return this.call("switch", "turn_on", { entity_id: PUMP });
+    const when = ran.toDateString() === new Date().toDateString() ? `today at ${clock(ran)}` : `yesterday at ${clock(ran)}`;
+    this.ask("Run the water pump again?", `It already ran ${when}. The tank is probably still full.`, "Turn on", () => this.call("switch", "turn_on", { entity_id: PUMP }));
+  }
+
+  // When the pump last started in the past 24 hours, or null.
+  async lastPumpRun() {
+    const start = new Date(Date.now() - 24 * 3600 * 1000);
+    const res = await this._hass.callWS({ type: "history/history_during_period", start_time: start.toISOString(),
+      entity_ids: [PUMP], minimal_response: true, no_attributes: true, significant_changes_only: false });
+    const runs = (res[PUMP] ?? []).filter((e) => e.s === "on");
+    return runs.length ? new Date(Math.max(start.getTime(), runs.at(-1).lu * 1000)) : null;
+  }
+
+  ask(title, text, yes, run) {
+    this.confirming = { title, text, yes, run };
+    this.render();
   }
 
   acOn() {
@@ -193,6 +238,8 @@ class FrequentCard extends HTMLElement {
     const auto = states[AUTOMATION]?.state === "on";
     const room = Number(states[ROOM_TEMP]?.state);
     const on = this.acOn();
+    const pump = states[PUMP];
+    const ask = this.confirming;
     const attrs = ac?.attributes ?? {};
     // The AC's own controls are disabled while it is off; the aims are not.
     const seg = (action, modes, current, attrs = on ? "" : "disabled") => modes.map((m) =>
@@ -212,8 +259,14 @@ class FrequentCard extends HTMLElement {
             <p class="status">${escape(this.statusLine(status, ac))}</p>
           </div>
           <div class="head-right">
-            <button class="power ${on ? "on" : ""}" data-action="power" aria-label="AC power">${ICON.power}</button>
-            <span class="setpoint">${on && attrs.temperature != null ? `${attrs.temperature}° set` : "off"}</span>
+            <div class="head-button">
+              <button class="power pump ${pump?.state === "on" ? "on" : ""}" data-action="pump" aria-label="Water pump" ${pump && pump.state !== "unavailable" ? "" : "disabled"}>${ICON.pump}</button>
+              <span class="setpoint">${pump?.state === "on" ? `Pump till ${clock(new Date(new Date(pump.last_changed).getTime() + PUMP_MINUTES * 60000))}` : "Pump"}</span>
+            </div>
+            <div class="head-button">
+              <button class="power ${on ? "on" : ""}" data-action="all-power" aria-label="AC and office lights power">${ICON.power}</button>
+              <span class="setpoint">${on && attrs.temperature != null ? `${attrs.temperature}° set` : "off"}</span>
+            </div>
           </div>
         </header>
         <section class="plan-wrap">${this.plan(states, status)}<p class="hint">Tap a spot to cool it, tap the AC to switch it.</p></section>
@@ -236,7 +289,11 @@ class FrequentCard extends HTMLElement {
           <p class="hint">Where the automation points the air when it cools ${AIM_NAMES[this.tuning].toLowerCase()}.</p>
         </section>
         <section class="lights">${LIGHTS.map((l) => this.lightHtml(l, states[l.entity])).join("")}</section>
-      </div>`;
+      </div>
+      ${ask ? `<div class="scrim" data-action="confirm-no"><div class="dialog" data-action="dialog" role="alertdialog" aria-modal="true" aria-label="${escape(ask.title)}">
+        <h2>${escape(ask.title)}</h2><p>${escape(ask.text)}</p>
+        <div class="actions"><button data-action="confirm-no">Cancel</button><button class="yes" data-action="confirm-yes">${escape(ask.yes)}</button></div>
+      </div></div>` : ""}`;
   }
 
   lightHtml(l, st) {
@@ -269,7 +326,16 @@ const CSS = `
   h1 { margin: 0; font-size: 44px; font-weight: 300; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
   h1 small { font-size: 13px; color: var(--muted); letter-spacing: 0; margin-left: 8px; font-weight: 400; }
   .status { margin: 10px 0 0; color: var(--cool); font-size: 14px; }
-  .head-right { display: grid; justify-items: center; gap: 6px; }
+  .head-right { display: flex; gap: 14px; }
+  .head-button { display: grid; justify-items: center; gap: 6px; }
+  .power.pump.on { background: #5fb0ff; border-color: #5fb0ff; }
+  .scrim { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
+  .dialog { width: min(360px, 100%); background: #181b1f; border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .dialog h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+  .dialog p { margin: 0 0 18px; color: var(--muted); }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .actions button { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); color: var(--ink); }
+  .actions .yes { background: var(--cool); border-color: var(--cool); color: #0d0f11; }
   .power { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); display: grid; place-items: center; color: var(--muted); }
   .power svg { width: 24px; }
   .power.on { color: #0d0f11; background: var(--cool); border-color: var(--cool); box-shadow: 0 0 24px rgba(124,199,255,.35); }
