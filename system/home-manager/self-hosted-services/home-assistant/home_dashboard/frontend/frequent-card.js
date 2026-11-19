@@ -201,12 +201,22 @@ class FrequentCard extends HTMLElement {
     const modes = this.setup
       ? ["vertical", "horizontal"].map((axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state)
       : [states[AC]?.attributes.swing_mode, states[AC]?.attributes.swing_horizontal_mode];
-    return modes.map((m) => (m && known(m) ? Number(m.slice(1)) : 3));
+    const aim = modes.map((m) => (m && known(m) ? Number(m.slice(1)) : 3));
+    // A dropped aim stays drawn until HA reports it, for at most 15 s, so the air doesn't jump back.
+    const sent = this.sent;
+    if (sent && sent.of === this.aimOf() && Date.now() < sent.until && sent.aim.join() !== aim.join()) return sent.aim;
+    this.sent = null;
+    return aim;
+  }
+
+  aimOf() {
+    return this.setup ? this.tuning : "ac";
   }
 
   // Sends only the axes that change: each is its own call, and the AC answers each.
   aimAt(v, h) {
     const [cv, ch] = this.aim();
+    this.sent = { of: this.aimOf(), aim: [v, h], until: Date.now() + 15000 };
     if (this.setup) {
       if (v !== cv) this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_vertical`, option: `V${v}` });
       if (h !== ch) this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_horizontal`, option: `H${h}` });
@@ -217,20 +227,21 @@ class FrequentCard extends HTMLElement {
   }
 
   // Dragging the air's landing point snaps it to the nearest louver position and sends it on drop.
+  // It starts only once the pointer moves: a tap on the handle goes to whatever is under it.
   dragStart(ev) {
     const handle = ev.target.closest?.(".handle");
     if (!handle || (!this.setup && !this.acOn())) return;
     ev.preventDefault();
     handle.setPointerCapture(ev.pointerId);
-    const svg = handle.ownerSVGElement;
-    this.drag = { id: ev.pointerId, svg, aim: this.aim() };
-    svg.classList.add("dragging");
-    this.dragMove(ev);
+    this.drag = { id: ev.pointerId, svg: handle.ownerSVGElement, from: [ev.clientX, ev.clientY], moved: false };
   }
 
   dragMove(ev) {
     const drag = this.drag;
     if (!drag || ev.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(ev.clientX - drag.from[0], ev.clientY - drag.from[1]) < 6) return;
+    drag.moved = true;
+    drag.svg.classList.add("dragging");
     const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(drag.svg.getScreenCTM().inverse());
     const x = Math.min(Math.max(p.x, 0), PLAN[0]);
     const y = Math.min(Math.max(p.y, 0), PLAN[1]);
@@ -249,6 +260,13 @@ class FrequentCard extends HTMLElement {
     const drag = this.drag;
     if (!drag || ev.pointerId !== drag.id) return;
     this.drag = null;
+    if (!drag.moved) {
+      // A tap: the spot, light or AC under the handle gets it.
+      const under = this.shadowRoot.elementsFromPoint(ev.clientX, ev.clientY).find((el) => !el.closest(".handle") && el.closest("[data-action]"));
+      if (drag.stale) this.render();
+      if (drop && under) this.onClick({ target: under });
+      return;
+    }
     if (drop) this.aimAt(...drag.aim);
     this.render();
   }
@@ -410,6 +428,8 @@ class FrequentCard extends HTMLElement {
   }
 
   render() {
+    // The SVG being dragged is replaced, so a drag in progress ends here, sending nothing.
+    this.drag = null;
     const states = this._hass.states;
     const ac = states[AC];
     const status = states[STATUS];
