@@ -88,6 +88,9 @@ class FrequentCard extends HTMLElement {
     this.shadowRoot.addEventListener("pointermove", (ev) => this.dragMove(ev));
     this.shadowRoot.addEventListener("pointerup", (ev) => this.dragEnd(ev, true));
     this.shadowRoot.addEventListener("pointercancel", (ev) => this.dragEnd(ev, false));
+    // touch-action doesn't reach SVG children in Chromium, so a finger on the handle would scroll the
+    // page and cancel the drag; only a touch that starts on the handle is kept from scrolling.
+    this.shadowRoot.addEventListener("touchstart", (ev) => ev.target.closest?.(".handle") && ev.preventDefault(), { passive: false });
     this.shadowRoot.addEventListener("change", (ev) => this.onChange(ev));
     // From auto the slider sits on the lowest speed, and picking that fires no change (nor, on a
     // touch screen, a click), so letting go of it sends the speed unless change just did.
