@@ -116,8 +116,8 @@
       formatter.${system} = pkgs.nixfmt-tree;
 
       checks.${system} = {
-        # The security_alerts, house_model and energy_meters Home Assistant integrations:
-        # formatting, lint, unit tests and a syntax check of their frontend modules.
+        # The security_alerts, home_dashboard, air_zones and energy_meters Home Assistant
+        # integrations: formatting, lint, unit tests and a syntax check of their frontend modules.
         security-alerts =
           pkgs.runCommand "security-alerts-check"
             {
@@ -139,7 +139,7 @@
               ruff format --check --no-cache .
               ruff check --no-cache .
               python -m pytest
-              for js in security_alerts/frontend/*.js house_model/frontend/*.js house_model/frontend/vendor/*.js; do
+              for js in security_alerts/frontend/*.js home_dashboard/frontend/*.js; do
                 node --check "$js"
               done
               touch $out
