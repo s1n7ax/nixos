@@ -85,6 +85,16 @@ class FrequentCard extends HTMLElement {
     this.tuning = "my_desk";
     this.shadowRoot.addEventListener("click", (ev) => this.onClick(ev));
     this.shadowRoot.addEventListener("change", (ev) => this.onChange(ev));
+    // From auto the slider sits on the lowest speed, and picking that fires no change (nor, on a
+    // touch screen, a click), so letting go of it sends the speed unless change just did.
+    this.shadowRoot.addEventListener("pointerup", (ev) => {
+      const t = ev.target;
+      if (t.dataset?.action !== "fan-speed") return;
+      setTimeout(() => {
+        const sent = Date.now() - (this.fanSentAt ?? 0) < 1000;
+        if (!sent && this._hass.states[AC]?.attributes.fan_mode === "auto") this.setSpeed(t);
+      }, 150);
+    });
     this.resized = new ResizeObserver(() => this.drawRoom());
   }
 
@@ -156,12 +166,6 @@ class FrequentCard extends HTMLElement {
       case "spot": return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
       case "power": return this.call("climate", this.acOn() ? "turn_off" : "turn_on", { entity_id: AC });
       case "auto": return this.call("switch", "toggle", { entity_id: AUTOMATION });
-      // From auto the slider sits on the lowest speed, and picking that changes nothing, so a tap
-      // on it sends the speed; a moved slider has already sent it on change.
-      case "fan-speed": {
-        const sent = Date.now() - (this.fanSentAt ?? 0) < 1000;
-        return !sent && this._hass.states[AC]?.attributes.fan_mode === "auto" ? this.setSpeed(t) : undefined;
-      }
       case "fan": return this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: d.mode });
       case "v": return this.call("climate", "set_swing_mode", { entity_id: AC, swing_mode: d.mode });
       case "h": return this.call("climate", "set_swing_horizontal_mode", { entity_id: AC, swing_horizontal_mode: d.mode });
@@ -270,7 +274,7 @@ class FrequentCard extends HTMLElement {
       ${spots}
       ${air}
       <g class="ac ${this.acOn() ? "on" : ""}" data-action="power"><rect x="43" y="56" width="22" height="7" rx="1.5"/>
-        <text x="54" y="55">AC</text></g>
+        <text x="67" y="61">AC</text></g>
     </svg></div>`;
   }
 
@@ -383,7 +387,7 @@ const CSS = `
   .power { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); display: grid; place-items: center; color: var(--muted); }
   .power svg { width: 24px; }
   .power.on { color: #0d0f11; background: var(--cool); border-color: var(--cool); box-shadow: 0 0 24px rgba(124,199,255,.35); }
-  .setpoint { font-size: 12px; color: var(--muted); }
+  .setpoint { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .plan-wrap { grid-area: plan; }
   .plan-box { position: relative; aspect-ratio: 100 / 64; border-radius: 6px; overflow: hidden; }
   .room3d canvas { width: 100%; height: 100%; display: block; }
@@ -393,7 +397,7 @@ const CSS = `
   .spot rect { fill: rgba(124,199,255,0); stroke: rgba(255,255,255,.07); stroke-width: .3; stroke-dasharray: 1.2 1; transition: fill .3s, stroke .3s; }
   .spot text, .ac text { fill: var(--muted); font-size: 2.6px; font-weight: 500; letter-spacing: .02em; pointer-events: none;
     paint-order: stroke; stroke: rgba(13,15,17,.85); stroke-width: .8px; stroke-linejoin: round; }
-  .ac text { text-anchor: middle; font-size: 2.2px; }
+  .ac text { font-size: 2.2px; }
   .spot { cursor: pointer; }
   .spot.on rect { fill: rgba(124,199,255,.10); stroke: var(--cool); stroke-dasharray: none; stroke-width: .4; }
   .spot.on text { fill: var(--cool); }
