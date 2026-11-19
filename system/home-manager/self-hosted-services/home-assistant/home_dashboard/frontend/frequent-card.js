@@ -48,11 +48,15 @@ const LOUVER_ICON = (axis, n) => {
   const tip = pt(from, deg, 13);
   return `${ac}<path d="M${from} L${tip} ${head(tip, deg)}"/>`;
 };
+// A mode the drawings don't know (not V/H 0–5) keeps its own name as the label.
+const known = (m) => /^[VH][0-5]$/.test(m);
 const louver = (m) => {
+  if (!known(m)) return escape(m);
   const n = Number(m.slice(1));
   return `<svg class="louver" viewBox="0 0 24 24" aria-hidden="true">${LOUVER_ICON(m[0], n)}</svg>`;
 };
 const louverName = (m) => {
+  if (!known(m)) return escape(m);
   const n = Number(m.slice(1));
   if (n === 0) return "Swing";
   return m[0] === "V" ? ["Level", "Slightly down", "Down", "Further down", "Straight down"][n - 1]
@@ -68,6 +72,12 @@ const ICON = {
 const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const clock = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
+// The room in 3D under the plan, one for every card: HA rebuilds cards on view and dashboard
+// changes, and each would hold a WebGL context. Without WebGL the plan stays flat. Loaded at
+// the card's own version, as the files are served with long cache headers.
+let room;
+const room3d = () => (room ??= import(`./room-3d.js${new URL(import.meta.url).search}`).then(({ Room3D }) => new Room3D()));
+
 class FrequentCard extends HTMLElement {
   constructor() {
     super();
@@ -75,21 +85,32 @@ class FrequentCard extends HTMLElement {
     this.tuning = "my_desk";
     this.shadowRoot.addEventListener("click", (ev) => this.onClick(ev));
     this.shadowRoot.addEventListener("change", (ev) => this.onChange(ev));
-    // The room in 3D under the plan; without WebGL the plan stays flat.
-    // At the card's own version, as the files are served with long cache headers.
-    import(`./room-3d.js${new URL(import.meta.url).search}`).then(({ Room3D }) => {
-      this.room3d = new Room3D();
-      new ResizeObserver(() => this.drawRoom()).observe(this);
+    this.resized = new ResizeObserver(() => this.drawRoom());
+  }
+
+  connectedCallback() {
+    this.resized.observe(this);
+    room3d().then((room) => {
+      this.room3d = room;
       this.drawRoom();
     }).catch((err) => console.warn("frequent-card: no 3D room", err));
   }
 
-  // A render replaces the plan's box, so the canvas moves into the new one.
+  disconnectedCallback() {
+    this.resized.disconnect();
+  }
+
+  // A render replaces the plan's box, so the canvas moves into the new one; it keeps its picture,
+  // so it is drawn again only when its size or the AC changes.
   drawRoom() {
     const box = this.shadowRoot.querySelector(".room3d");
     if (!this.room3d || !box || !box.clientWidth) return;
     if (this.room3d.canvas.parentNode !== box) box.replaceChildren(this.room3d.canvas);
-    this.room3d.draw(box.clientWidth, this.acOn());
+    const look = `${box.clientWidth}|${window.devicePixelRatio}|${this.acOn()}`;
+    if (look !== this.room3d.look) {
+      this.room3d.look = look;
+      this.room3d.draw(box.clientWidth, this.acOn());
+    }
     this.shadowRoot.querySelector(".plan-box").classList.add("solid");
   }
 
@@ -135,6 +156,12 @@ class FrequentCard extends HTMLElement {
       case "spot": return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
       case "power": return this.call("climate", this.acOn() ? "turn_off" : "turn_on", { entity_id: AC });
       case "auto": return this.call("switch", "toggle", { entity_id: AUTOMATION });
+      // From auto the slider sits on the lowest speed, and picking that changes nothing, so a tap
+      // on it sends the speed; a moved slider has already sent it on change.
+      case "fan-speed": {
+        const sent = Date.now() - (this.fanSentAt ?? 0) < 1000;
+        return !sent && this._hass.states[AC]?.attributes.fan_mode === "auto" ? this.setSpeed(t) : undefined;
+      }
       case "fan": return this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: d.mode });
       case "v": return this.call("climate", "set_swing_mode", { entity_id: AC, swing_mode: d.mode });
       case "h": return this.call("climate", "set_swing_horizontal_mode", { entity_id: AC, swing_horizontal_mode: d.mode });
@@ -144,11 +171,16 @@ class FrequentCard extends HTMLElement {
     }
   }
 
+  setSpeed(input) {
+    const speeds = (this._hass.states[AC]?.attributes.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
+    this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: speeds[Number(input.value)] });
+  }
+
   onChange(ev) {
     const t = ev.target;
-    if (t.dataset.action === "fan") {
-      const speeds = (this._hass.states[AC]?.attributes.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
-      this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: speeds[Number(t.value)] });
+    if (t.dataset.action === "fan-speed") {
+      this.fanSentAt = Date.now();
+      this.setSpeed(t);
     } else if (t.dataset.action === "brightness") {
       this.call("light", "turn_on", { entity_id: t.dataset.entity, brightness_pct: Number(t.value) });
     }
@@ -285,7 +317,7 @@ class FrequentCard extends HTMLElement {
           <div class="row"><span>Automation</span>
             <button class="toggle ${auto ? "on" : ""}" data-action="auto" role="switch" aria-checked="${auto}"><i></i></button></div>
           <div class="row col"><span>Fan</span><div class="fan ${fanAuto ? "auto" : ""}">
-            <div class="slider"><input type="range" min="0" max="${speeds.length - 1}" step="1" value="${Math.max(speed, 0)}" data-action="fan" aria-label="Fan speed" ${on ? "" : "disabled"}>
+            <div class="slider"><input type="range" min="0" max="${speeds.length - 1}" step="1" value="${Math.max(speed, 0)}" data-action="fan-speed" aria-label="Fan speed" ${on ? "" : "disabled"}>
               <div class="ticks">${speeds.map((m) => `<span class="${m === attrs.fan_mode ? "sel" : ""}">${m}</span>`).join("")}</div></div>
             <button class="chip ${fanAuto ? "sel" : ""}" data-action="fan" data-mode="auto" ${on ? "" : "disabled"}>Auto</button></div></div>
           <div class="row col"><span>Up · down</span><div class="seg">${seg("v", vertical, attrs.swing_mode)}</div></div>
