@@ -1,13 +1,13 @@
 // The office drawn in 3D and seen from straight above, for the Frequent card's plan. The card
 // lays its spots, labels and air on top in the same coordinates: plan units, 1 unit = 5 cm, the
-// room 17 × 11 ft (103.6 × 67.1). The furniture models are ported from NeonPlan 3D's built-in, procedural
+// room 11 ft across and 17 ft top to bottom (67.1 × 103.6). The furniture models are ported from NeonPlan 3D's built-in, procedural
 // low-poly furniture (Mastershort, MIT, vendor/neonplan3d.LICENSE): boxes, lofts and cylinders
 // in local metres (x across, z depth with the front at +z, y up), turned and moved into place.
 
 import * as THREE from "./vendor/three.module.min.js";
 
 export const UNIT = 0.05;
-export const PLAN = [103.6, 67.1];
+export const PLAN = [67.1, 103.6];
 const ROOM = PLAN.map((v) => v * UNIT);
 const WALL = 0.1;
 
@@ -183,15 +183,15 @@ const MODELS = {
 // the spot it belongs to. Desks stand against the top and bottom walls, the bed against the right.
 // The bed's head is at its -z, so 90° puts the pillows at the right end.
 export const FURNITURE = [
-  { type: "desk", at: [21, 8.5], size: [1.5, 0.65, 0.75], rotation: 0, spot: "my_desk" },
-  { type: "office_chair", at: [21, 22], size: [0.6, 0.6, 1.05], rotation: 180, spot: "my_desk" },
-  { type: "desk", at: [19, 59.1], size: [1.4, 0.6, 0.75], rotation: 180, spot: "wife_desk" },
-  { type: "office_chair", at: [19, 46], size: [0.6, 0.6, 1.05], rotation: 0, spot: "wife_desk" },
-  { type: "bed", at: [79.6, 33.5], size: [1.3, 2.2, 0.9], rotation: 90, spot: "bed" },
-  { type: "ac_unit", at: [54, 64.4], size: [0.9, 0.22, 0.3], rotation: 180, ac: true },
+  { type: "desk", at: [17, 8.5], size: [1.5, 0.65, 0.75], rotation: 0, spot: "my_desk" },
+  { type: "office_chair", at: [17, 22], size: [0.6, 0.6, 1.05], rotation: 180, spot: "my_desk" },
+  { type: "desk", at: [16, 95.6], size: [1.4, 0.6, 0.75], rotation: 180, spot: "wife_desk" },
+  { type: "office_chair", at: [16, 82.5], size: [0.6, 0.6, 1.05], rotation: 0, spot: "wife_desk" },
+  { type: "bed", at: [43.1, 51.8], size: [1.3, 2.2, 0.9], rotation: 90, spot: "bed" },
+  { type: "ac_unit", at: [46, 100.9], size: [0.9, 0.22, 0.3], rotation: 180, ac: true },
 ];
 // The ceiling lights: across the room's middle, set in from the top and bottom walls.
-export const CEILING_LIGHTS = { "light.b_office_srinesh": [51.8, 12], "light.b_office_nidu": [51.8, 55] };
+export const CEILING_LIGHTS = { "light.b_office_srinesh": [33.5, 12], "light.b_office_nidu": [33.5, 91.6] };
 
 // A soft round glow, drawn once and shared by every halo.
 let haloTexture;

@@ -1,8 +1,7 @@
 // The Frequent tab: the office drawn in 3D (room-3d.js) with everything for the AC on it, the
 // way a car shows its climate: the air streams from the AC to where it lands and is dragged to
-// aim it, the spots light up and are tapped on and off, and the fan, swing, settings and
-// automation sit in the room's bar under the AC. Settings turns the same room into setting each
-// profile's aim. The ceiling lights are tapped on the room too, and their cards stay below.
+// aim it, the spots light up and are tapped on and off, and the fan, swing and automation sit in
+// the room's bar under the AC. The ceiling lights are tapped on the room too; their cards stay.
 // Look: Night — dark, quiet, warm light and cool air.
 
 const AC = "climate.panasonic_ac_panasonic_ac";
@@ -18,22 +17,20 @@ const LIGHTS = [
 ];
 // The room in plan units (5 cm), as room-3d.js draws it, and the spots' tap areas around their
 // furniture.
-const PLAN = [103.6, 67.1];
+const PLAN = [67.1, 103.6];
 const SPOTS = {
-  my_desk: { name: "My desk", rect: [3, 2.5, 36, 25] },
-  bed: { name: "Bed", rect: [56, 19, 46, 29] },
-  wife_desk: { name: "Wife's desk", rect: [3, 41, 36, 24] },
+  my_desk: { name: "My desk", rect: [2.5, 2.5, 31, 25] },
+  bed: { name: "Bed", rect: [20, 37, 45, 30] },
+  wife_desk: { name: "Wife's desk", rect: [2.5, 77, 31, 24] },
 };
-// The profiles the automation aims with; the bed has its own while s1n7ax sleeps.
-const AIM_NAMES = { my_desk: "My desk", bed: "Bed", bed_sleep: "Bed asleep", wife_desk: "Wife's desk" };
 // Ceiling lights, where room-3d.js hangs them.
-const LIGHT_AT = { "light.b_office_srinesh": [51.8, 12], "light.b_office_nidu": [51.8, 55] };
-const AC_AT = [54, 62];
+const LIGHT_AT = { "light.b_office_srinesh": [33.5, 12], "light.b_office_nidu": [33.5, 91.6] };
+const AC_AT = [46, 99];
 // Where the air lands for a louver position: left/right picks a column (5 far left … 1 far
 // right, as the louver icons draw it), up/down a row (1 level, reaching the far wall … 5 straight
 // down, by the AC). 0 is the AC's own swing across that axis.
-const COLUMNS = [94, 73, 52, 31, 10];
-const ROWS = [9, 20.5, 32, 43.5, 55];
+const COLUMNS = [60, 47, 33.5, 20, 7];
+const ROWS = [9, 29.5, 50, 70.5, 91];
 const landing = (v, h) => [COLUMNS[(h || 3) - 1], ROWS[(v || 3) - 1]];
 const nearest = (list, value) => list.reduce((best, x, i) => (Math.abs(x - value) < Math.abs(list[best] - value) ? i : best), 0) + 1;
 const curve = ([x, y]) => {
@@ -58,8 +55,6 @@ const swingIcon = (axis) => {
 const known = (m) => /^[VH][0-5]$/.test(m);
 
 const ICON = {
-  gear: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8m0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4m7.43-1.02a7.6 7.6 0 0 0 0-1.96l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.3 7.3 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.58-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.49.49 0 0 0 .12.64l2.11 1.65a7.9 7.9 0 0 0 0 1.96l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64z"/></svg>`,
-  check: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`,
   auto: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16m.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`,
   bulb: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>`,
   pump: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2s-6 6.6-6 10.8a6 6 0 0 0 12 0c0-4.2-6-10.8-6-10.8m0 15.3a4.5 4.5 0 0 1-4.5-4.5h2a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
@@ -81,8 +76,6 @@ class FrequentCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.tuning = "my_desk";
-    this.setup = false;
     this.shadowRoot.addEventListener("click", (ev) => this.onClick(ev));
     this.shadowRoot.addEventListener("pointerdown", (ev) => this.dragStart(ev));
     this.shadowRoot.addEventListener("pointermove", (ev) => this.dragMove(ev));
@@ -162,8 +155,7 @@ class FrequentCard extends HTMLElement {
   }
 
   watched() {
-    return [AC, STATUS, AUTOMATION, ROOM_TEMP, PUMP, ...LIGHTS.map((l) => l.entity), ...Object.keys(SPOTS).map((k) => `switch.air_zones_${k}`),
-      ...Object.keys(AIM_NAMES).flatMap((k) => [`select.air_zones_${k}_vertical`, `select.air_zones_${k}_horizontal`])];
+    return [AC, STATUS, AUTOMATION, ROOM_TEMP, PUMP, ...LIGHTS.map((l) => l.entity), ...Object.keys(SPOTS).map((k) => `switch.air_zones_${k}`)];
   }
 
   call(domain, service, data) {
@@ -179,11 +171,7 @@ class FrequentCard extends HTMLElement {
       case "pump": return this.pump();
       case "confirm-yes": { const run = this.confirming.run; this.confirming = null; this.render(); return run(); }
       case "confirm-no": this.confirming = null; return this.render();
-      case "spot":
-        if (!this.setup) return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
-        this.tuning = d.spot;
-        return this.render();
-      case "setup": this.setup = !this.setup; return this.render();
+      case "spot": return this.call("switch", "toggle", { entity_id: `switch.air_zones_${d.spot}` });
       case "power": return this.call("climate", this.acOn() ? "turn_off" : "turn_on", { entity_id: AC });
       case "auto": return this.call("switch", "toggle", { entity_id: AUTOMATION });
       case "fan": return this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: d.mode });
@@ -192,39 +180,25 @@ class FrequentCard extends HTMLElement {
         const [v, h] = this.aim();
         return this.aimAt(d.axis === "V" ? (v ? 0 : 3) : v, d.axis === "H" ? (h ? 0 : 3) : h);
       }
-      case "tune": this.tuning = d.aim; return this.render();
       case "light": return this.call("light", "toggle", { entity_id: d.entity });
     }
   }
 
-  // The louver positions shown: the AC's own, or in settings the profile's. A mode the drawings
-  // don't know (not V/H 0–5) is drawn at the middle.
+  // The AC's louver positions; a mode the drawings don't know (not V/H 0–5) is drawn at the middle.
   aim() {
-    const states = this._hass.states;
-    const modes = this.setup
-      ? ["vertical", "horizontal"].map((axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state)
-      : [states[AC]?.attributes.swing_mode, states[AC]?.attributes.swing_horizontal_mode];
-    const aim = modes.map((m) => (m && known(m) ? Number(m.slice(1)) : 3));
+    const attrs = this._hass.states[AC]?.attributes ?? {};
+    const aim = [attrs.swing_mode, attrs.swing_horizontal_mode].map((m) => (m && known(m) ? Number(m.slice(1)) : 3));
     // A dropped aim stays drawn until HA reports it, for at most 15 s, so the air doesn't jump back.
     const sent = this.sent;
-    if (sent && sent.of === this.aimOf() && Date.now() < sent.until && sent.aim.join() !== aim.join()) return sent.aim;
+    if (sent && Date.now() < sent.until && sent.aim.join() !== aim.join()) return sent.aim;
     this.sent = null;
     return aim;
-  }
-
-  aimOf() {
-    return this.setup ? this.tuning : "ac";
   }
 
   // Sends only the axes that change: each is its own call, and the AC answers each.
   aimAt(v, h) {
     const [cv, ch] = this.aim();
-    this.sent = { of: this.aimOf(), aim: [v, h], until: Date.now() + 15000 };
-    if (this.setup) {
-      if (v !== cv) this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_vertical`, option: `V${v}` });
-      if (h !== ch) this.call("select", "select_option", { entity_id: `select.air_zones_${this.tuning}_horizontal`, option: `H${h}` });
-      return;
-    }
+    this.sent = { aim: [v, h], until: Date.now() + 15000 };
     if (v !== cv) this.call("climate", "set_swing_mode", { entity_id: AC, swing_mode: `V${v}` });
     if (h !== ch) this.call("climate", "set_swing_horizontal_mode", { entity_id: AC, swing_horizontal_mode: `H${h}` });
   }
@@ -233,7 +207,7 @@ class FrequentCard extends HTMLElement {
   // It starts only once the pointer moves: a tap on the handle goes to whatever is under it.
   dragStart(ev) {
     const handle = ev.target.closest?.(".handle");
-    if (!handle || (!this.setup && !this.acOn())) return;
+    if (!handle || !this.acOn()) return;
     ev.preventDefault();
     handle.setPointerCapture(ev.pointerId);
     const svg = handle.ownerSVGElement;
@@ -363,7 +337,7 @@ class FrequentCard extends HTMLElement {
     const ring = `<circle cx="${at[0]}" cy="${at[1]}" r="3.2">${anim("cx", loop.map((p) => p[0]))}${anim("cy", loop.map((p) => p[1]))}</circle>`;
     const grid = ROWS.flatMap((y) => COLUMNS.map((x) => `<circle cx="${x}" cy="${y}" r=".7"/>`)).join("");
     return `<g class="grid">${grid}</g>
-      <g class="air ${fan === "low" ? "slow" : ""} ${sweep ? "sweep" : ""} ${this.setup ? "setup" : ""}" style="--w:${width}">
+      <g class="air ${fan === "low" ? "slow" : ""} ${sweep ? "sweep" : ""}" style="--w:${width}">
         <path d="${path}">${d}</path><path d="${path}" class="b">${d}</path><path d="${path}" class="c">${d}</path>${ring}</g>
       <g class="handle" transform="translate(${at[0]} ${at[1]})" role="slider" aria-label="Drag to aim the air"><circle class="hit" r="7"/><circle class="knob" r="2.4"/></g>`;
   }
@@ -373,9 +347,8 @@ class FrequentCard extends HTMLElement {
     const fan = states[AC]?.attributes.fan_mode;
     const spots = Object.entries(SPOTS).map(([k, s]) => {
       const active = states[`switch.air_zones_${k}`]?.state === "on";
-      const picked = this.setup && (this.tuning === k || (k === "bed" && this.tuning === "bed_sleep"));
       const [x, y, w, h] = s.rect;
-      return `<g class="spot ${active ? "on" : ""} ${picked ? "picked" : ""}" data-action="spot" data-spot="${k}" role="button" aria-label="${s.name}" aria-pressed="${active}">
+      return `<g class="spot ${active ? "on" : ""}" data-action="spot" data-spot="${k}" role="button" aria-label="${s.name}" aria-pressed="${active}">
         <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>
         <text x="${x + 1.8}" y="${y + 4}">${s.name}</text></g>`;
     }).join("");
@@ -385,39 +358,34 @@ class FrequentCard extends HTMLElement {
       return `<g class="ceiling ${lit ? "on" : ""}" data-action="light" data-entity="${entity}" role="button" aria-label="Toggle ${name} light" aria-pressed="${lit}">
         <circle cx="${x}" cy="${y}" r="5.5"/><text x="${x + 6}" y="${y + 1}">${name}</text></g>`;
     }).join("");
-    // In settings the profile's air shows whether or not the AC runs; live, only while it runs.
-    const air = this.setup || on ? this.air(fan) : "";
+    const air = on ? this.air(fan) : "";
     // Marked solid as it is built once the room is drawn, so the flat outlines never flash in.
-    return `<div class="plan-box ${this.setup ? "setup" : ""} ${this.room3d ? "solid" : ""}"><div class="room3d"></div>
+    return `<div class="plan-box ${this.room3d ? "solid" : ""}"><div class="room3d"></div>
       <svg class="plan" viewBox="0 0 ${PLAN.join(" ")}" role="img" aria-label="Office plan">
       <rect class="room" x="1" y="1" width="${PLAN[0] - 2}" height="${PLAN[1] - 2}" rx="1.5"/>
       ${spots}
       ${lights}
-      <g class="ac ${on ? "on" : ""}" data-action="power" role="button" aria-label="AC power"><rect x="43" y="60" width="22" height="7" rx="1.5"/>
-        <text x="67" y="65">AC</text></g>
+      <g class="ac ${on ? "on" : ""}" data-action="power" role="button" aria-label="AC power"><rect x="35" y="97" width="22" height="7" rx="1.5"/>
+        <text x="58" y="102">AC</text></g>
       ${air}
     </svg></div>`;
   }
 
-  // The bar under the room, beside the AC: fan and swing for what the room shows, then settings
-  // and the automation.
+  // The bar under the room, beside the AC: fan and swing, then the automation.
   bar(states) {
     const on = this.acOn();
     const attrs = states[AC]?.attributes ?? {};
     const auto = states[AUTOMATION]?.state === "on";
     const [v, h] = this.aim();
-    // Live the AC's controls are disabled while it is off; a profile is set either way.
-    const off = this.setup || on ? "" : "disabled";
+    // The AC's controls are disabled while it is off.
+    const off = on ? "" : "disabled";
     const swing = (axis, value, label) =>
       `<button class="chip icon ${value === 0 ? "sel" : ""}" data-action="swing" data-axis="${axis}" aria-pressed="${value === 0}" aria-label="Swing ${label}" title="Swing ${label}" ${off}>${swingIcon(axis)}</button>`;
     // The slider runs through the AC's speeds; auto sits beside it, as it is not a speed.
     const speeds = (attrs.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
     const fanAuto = attrs.fan_mode === "auto";
     const speed = speeds.indexOf(attrs.fan_mode);
-    const fan = this.setup
-      ? `<div class="profiles">${Object.entries(AIM_NAMES).map(([k, n]) =>
-          `<button class="${k === this.tuning ? "sel" : ""}" data-action="tune" data-aim="${k}" aria-pressed="${k === this.tuning}">${n}</button>`).join("")}</div>`
-      : `<div class="fan ${fanAuto ? "auto" : ""}">
+    const fan = `<div class="fan ${fanAuto ? "auto" : ""}">
           <div class="slider"><input type="range" min="0" max="${speeds.length - 1}" step="1" value="${Math.max(speed, 0)}" data-action="fan-speed" aria-label="Fan speed" ${off}>
             <div class="ticks">${speeds.map((m) => `<span class="${m === attrs.fan_mode ? "sel" : ""}">${m}</span>`).join("")}</div></div>
           <button class="chip ${fanAuto ? "sel" : ""}" data-action="fan" data-mode="auto" ${off}>Auto</button></div>`;
@@ -426,7 +394,6 @@ class FrequentCard extends HTMLElement {
       <div class="tools">
         ${swing("V", v, "up and down")}${swing("H", h, "left and right")}
         <span class="gap"></span>
-        <button class="chip icon ${this.setup ? "sel" : ""}" data-action="setup" aria-pressed="${this.setup}" aria-label="${this.setup ? "Done setting profiles" : "Set each profile's aim"}" title="${this.setup ? "Done" : "Profiles"}">${this.setup ? ICON.check : ICON.gear}</button>
         <button class="automation ${auto ? "on" : ""}" data-action="auto" role="switch" aria-checked="${auto}" aria-label="Automation">${ICON.auto}<i></i></button>
       </div>
     </div>`;
@@ -462,8 +429,7 @@ class FrequentCard extends HTMLElement {
           </div>
         </header>
         <section class="plan-wrap"><div class="frame">${this.plan(states)}${this.bar(states)}</div>
-          <p class="hint">${this.setup ? `Drag the air to where it should land for ${AIM_NAMES[this.tuning].toLowerCase()}. Tap ✓ when done.`
-            : states[AUTOMATION]?.state === "on" ? "Tap a spot to cool it, drag the air to aim it — your aim holds for an hour."
+          <p class="hint">${states[AUTOMATION]?.state === "on" ? "Tap a spot to cool it, drag the air to aim it — your aim holds for an hour."
             : "Tap a spot to cool it, drag the air to aim it, tap the AC to switch it."}</p></section>
         <section class="lights">${LIGHTS.map((l) => this.lightHtml(l, states[l.entity])).join("")}</section>
       </div>
@@ -519,7 +485,7 @@ const CSS = `
   .setpoint { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .plan-wrap { grid-area: plan; }
   .frame { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-  .plan-box { position: relative; aspect-ratio: 103.6 / 67.1; overflow: hidden; }
+  .plan-box { position: relative; aspect-ratio: 67.1 / 103.6; overflow: hidden; }
   .room3d canvas { width: 100%; height: 100%; display: block; }
   .plan { position: absolute; inset: 0; width: 100%; height: 100%; }
   .room { fill: rgba(255,255,255,.015); stroke: #39404a; stroke-width: .6; }
@@ -539,7 +505,6 @@ const CSS = `
   .ac text { font-size: 2.2px; }
   .spot { cursor: pointer; }
   .plan-box:not(.solid) .spot.on rect { fill: rgba(124,199,255,.10); stroke: var(--cool); stroke-dasharray: none; stroke-width: .4; }
-  .setup .spot.picked text { fill: var(--warm); }
   .spot.on text { fill: var(--cool); }
   .ac rect { fill: transparent; cursor: pointer; }
   .ac.on text { fill: var(--cool); }
@@ -547,18 +512,12 @@ const CSS = `
   .air path.b { opacity: .45; transform: translate(-1.5px, 1px); animation-delay: -.4s; }
   .air path.c { opacity: .3; transform: translate(1.5px, -1px); animation-delay: -.8s; }
   .air.slow path { animation-duration: 2.6s; }
-  .air.setup path { stroke: var(--warm); }
-  .air.setup circle { fill: rgba(255,181,77,.18); stroke: var(--warm); }
   .handle { cursor: grab; touch-action: none; }
   .dragging .handle { cursor: grabbing; }
   .handle .hit { fill: transparent; }
   .handle .knob { fill: var(--ink); stroke: var(--cool); stroke-width: .6; filter: drop-shadow(0 0 1.2px rgba(124,199,255,.9)); }
-  .setup .handle .knob { stroke: var(--warm); }
   .grid circle { fill: var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none; }
   .dragging .grid circle { opacity: .35; }
-  .profiles { flex: 1 1 300px; display: flex; gap: 6px; flex-wrap: wrap; }
-  .profiles button { padding: 7px 10px; border-radius: 999px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); }
-  .profiles button.sel { color: #0d0f11; background: var(--warm); border-color: var(--warm); }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--line); }
   .bar .fan { flex: 1 1 260px; }
   .tools { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; }
@@ -598,7 +557,9 @@ const CSS = `
   .light.gone { opacity: .45; }
   .light input { width: 100%; accent-color: var(--warm); }
   @media (min-width: 900px) {
-    .page { max-width: 1040px; padding: 32px 32px 40px; gap: 18px; }
+    .page { max-width: 1040px; padding: 32px 32px 40px; gap: 18px; align-items: start;
+      grid-template-columns: min(calc((100dvh - 330px) * 67.1 / 103.6), 60%) minmax(260px, 1fr); grid-template-areas: "head head" "plan lights"; }
+    .lights { grid-template-columns: 1fr; }
     h1 { font-size: 56px; }
   }`;
 
