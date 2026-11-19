@@ -13,18 +13,46 @@ const LIGHTS = [
 // Spots on the plan (viewBox 0 0 100 64): their outline, where the air lands, and their switch.
 const SPOTS = {
   my_desk: { name: "My desk", rect: [3, 3, 37, 12], air: [24, 12] },
-  bed: { name: "Bed", rect: [24, 19, 72, 22], air: [62, 33] },
+  bed: { name: "Bed", rect: [52, 18, 44, 26], air: [78, 37] },
   wife_desk: { name: "Wife's desk", rect: [3, 46, 34, 14], air: [26, 49] },
 };
 // The bed's aim while s1n7ax sleeps: left and middle, away from the pillows.
-const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [44, 33] };
+const AIRS = { ...Object.fromEntries(Object.entries(SPOTS).map(([k, s]) => [k, s.air])), bed_sleep: [64, 37] };
 const AIM_NAMES = { my_desk: "My desk", bed: "Bed", bed_sleep: "Bed asleep", wife_desk: "Wife's desk" };
 const AC_AT = [54, 56];
 // The MirAIe AC's modes; the AC's own lists win when it reports them. "off" is not a fan speed.
 const FANS = ["low", "medium", "high", "auto"];
 const VERTICAL = ["V0", "V1", "V2", "V3", "V4", "V5"];
 const HORIZONTAL = ["H0", "H1", "H2", "H3", "H4", "H5"];
-const louver = (m) => (m.endsWith("0") ? "Swing" : m.slice(1));
+// Each louver position drawn as the way the air leaves: up/down seen from the side (1 level,
+// 5 straight down), left/right seen from above as on the plan (1 right, 3 ahead, 5 left), and
+// 0, the AC's own swing, as a sweeping arc.
+const AT = { V: { ac: '<rect x="1.5" y="3" width="6" height="4" rx="1"/>', from: [8, 6], swing: [0, 90] },
+  H: { ac: '<rect x="7" y="18.5" width="10" height="3.5" rx="1"/>', from: [12, 17], swing: [-140, -40] } };
+const pt = ([x, y], deg, r) => [x + r * Math.cos((deg * Math.PI) / 180), y + r * Math.sin((deg * Math.PI) / 180)].map((v) => +v.toFixed(2));
+// An arrowhead at `tip`, pointing along `deg`.
+const head = (tip, deg) => `M${pt(tip, deg + 145, 4.5)} L${tip} L${pt(tip, deg - 145, 4.5)}`;
+const LOUVER_ICON = (axis, n) => {
+  const { ac, from, swing } = AT[axis];
+  if (n === 0) {
+    const [a, b] = swing.map((d) => pt(from, d, 13));
+    return `${ac}<path d="M${a} A13 13 0 0 1 ${b} ${head(a, swing[0] - 90)} ${head(b, swing[1] + 90)}"/>`;
+  }
+  // Up/down: 1 level to 5 straight down. Left/right, as on the plan: 1 far right, 3 ahead, 5 far left.
+  const deg = axis === "V" ? 8 + (n - 1) * 18 : -90 + (3 - n) * 27;
+  const tip = pt(from, deg, 13);
+  return `${ac}<path d="M${from} L${tip} ${head(tip, deg)}"/>`;
+};
+const louver = (m) => {
+  const n = Number(m.slice(1));
+  return `<svg class="louver" viewBox="0 0 24 24" aria-hidden="true">${LOUVER_ICON(m[0], n)}</svg>`;
+};
+const louverName = (m) => {
+  const n = Number(m.slice(1));
+  if (n === 0) return "Swing";
+  return m[0] === "V" ? ["Level", "Slightly down", "Down", "Further down", "Straight down"][n - 1]
+    : ["Far right", "Right", "Ahead", "Left", "Far left"][n - 1];
+};
 
 const ICON = {
   bulb: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>`,
@@ -92,7 +120,10 @@ class FrequentCard extends HTMLElement {
 
   onChange(ev) {
     const t = ev.target;
-    if (t.dataset.action === "brightness") {
+    if (t.dataset.action === "fan") {
+      const speeds = (this._hass.states[AC]?.attributes.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
+      this.call("climate", "set_fan_mode", { entity_id: AC, fan_mode: speeds[Number(t.value)] });
+    } else if (t.dataset.action === "brightness") {
       this.call("light", "turn_on", { entity_id: t.dataset.entity, brightness_pct: Number(t.value) });
     }
   }
@@ -146,8 +177,8 @@ class FrequentCard extends HTMLElement {
       <path class="swing" d="M99 6 L89 6 A10 10 0 0 1 99 16"/>
       <text class="label" x="88" y="10" text-anchor="end">door</text>
       ${spots}
-      <path class="blanket" d="M30 20 V40"/>
-      <g class="pillows"><rect x="91" y="21.5" width="3.2" height="7" rx="1"/><rect x="91" y="31.5" width="3.2" height="7" rx="1"/></g>
+      <path class="blanket" d="M58 19 V43"/>
+      <g class="pillows"><rect x="91" y="22.5" width="3.2" height="8" rx="1"/><rect x="91" y="32" width="3.2" height="8" rx="1"/></g>
       ${air}
       <g class="ac ${this.acOn() ? "on" : ""}" data-action="power"><rect x="38" y="56.5" width="32" height="5" rx="1.5"/>
         <path class="vent" d="M41 57.8 H48 M60 57.8 H67"/>
@@ -164,10 +195,13 @@ class FrequentCard extends HTMLElement {
     const on = this.acOn();
     const attrs = ac?.attributes ?? {};
     // The AC's own controls are disabled while it is off; the aims are not.
-    const seg = (action, modes, current, label = (m) => m, attrs = on ? "" : "disabled") => modes.map((m) =>
-      `<button class="${m === current ? "sel" : ""}" data-action="${action}" data-mode="${m}" ${attrs}>${label(m)}</button>`).join("");
+    const seg = (action, modes, current, attrs = on ? "" : "disabled") => modes.map((m) =>
+      `<button class="${m === current ? "sel" : ""}" data-action="${action}" data-mode="${m}" title="${louverName(m)}" aria-label="${louverName(m)}" ${attrs}>${louver(m)}</button>`).join("");
     const aim = (axis) => states[`select.air_zones_${this.tuning}_${axis}`]?.state;
-    const fans = (attrs.fan_modes ?? FANS).filter((m) => m !== "off");
+    // The slider runs through the AC's speeds; auto sits beside it, as it is not a speed.
+    const speeds = (attrs.fan_modes ?? FANS).filter((m) => !["off", "auto"].includes(m));
+    const fanAuto = attrs.fan_mode === "auto";
+    const speed = speeds.indexOf(attrs.fan_mode);
     const vertical = attrs.swing_modes ?? VERTICAL;
     const horizontal = attrs.swing_horizontal_modes ?? HORIZONTAL;
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
@@ -186,16 +220,20 @@ class FrequentCard extends HTMLElement {
         <section class="panel ac-panel">
           <div class="row"><span>Automation</span>
             <button class="toggle ${auto ? "on" : ""}" data-action="auto" role="switch" aria-checked="${auto}"><i></i></button></div>
-          <div class="row col"><span>Fan</span><div class="seg">${seg("fan", fans, attrs.fan_mode)}</div></div>
-          <div class="row col"><span>Up · down</span><div class="seg">${seg("v", vertical, attrs.swing_mode, louver)}</div></div>
-          <div class="row col"><span>Left · right</span><div class="seg">${seg("h", horizontal, attrs.swing_horizontal_mode, louver)}</div></div>
+          <div class="row col"><span>Fan</span><div class="fan ${fanAuto ? "auto" : ""}">
+            <div class="slider"><input type="range" min="0" max="${speeds.length - 1}" step="1" value="${Math.max(speed, 0)}" data-action="fan" aria-label="Fan speed" ${on ? "" : "disabled"}>
+              <div class="ticks">${speeds.map((m) => `<span class="${m === attrs.fan_mode ? "sel" : ""}">${m}</span>`).join("")}</div></div>
+            <button class="chip ${fanAuto ? "sel" : ""}" data-action="fan" data-mode="auto" ${on ? "" : "disabled"}>Auto</button></div></div>
+          <div class="row col"><span>Up · down</span><div class="seg">${seg("v", vertical, attrs.swing_mode)}</div></div>
+          <div class="row col"><span>Left · right</span><div class="seg">${seg("h", horizontal, attrs.swing_horizontal_mode)}</div></div>
           ${auto ? `<p class="hint">A change here holds for an hour, then the automation takes over.</p>` : ""}
         </section>
         <section class="panel aim-panel">
           <div class="row col"><span>Aim for</span><div class="seg tabs">${Object.entries(AIM_NAMES).map(([k, n]) =>
             `<button class="${k === this.tuning ? "sel" : ""}" data-action="tune" data-aim="${k}">${n}</button>`).join("")}</div></div>
-          <div class="row col"><span>Up · down</span><div class="seg">${seg("aim", VERTICAL, aim("vertical"), louver, 'data-axis="vertical"')}</div></div>
-          <div class="row col"><span>Left · right</span><div class="seg">${seg("aim", HORIZONTAL, aim("horizontal"), louver, 'data-axis="horizontal"')}</div></div>
+          <div class="row col"><span>Up · down</span><div class="seg">${seg("aim", VERTICAL, aim("vertical"), 'data-axis="vertical"')}</div></div>
+          <div class="row col"><span>Left · right</span><div class="seg">${seg("aim", HORIZONTAL, aim("horizontal"), 'data-axis="horizontal"')}</div></div>
+          <p class="hint">Where the automation points the air when it cools ${AIM_NAMES[this.tuning].toLowerCase()}.</p>
         </section>
         <section class="lights">${LIGHTS.map((l) => this.lightHtml(l, states[l.entity])).join("")}</section>
       </div>`;
@@ -237,8 +275,8 @@ const CSS = `
   .power.on { color: #0d0f11; background: var(--cool); border-color: var(--cool); box-shadow: 0 0 24px rgba(124,199,255,.35); }
   .setpoint { font-size: 12px; color: var(--muted); }
   .plan-wrap { grid-area: plan; }
-  .plan { width: 100%; display: block; background: rgba(255,255,255,.015); border: 1px solid var(--line); border-radius: 16px; }
-  .room { fill: none; stroke: #39404a; stroke-width: .6; }
+  .plan { width: 100%; display: block; }
+  .room { fill: rgba(255,255,255,.015); stroke: #39404a; stroke-width: .6; }
   .door { stroke: var(--bg); stroke-width: 1.4; }
   .swing { fill: none; stroke: #39404a; stroke-width: .3; stroke-dasharray: 1 1; }
   .desk { fill: #2a3038; stroke: none; } .chair { fill: none; stroke: #4a525c; stroke-width: .3; }
@@ -273,6 +311,17 @@ const CSS = `
   .seg button { flex: 1; min-width: 0; padding: 10px 2px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; text-transform: capitalize; white-space: nowrap; }
   .seg button.sel { color: #0d0f11; background: var(--cool); border-color: var(--cool); }
   .seg.tabs button.sel { background: var(--ink); border-color: var(--ink); }
+  .seg button:has(.louver) { padding: 6px 2px; display: grid; place-items: center; }
+  .louver { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .louver rect { fill: currentColor; stroke: none; opacity: .5; }
+  .fan { display: flex; align-items: flex-start; gap: 12px; }
+  .slider { flex: 1; min-width: 0; }
+  .slider input { width: 100%; margin: 8px 0 4px; accent-color: var(--cool); }
+  .fan.auto .slider input { accent-color: var(--muted); opacity: .5; }
+  .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; text-transform: capitalize; }
+  .ticks span.sel { color: var(--cool); }
+  .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .chip.sel { color: #0d0f11; background: var(--cool); border-color: var(--cool); }
   .toggle { width: 48px; height: 28px; border-radius: 999px; background: #2a2f36; position: relative; transition: background .2s; }
   .toggle i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #9aa3ad; transition: transform .2s, background .2s; }
   .toggle.on { background: rgba(124,199,255,.35); } .toggle.on i { transform: translateX(20px); background: var(--cool); }
