@@ -233,7 +233,8 @@ class FrequentCard extends HTMLElement {
     if (!handle || (!this.setup && !this.acOn())) return;
     ev.preventDefault();
     handle.setPointerCapture(ev.pointerId);
-    this.drag = { id: ev.pointerId, svg: handle.ownerSVGElement, from: [ev.clientX, ev.clientY], moved: false };
+    const svg = handle.ownerSVGElement;
+    this.drag = { id: ev.pointerId, svg, handle, air: svg.querySelector(".air"), from: [ev.clientX, ev.clientY], moved: false };
   }
 
   dragMove(ev) {
@@ -246,13 +247,12 @@ class FrequentCard extends HTMLElement {
     const x = Math.min(Math.max(p.x, 0), PLAN[0]);
     const y = Math.min(Math.max(p.y, 0), PLAN[1]);
     drag.aim = [nearest(ROWS, y), nearest(COLUMNS, x)];
-    const air = drag.svg.querySelector(".air");
+    const { air, handle } = drag;
     const at = landing(...drag.aim);
     air.classList.remove("sweep");
     for (const path of air.querySelectorAll("path")) path.setAttribute("d", curve(at));
     air.querySelectorAll("animate").forEach((a) => a.remove());
     for (const c of air.querySelectorAll("circle")) c.setAttribute("cx", at[0]), c.setAttribute("cy", at[1]);
-    const handle = drag.svg.querySelector(".handle");
     handle.setAttribute("transform", `translate(${at[0]} ${at[1]})`);
   }
 
@@ -351,6 +351,7 @@ class FrequentCard extends HTMLElement {
     const hs = steps(h);
     const frames = Array.from({ length: Math.max(vs.length, hs.length) }, (_, i) => landing(vs[i % vs.length], hs[i % hs.length]));
     const at = landing(v, h);
+    const path = curve(at);
     const sweep = frames.length > 1;
     const loop = [...frames, frames[0]];
     const anim = (attr, values) => (sweep ? `<animate attributeName="${attr}" dur="${frames.length * 1.4}s" repeatCount="indefinite" values="${values.join(";")}"/>` : "");
@@ -360,7 +361,7 @@ class FrequentCard extends HTMLElement {
     const grid = ROWS.flatMap((y) => COLUMNS.map((x) => `<circle cx="${x}" cy="${y}" r=".7"/>`)).join("");
     return `<g class="grid">${grid}</g>
       <g class="air ${fan === "low" ? "slow" : ""} ${sweep ? "sweep" : ""} ${this.setup ? "setup" : ""}" style="--w:${width}">
-        <path d="${curve(at)}">${d}</path><path d="${curve(at)}" class="b">${d}</path><path d="${curve(at)}" class="c">${d}</path>${ring}</g>
+        <path d="${path}">${d}</path><path d="${path}" class="b">${d}</path><path d="${path}" class="c">${d}</path>${ring}</g>
       <g class="handle" transform="translate(${at[0]} ${at[1]})" role="slider" aria-label="Drag to aim the air"><circle class="hit" r="7"/><circle class="knob" r="2.4"/></g>`;
   }
 

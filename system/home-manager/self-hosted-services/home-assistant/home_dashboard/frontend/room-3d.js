@@ -20,6 +20,8 @@ const EDGE = 0x2a3b80;
 const EDGE_FAINT = 0x182350;
 const AC_Y = 2.05;
 const CEILING_Y = 2.6;
+// A ceiling light's face while it is off.
+const FITTING = 0x3a424e;
 // An active spot's furniture: tinted toward the air's colour and lit from within.
 const COOL = 0x7cc7ff;
 
@@ -295,7 +297,7 @@ export class Room3D {
       // A fitting on the ceiling throws no shadow worth drawing from straight above.
       group.traverse((o) => (o.castShadow = false));
       const face = new THREE.Mesh(new THREE.CircleGeometry(0.16, 32).rotateX(-Math.PI / 2).translate(0, CEILING_Y + 0.001, 0),
-        new THREE.MeshBasicMaterial({ color: 0x3a424e }));
+        new THREE.MeshBasicMaterial({ color: FITTING }));
       const glow = haloMesh(1.6, 1.6, CEILING_Y - 0.05);
       const lamp = new THREE.PointLight(0xffffff, 0, 4, 1.6);
       lamp.position.set(0, CEILING_Y - 0.3, 0);
@@ -328,7 +330,7 @@ export class Room3D {
         glow.material.color.copy(color);
         lamp.color.copy(color);
       } else {
-        face.material.color.set(0x3a424e);
+        face.material.color.set(FITTING);
       }
     }
     this.renderer.render(this.scene, this.camera);
