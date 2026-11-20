@@ -21,7 +21,6 @@ from homeassistant.const import STATE_ON
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_state_change_event
-from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 
@@ -48,7 +47,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         return True
     lights = LightMemory(hass, config[DOMAIN][CONF_ENTITIES])
     await lights.async_load()
-    async_at_started(hass, lights.start)
+    lights.start()
     return True
 
 
@@ -72,11 +71,12 @@ class LightMemory:
         self.store.async_delay_save(lambda: {"settings": self.settings}, 1)
 
     @callback
-    def start(self, _hass: HomeAssistant) -> None:
+    def start(self) -> None:
+        """Watch the lights from setup on, so a turn-on while HA is still starting is covered."""
         async_track_state_change_event(self.hass, self.entities, self._changed)
         for entity_id in self.entities:
             self._remember(self.hass.states.get(entity_id))
-            # MQTT lights often appear only after HA has started; their first state wraps them.
+            # A light MQTT has not set up yet is wrapped when it first reports.
             if not self._wrap(entity_id):
                 _LOGGER.debug("%s not there yet; wrapping it when it reports", entity_id)
 
