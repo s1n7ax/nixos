@@ -3,6 +3,7 @@
 Set up from an `air_zones:` line in configuration.yaml. It adds a switch per spot (my
 desk, bed, wife's desk), an automation switch, a vertical and a horizontal aim select per
 spot and a status sensor. The schedule, the sleep rules and the sweep live in `zones.py`.
+While s1n7ax is away from home, their desk is left out.
 
 It only steers the AC while the AC is on, and never turns it on. A fan or direction
 change made by hand (HA, the MirAIe app or the remote) is left alone for an hour.
@@ -14,7 +15,7 @@ import logging
 from datetime import datetime, timedelta
 
 import voluptuous as vol
-from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, Platform
+from homeassistant.const import STATE_HOME, STATE_UNAVAILABLE, STATE_UNKNOWN, Platform
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
@@ -33,6 +34,7 @@ DOMAIN = "air_zones"
 SIGNAL = f"{DOMAIN}_update"
 CONF_CLIMATE = "climate"
 CONF_SLEEP_SENSOR = "sleep_sensor"
+CONF_PERSON = "person"
 INTERVAL = timedelta(seconds=15)
 PLATFORMS = (Platform.SWITCH, Platform.SELECT, Platform.SENSOR)
 OFF_STATES = ("off", STATE_UNAVAILABLE, STATE_UNKNOWN)
@@ -47,6 +49,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Optional(
                     CONF_SLEEP_SENSOR, default="sensor.pixel_9_pro_xl_sleep_confidence"
                 ): cv.entity_id,
+                vol.Optional(CONF_PERSON, default="person.s1n7ax"): cv.entity_id,
             }
         )
     },
@@ -90,11 +93,13 @@ class AirZones:
         self.hass = hass
         self.climate = conf[CONF_CLIMATE]
         self.sleep_sensor = conf[CONF_SLEEP_SENSOR]
+        self.person = conf[CONF_PERSON]
         self.store = Store(hass, 1, DOMAIN)
         self.enabled = True
         self.spots: set[str] = set()
         self.aims = dict(zones.DEFAULT_AIMS)
         self.asleep_since: datetime | None = None
+        self.away = False
         self.last_step: str | None = None
         self.hold_until: datetime | None = None
         # 29 °C is set once per step, when the AC is on.
@@ -111,6 +116,7 @@ class AirZones:
         self.spots = set(data.get("spots", [])) & set(zones.SPOTS)
         self.aims.update({k: tuple(v) for k, v in data.get("aims", {}).items() if k in zones.AIMS})
         self.asleep_since = _time(data.get("asleep_since"))
+        self.away = data.get("away", False)
         self.last_step = data.get("last_step")
         self.hold_until = _time(data.get("hold_until"))
         self.temperature_due = data.get("temperature_due", False)
@@ -123,6 +129,7 @@ class AirZones:
                 "spots": sorted(self.spots),
                 "aims": {k: list(v) for k, v in self.aims.items()},
                 "asleep_since": self.asleep_since and self.asleep_since.isoformat(),
+                "away": self.away,
                 "last_step": self.last_step,
                 "hold_until": self.hold_until and self.hold_until.isoformat(),
                 "temperature_due": self.temperature_due,
@@ -186,15 +193,33 @@ class AirZones:
         except ValueError:
             return None
 
+    def _away(self) -> bool:
+        """Whether s1n7ax is away; the last known answer while their person is unknown."""
+        state = self.hass.states.get(self.person)
+        if _is_off(state):
+            return self.away
+        return state.state != STATE_HOME
+
     async def async_update(self) -> None:
         now = dt_util.now()
         self.asleep_since = zones.asleep_since(now, self.asleep_since, self._sleep_confidence())
-        step = zones.current_step(now, self.asleep_since)
+        away = self._away()
+        step = zones.current_step(now, self.asleep_since, away)
         if step.key != self.last_step:
             _LOGGER.info("Step %s: %s", step.key, sorted(step.spots))
             self.last_step = step.key
             self.spots = set(step.spots)
             self.temperature_due = True
+            self._save()
+        elif away != self.away:
+            # Leaving or coming home mid-step moves only the desk; other spots stay as set.
+            _LOGGER.info("s1n7ax %s", "left" if away else "came home")
+            if away:
+                self.spots.discard(zones.MY_DESK)
+            elif zones.MY_DESK in zones.current_step(now, self.asleep_since).spots:
+                self.spots.add(zones.MY_DESK)
+        if away != self.away:
+            self.away = away
             self._save()
         self.plan = zones.plan(now, self.spots, self.aims, self.asleep_since)
         if self.hold_until is not None and now >= self.hold_until:
