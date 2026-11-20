@@ -276,15 +276,17 @@ class AirZones:
         self.expected = wanted
         self.last_command = now
         self.commands.append((now, current, wanted))
-        fan, vertical, horizontal = wanted
-        if current[0] != fan:
-            await self._call("set_fan_mode", {**target, "fan_mode": fan})
-        if current[1] != vertical:
-            await self._call("set_swing_mode", {**target, "swing_mode": vertical})
-        if current[2] != horizontal:
-            await self._call(
-                "set_swing_horizontal_mode", {**target, "swing_horizontal_mode": horizontal}
-            )
+        calls = (
+            ("set_fan_mode", "fan_mode"),
+            ("set_swing_mode", "swing_mode"),
+            ("set_swing_horizontal_mode", "swing_horizontal_mode"),
+        )
+        for (service, attr), now_set, value in zip(calls, current, wanted, strict=True):
+            # A person may steer the AC while an earlier call waits on the cloud.
+            if self.hold_until is not None:
+                return
+            if now_set != value:
+                await self._call(service, {**target, attr: value})
 
     async def _call(self, service: str, data: dict) -> bool:
         try:
