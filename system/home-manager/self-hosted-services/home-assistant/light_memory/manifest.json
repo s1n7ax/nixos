@@ -1,0 +1,11 @@
+{
+  "domain": "light_memory",
+  "name": "Light memory",
+  "codeowners": [],
+  "config_flow": false,
+  "dependencies": ["light"],
+  "documentation": "https://github.com/s1n7ax/nixos/tree/main/system/home-manager/self-hosted-services/home-assistant",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "1.0.0"
+}

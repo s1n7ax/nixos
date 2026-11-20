@@ -36,6 +36,8 @@ with lib;
         "${./home-assistant/air_zones}:/config/custom_components/air_zones:ro"
         # The energy_meters integration: keeps the Energy dashboard's device list in sync.
         "${./home-assistant/energy_meters}:/config/custom_components/energy_meters:ro"
+        # The light_memory integration: office lights come back on as they were last set.
+        "${./home-assistant/light_memory}:/config/custom_components/light_memory:ro"
       ];
       extraPodmanArgs = [ "--tz=local" ];
       # Loopback only: the host Caddy (nixos/self-hosted-services/home-assistant-proxy.nix)
