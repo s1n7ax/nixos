@@ -328,8 +328,9 @@ close() {
 # screen, so the wheel scrolls back, and a drag copies, in the session, the
 # way they do in a local workspace (emacs keys, as tmux picks here). The copy
 # reaches this machine's clipboard through its tmux, which needs
-# set-clipboard on for that (see tmux.nix). The config is read when the
-# server starts.
+# set-clipboard on for that (see tmux.nix). A program's own copy (OSC 52, a
+# Neovim yank) needs set-clipboard on in this tmux too, or it drops it. The
+# config is read when the server starts.
 #
 # Alt+Shift+Tab is sent on by a key binding: this machine's tmux hands it to
 # the session's client as an extended key, and tmux (3.7b) then sends nothing
@@ -378,6 +379,8 @@ set -g mouse on
 set -g mode-keys emacs
 set -s escape-time 0
 set -s extended-keys on
+set -s set-clipboard on
+set -s get-clipboard off
 set -g default-terminal tmux-256color
 set -as terminal-features ",*:RGB"
 set -g history-limit 50000
