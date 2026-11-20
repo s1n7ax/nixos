@@ -12,6 +12,7 @@
       grim
       slurp
       satty
+      wl-clipboard
     ];
   };
 }

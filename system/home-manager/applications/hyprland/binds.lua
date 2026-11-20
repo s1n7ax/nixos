@@ -33,7 +33,7 @@ hl.bind(
 hl.bind(
 	amod .. " + C",
 	hl.dsp.exec_cmd(
-		[[geom=$(slurp) && grim -g "$geom" - | satty --filename - --copy-command wl-copy --early-exit --actions-on-enter save-to-clipboard --initial-tool arrow]]
+		[[geom=$(slurp) && grim -g "$geom" - | satty --filename - --copy-command 'wl-copy -t image/png' --early-exit --actions-on-enter save-to-clipboard --initial-tool arrow]]
 	)
 )
 
