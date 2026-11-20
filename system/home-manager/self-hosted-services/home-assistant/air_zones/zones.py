@@ -120,12 +120,15 @@ def asleep_since(
     return None
 
 
-def current_step(now: datetime, since: datetime | None) -> Step:
-    """The step in force: the last schedule moment, or sleep once it started after it."""
+def current_step(now: datetime, since: datetime | None, away: bool = False) -> Step:
+    """The step in force: the last schedule moment, or sleep once it started after it.
+
+    While s1n7ax is away, their desk gets no air.
+    """
     moment, spots = last_moment(now)
     if since is not None and since >= moment:
         return Step(f"sleep {since.isoformat()}", SLEEP_SPOTS, since)
-    return Step(moment.isoformat(), spots, None)
+    return Step(moment.isoformat(), spots - {MY_DESK} if away else spots, None)
 
 
 def plan(

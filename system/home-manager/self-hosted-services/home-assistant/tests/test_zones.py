@@ -92,6 +92,24 @@ def test_yesterdays_sleep_does_not_leak_into_the_day():
     assert current_step(at(21, 12), at(21, 1, 30)).spots == {BED, WIFE_DESK}
 
 
+@pytest.mark.parametrize(
+    ("now", "spots"),
+    [
+        (at(20, 9), {BED, WIFE_DESK}),
+        (at(20, 12), {BED, WIFE_DESK}),
+        (at(20, 19), {BED, WIFE_DESK}),
+        (at(20, 22, 30), {BED}),
+    ],
+)
+def test_away_leaves_my_desk_out(now, spots):
+    assert current_step(now, None, away=True).spots == spots
+
+
+def test_away_keeps_the_step():
+    # Leaving or coming home is not a new step: hand-set spots and 29 °C stay.
+    assert current_step(at(20, 19), None, away=True).key == current_step(at(20, 19), None).key
+
+
 def test_one_spot_is_aimed_at():
     p = plan(at(20, 12), {MY_DESK}, DEFAULT_AIMS, None)
     assert p.targets == (MY_DESK,)
