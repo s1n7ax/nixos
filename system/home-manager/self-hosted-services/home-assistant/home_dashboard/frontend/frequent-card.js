@@ -26,13 +26,28 @@ const SPOTS = {
 // Ceiling lights, where room-3d.js hangs them.
 const LIGHT_AT = { "light.b_office_srinesh": [33.5, 12], "light.b_office_nidu": [33.5, 77.5] };
 const AC_AT = [33.5, 84.9];
-// Where the air lands for a louver position: left/right picks a column (5 far left … 1 far
-// right, as the louver icons draw it), up/down a row (1 level, reaching the far wall … 5 straight
-// down, by the AC). 0 is the AC's own swing across that axis.
-const COLUMNS = [60, 47, 33.5, 20, 7];
-const ROWS = [8, 25.5, 43, 60.5, 78];
-const landing = (v, h) => [COLUMNS[(h || 3) - 1], ROWS[(v || 3) - 1]];
-const nearest = (list, value) => list.reduce((best, x, i) => (Math.abs(x - value) < Math.abs(list[best] - value) ? i : best), 0) + 1;
+// Where the air lands for a louver position, fanning out from the AC: up/down picks how far it
+// throws (1 reaching the far wall … 5 the lowest, which still lands on the bed, not under the AC),
+// left/right how far it bends (5 far left … 1 far right, as the louver icons draw it). Each step
+// throws further than the last, so the further out, the more of the room a step covers. The saved
+// aims land on their spots: the bed V5/H2 and V5/H3, wife's desk V5/H5, my desk V2/H5. 0 is the
+// AC's own swing across that axis.
+const THROWS = [83, 68, 54, 42, 33];
+const BENDS = [1, 0.4, 0, -0.4, -1];
+const SPREAD = 25;
+const landing = (v, h) => {
+  const r = THROWS[(v || 3) - 1];
+  const dx = BENDS[(h || 3) - 1] * SPREAD;
+  return [AC_AT[0] + dx, AC_AT[1] - Math.sqrt(r * r - dx * dx)].map((n) => +n.toFixed(2));
+};
+// The landing ring grows with the throw, as the air spreads the further it goes.
+const reach = ([x, y]) => +(1.5 + Math.hypot(x - AC_AT[0], y - AC_AT[1]) / 22).toFixed(2);
+const AIMS = THROWS.flatMap((_, v) => BENDS.map((_, h) => [v + 1, h + 1]));
+// The louver position landing nearest a point on the plan, as [v, h].
+const nearest = ([x, y]) => AIMS.reduce((best, aim) => {
+  const dist = (a) => Math.hypot(landing(...a)[0] - x, landing(...a)[1] - y);
+  return dist(aim) < dist(best) ? aim : best;
+});
 const curve = ([x, y]) => {
   const [ax, ay] = AC_AT;
   return `M${ax} ${ay} Q ${(ax + x) / 2 + (x < ax ? 8 : -8)} ${(ay + y) / 2} ${x} ${y}`;
@@ -224,13 +239,13 @@ class FrequentCard extends HTMLElement {
     const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(drag.svg.getScreenCTM().inverse());
     const x = Math.min(Math.max(p.x, 0), PLAN[0]);
     const y = Math.min(Math.max(p.y, 0), PLAN[1]);
-    drag.aim = [nearest(ROWS, y), nearest(COLUMNS, x)];
+    drag.aim = nearest([x, y]);
     const { air, handle } = drag;
     const at = landing(...drag.aim);
     air.classList.remove("sweep");
     for (const path of air.querySelectorAll("path")) path.setAttribute("d", curve(at));
     air.querySelectorAll("animate").forEach((a) => a.remove());
-    for (const c of air.querySelectorAll("circle")) c.setAttribute("cx", at[0]), c.setAttribute("cy", at[1]);
+    for (const c of air.querySelectorAll("circle")) c.setAttribute("cx", at[0]), c.setAttribute("cy", at[1]), c.setAttribute("r", reach(at));
     handle.setAttribute("transform", `translate(${at[0]} ${at[1]})`);
   }
 
@@ -335,8 +350,8 @@ class FrequentCard extends HTMLElement {
     const anim = (attr, values) => (sweep ? `<animate attributeName="${attr}" dur="${frames.length * 1.4}s" repeatCount="indefinite" values="${values.join(";")}"/>` : "");
     const d = anim("d", loop.map(curve));
     const width = { low: 0.6, medium: 0.9, high: 1.3 }[fan] ?? 1;
-    const ring = `<circle cx="${at[0]}" cy="${at[1]}" r="3.2">${anim("cx", loop.map((p) => p[0]))}${anim("cy", loop.map((p) => p[1]))}</circle>`;
-    const grid = ROWS.flatMap((y) => COLUMNS.map((x) => `<circle cx="${x}" cy="${y}" r=".7"/>`)).join("");
+    const ring = `<circle cx="${at[0]}" cy="${at[1]}" r="${reach(at)}">${anim("cx", loop.map((p) => p[0]))}${anim("cy", loop.map((p) => p[1]))}${anim("r", loop.map(reach))}</circle>`;
+    const grid = AIMS.map((a) => landing(...a)).map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".7"/>`).join("");
     return `<g class="grid">${grid}</g>
       <g class="air ${fan === "low" ? "slow" : ""} ${sweep ? "sweep" : ""}" style="--w:${width}">
         <path d="${path}">${d}</path><path d="${path}" class="b">${d}</path><path d="${path}" class="c">${d}</path>${ring}</g>
