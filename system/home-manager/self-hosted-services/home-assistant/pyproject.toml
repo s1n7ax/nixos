@@ -4,9 +4,9 @@
 # (or `nix build .#checks.x86_64-linux.security-alerts` from the repo root).
 
 [tool.pytest.ini_options]
-# Tests import the pure-Python parts (`core`, `imaging`, `matching`, `meters`, `zones`) directly,
+# Tests import the pure-Python parts (`core`, `imaging`, `matching`, `memory`, `meters`, `zones`) directly,
 # without Home Assistant installed.
-pythonpath = ["security_alerts", "energy_meters", "air_zones"]
+pythonpath = ["security_alerts", "energy_meters", "air_zones", "light_memory"]
 testpaths = ["tests"]
 addopts = "-p no:cacheprovider"
 
@@ -18,4 +18,4 @@ target-version = "py313"
 select = ["E", "F", "W", "I", "B", "UP"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["core", "imaging", "matching", "meters", "modes", "zones"]
+known-first-party = ["core", "imaging", "matching", "memory", "meters", "modes", "zones"]
