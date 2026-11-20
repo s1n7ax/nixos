@@ -9,7 +9,7 @@ from zones import (
     BED_SLEEP,
     DEFAULT_AIMS,
     FAN_HIGH,
-    FAN_LOW,
+    FAN_MEDIUM,
     MY_DESK,
     SPOTS,
     WIFE_DESK,
@@ -122,10 +122,26 @@ def test_asleep_the_bed_gets_its_sleep_aim_on_high_fan():
     assert p.fan == FAN_HIGH
 
 
-def test_three_hours_into_sleep_the_fan_goes_low():
+def test_three_hours_into_sleep_the_fan_goes_medium():
     since = at(21, 1)
     assert plan(at(21, 3, 59), {BED}, DEFAULT_AIMS, since).fan == FAN_HIGH
-    assert plan(at(21, 4), {BED}, DEFAULT_AIMS, since).fan == FAN_LOW
+    assert plan(at(21, 4), {BED}, DEFAULT_AIMS, since).fan == FAN_MEDIUM
+
+
+@pytest.mark.parametrize(
+    ("now", "target", "fan"),
+    [
+        (at(21, 4, 29), BED_SLEEP, FAN_HIGH),
+        (at(21, 4, 30), BED_SLEEP, FAN_MEDIUM),
+        (at(21, 7, 59), BED_SLEEP, FAN_MEDIUM),
+        (at(21, 8), BED, FAN_HIGH),
+    ],
+)
+def test_without_a_sleep_signal_the_fan_goes_medium_at_0430_until_0800(now, target, fan):
+    since = asleep_since(now, None, None)
+    step = current_step(now, since)
+    p = plan(now, step.spots, DEFAULT_AIMS, since)
+    assert (p.targets[0], p.fan) == (target, fan)
 
 
 def test_tuned_aims_are_used():

@@ -313,7 +313,7 @@ class FrequentCard extends HTMLElement {
       case "paused": return "Automation off · you're steering";
       case "holding": return `Keeping your change until ${clock(a.hold_until)}`;
       case "idle": return "No spot needs air";
-      case "aimed": return `Cooling ${names[0]}${a.asleep_since ? (a.fan === "low" ? " · gentle" : " · asleep") : ""}`;
+      case "aimed": return `Cooling ${names[0]}${a.asleep_since ? (a.fan !== "high" ? " · gentle" : " · asleep") : ""}`;
       case "sweeping": return `Sweeping ${names.join(" → ")}`;
       default: return "Air zones not loaded";
     }
