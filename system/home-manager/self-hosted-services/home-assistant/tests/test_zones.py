@@ -17,6 +17,7 @@ from zones import (
     current_step,
     is_manual,
     last_moment,
+    person_steers,
     plan,
 )
 
@@ -223,3 +224,65 @@ def test_coming_back_on_or_online_is_not_manual():
 
 def test_unchanged_setting_is_not_manual():
     assert not is_manual(OLD, OLD, [], NOW)
+
+
+AC = "climate.ac"
+
+
+@pytest.mark.parametrize(
+    ("call", "user_id", "steers"),
+    [
+        (
+            {"domain": "climate", "service": "set_swing_mode", "service_data": {"entity_id": AC}},
+            "u",
+            True,
+        ),
+        (
+            {"domain": "climate", "service": "set_fan_mode", "service_data": {"entity_id": [AC]}},
+            "u",
+            True,
+        ),
+        (
+            {
+                "domain": "climate",
+                "service": "set_swing_horizontal_mode",
+                "service_data": {"entity_id": AC},
+            },
+            "u",
+            True,
+        ),
+        # The integration's own commands carry no user.
+        (
+            {"domain": "climate", "service": "set_swing_mode", "service_data": {"entity_id": AC}},
+            None,
+            False,
+        ),
+        (
+            {"domain": "climate", "service": "set_temperature", "service_data": {"entity_id": AC}},
+            "u",
+            False,
+        ),
+        (
+            {"domain": "climate", "service": "turn_on", "service_data": {"entity_id": AC}},
+            "u",
+            False,
+        ),
+        (
+            {
+                "domain": "climate",
+                "service": "set_swing_mode",
+                "service_data": {"entity_id": "climate.other"},
+            },
+            "u",
+            False,
+        ),
+        (
+            {"domain": "light", "service": "set_swing_mode", "service_data": {"entity_id": AC}},
+            "u",
+            False,
+        ),
+        ({"domain": "climate", "service": "set_swing_mode", "service_data": {}}, "u", False),
+    ],
+)
+def test_person_steers(call, user_id, steers):
+    assert person_steers(call, user_id, AC) is steers
