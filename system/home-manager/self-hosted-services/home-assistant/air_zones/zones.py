@@ -44,7 +44,7 @@ GENTLE_AFTER = timedelta(hours=3)
 
 TEMPERATURE = 29
 FAN_HIGH = "high"
-FAN_LOW = "low"
+FAN_MEDIUM = "medium"
 HOLD = timedelta(hours=1)
 DWELL = timedelta(minutes=2)
 # The AC reports a command back through its cloud, a few seconds later and one setting at
@@ -144,7 +144,7 @@ def plan(
         return None
     target = targets[int(now.timestamp() // DWELL.total_seconds()) % len(targets)]
     vertical, horizontal = aims.get(target, DEFAULT_AIMS[target])
-    fan = FAN_LOW if asleep and now >= since + GENTLE_AFTER else FAN_HIGH
+    fan = FAN_MEDIUM if asleep and now >= since + GENTLE_AFTER else FAN_HIGH
     return Plan(targets, target, vertical, horizontal, fan)
 
 
