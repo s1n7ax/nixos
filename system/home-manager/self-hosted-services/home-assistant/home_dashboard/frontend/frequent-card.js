@@ -41,8 +41,9 @@ const curve = ([x, y]) => {
 const FANS = ["low", "medium", "high", "auto"];
 // The AC's own swing on an axis, drawn as a sweeping arc: up/down seen from the side, left/right
 // seen from above as on the plan.
-const AT = { V: { ac: '<rect x="1.5" y="3" width="6" height="4" rx="1"/>', from: [8, 6], swing: [0, 90] },
-  H: { ac: '<rect x="7" y="18.5" width="10" height="3.5" rx="1"/>', from: [12, 17], swing: [-140, -40] } };
+// Each is placed so the drawing sits centred in its button.
+const AT = { V: { ac: '<rect x="1" y="3" width="6" height="4" rx="1"/>', from: [7.5, 6], swing: [0, 90] },
+  H: { ac: '<rect x="7" y="17.5" width="10" height="3.5" rx="1"/>', from: [12, 16], swing: [-140, -40] } };
 const pt = ([x, y], deg, r) => [x + r * Math.cos((deg * Math.PI) / 180), y + r * Math.sin((deg * Math.PI) / 180)].map((v) => +v.toFixed(2));
 // An arrowhead at `tip`, pointing along `deg`.
 const head = (tip, deg) => `M${pt(tip, deg + 145, 4.5)} L${tip} L${pt(tip, deg - 145, 4.5)}`;
@@ -519,6 +520,7 @@ const CSS = `
   .handle .knob { fill: var(--ink); stroke: var(--cool); stroke-width: .6; filter: drop-shadow(0 0 1.2px rgba(124,199,255,.9)); }
   .grid circle { fill: var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none; }
   .dragging .grid circle { opacity: .35; }
+  /* The bar's buttons are all 40px tall, and every control is centred on the slider's track. */
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--line); }
   .bar .fan { flex: 1 1 260px; }
   .tools { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; }
@@ -539,13 +541,14 @@ const CSS = `
   .hint { color: var(--muted); font-size: 12px; margin: 8px 2px 0; }
   .louver { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .louver rect { fill: currentColor; stroke: none; opacity: .5; }
-  .fan { display: flex; align-items: flex-start; gap: 12px; }
-  .slider { flex: 1; min-width: 0; }
-  .slider input { width: 100%; margin: 8px 0 4px; accent-color: var(--cool); }
+  .fan { display: flex; align-items: center; gap: 12px; }
+  /* As much room above the track as the speeds take below it, so the track is the slider's middle. */
+  .slider { flex: 1; min-width: 0; --ticks: 17px; padding-top: var(--ticks); }
+  .slider input { display: block; width: 100%; margin: 4px 0; accent-color: var(--cool); }
   .fan.auto .slider input { accent-color: var(--muted); opacity: .5; }
-  .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; text-transform: capitalize; }
+  .ticks { display: flex; justify-content: space-between; height: var(--ticks); color: var(--muted); font-size: 12px; text-transform: capitalize; }
   .ticks span.sel { color: var(--cool); }
-  .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .chip { height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
   .chip.sel { color: #0d0f11; background: var(--cool); border-color: var(--cool); }
   .lights { grid-area: lights; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .light { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; transition: box-shadow .3s, border-color .3s; }
