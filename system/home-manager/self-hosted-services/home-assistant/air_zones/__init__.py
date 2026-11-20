@@ -6,7 +6,8 @@ spot and a status sensor. The schedule, the sleep rules and the sweep live in `z
 While s1n7ax is away from home, their desk is left out.
 
 It only steers the AC while the AC is on, and never turns it on. A fan or direction
-change made by hand (HA, the MirAIe app or the remote) is left alone for an hour.
+change made by hand (HA, the MirAIe app or the remote) is left alone for an hour. One made
+by a person in HA is known from the service call; others from how the AC reports them.
 """
 
 from __future__ import annotations
@@ -15,7 +16,13 @@ import logging
 from datetime import datetime, timedelta
 
 import voluptuous as vol
-from homeassistant.const import STATE_HOME, STATE_UNAVAILABLE, STATE_UNKNOWN, Platform
+from homeassistant.const import (
+    EVENT_CALL_SERVICE,
+    STATE_HOME,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+    Platform,
+)
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
@@ -141,6 +148,7 @@ class AirZones:
     def start(self, _hass: HomeAssistant) -> None:
         async_track_time_interval(self.hass, self._interval, INTERVAL)
         async_track_state_change_event(self.hass, [self.climate], self._climate_changed)
+        self.hass.bus.async_listen(EVENT_CALL_SERVICE, self._service_called)
         self.hass.async_create_task(self.async_update())
 
     async def _interval(self, _now: datetime) -> None:
@@ -153,9 +161,7 @@ class AirZones:
         now = dt_util.now()
         self.commands = [c for c in self.commands if now - c[0] < zones.REPORT_WINDOW]
         if zones.is_manual(before, after, self.commands, now):
-            _LOGGER.info("Manual AC change to %s; holding until %s", after, now + zones.HOLD)
-            self.hold_until = now + zones.HOLD
-            self._save()
+            self._hold(now, f"Manual AC change to {after}")
         elif before is None and after is not None:
             # Turned on or back online: aim it now, not at the next interval.
             self.expected = None
@@ -163,6 +169,20 @@ class AirZones:
             self.hass.async_create_task(self.async_update())
         # The status follows the AC at once, e.g. "ac_off", not at the next interval.
         async_dispatcher_send(self.hass, SIGNAL)
+
+    @callback
+    def _service_called(self, event: Event) -> None:
+        """A person steering the AC from HA holds it, even while its reports can't tell."""
+        if not zones.person_steers(event.data, event.context.user_id, self.climate):
+            return
+        self._hold(dt_util.now(), f"climate.{event.data['service']} by a person")
+        async_dispatcher_send(self.hass, SIGNAL)
+
+    @callback
+    def _hold(self, now: datetime, why: str) -> None:
+        _LOGGER.info("%s; holding until %s", why, now + zones.HOLD)
+        self.hold_until = now + zones.HOLD
+        self._save()
 
     async def async_set_spot(self, spot: str, on: bool) -> None:
         (self.spots.add if on else self.spots.discard)(spot)

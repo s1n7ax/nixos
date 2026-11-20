@@ -20,9 +20,9 @@ AIMS = (MY_DESK, BED, BED_SLEEP, WIFE_DESK)
 VERTICAL = ("V0", "V1", "V2", "V3", "V4", "V5")
 HORIZONTAL = ("H0", "H1", "H2", "H3", "H4", "H5")
 DEFAULT_AIMS = {
-    MY_DESK: ("V1", "H5"),
-    BED: ("V3", "H2"),
-    BED_SLEEP: ("V3", "H3"),
+    MY_DESK: ("V2", "H5"),
+    BED: ("V5", "H2"),
+    BED_SLEEP: ("V5", "H3"),
     WIFE_DESK: ("V4", "H5"),
 }
 
@@ -53,6 +53,9 @@ DWELL = timedelta(minutes=2)
 # arriving. Turning on or coming back online also reports for a while, one setting at a time.
 RESEND = timedelta(seconds=45)
 REPORT_WINDOW = timedelta(minutes=2)
+# The climate services a person steers the AC with; one called from HA by a person is a manual
+# change however the AC reports it back.
+STEERING = ("set_fan_mode", "set_swing_mode", "set_swing_horizontal_mode")
 
 
 # (fan, vertical, horizontal), as the AC reports it.
@@ -167,3 +170,11 @@ def is_manual(
     if any(old is None or new is None for old, new in recent):
         return False
     return any(all(a not in (old[i], new[i]) for old, new in recent) for i, a in enumerate(after))
+
+
+def person_steers(call: dict, user_id: str | None, climate: str) -> bool:
+    """Whether a service call (a `call_service` event's data) is a person steering `climate`."""
+    if user_id is None or call.get("domain") != "climate" or call.get("service") not in STEERING:
+        return False
+    targets = call.get("service_data", {}).get("entity_id", [])
+    return climate in ([targets] if isinstance(targets, str) else targets)
