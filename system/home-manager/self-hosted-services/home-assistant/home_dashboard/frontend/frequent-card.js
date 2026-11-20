@@ -520,7 +520,7 @@ const CSS = `
   .handle .knob { fill: var(--ink); stroke: var(--cool); stroke-width: .6; filter: drop-shadow(0 0 1.2px rgba(124,199,255,.9)); }
   .grid circle { fill: var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none; }
   .dragging .grid circle { opacity: .35; }
-  /* Every control in the bar is 40px tall and centred on the slider's track. */
+  /* The bar's buttons are all 40px tall, and every control is centred on the slider's track. */
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--line); }
   .bar .fan { flex: 1 1 260px; }
   .tools { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; }
