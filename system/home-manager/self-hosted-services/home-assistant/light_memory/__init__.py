@@ -90,7 +90,7 @@ class LightMemory:
         """Only an on light's report counts: the bulbs report a stale level while off."""
         if state is None or state.state != STATE_ON:
             return
-        setting = memory.setting(dict(state.attributes))
+        setting = memory.setting(state.attributes)
         if setting is None or setting == self.settings.get(state.entity_id):
             return
         self.settings[state.entity_id] = setting

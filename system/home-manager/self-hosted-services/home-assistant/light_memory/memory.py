@@ -5,6 +5,7 @@ Pure Python, no Home Assistant imports, so the tests run without it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 # A light's brightness and colour, keyed like `light.turn_on`'s own data, e.g.
@@ -27,7 +28,7 @@ COLOR_BY_MODE = {
 COLOR_KEYS = (*COLOR_BY_MODE.values(), WHITE)
 
 
-def setting(attributes: dict[str, Any]) -> Setting | None:
+def setting(attributes: Mapping[str, Any]) -> Setting | None:
     """The brightness and colour of a light that is on, or None when it reports neither."""
     remembered: Setting = {}
     if (brightness := attributes.get(BRIGHTNESS)) is not None:
