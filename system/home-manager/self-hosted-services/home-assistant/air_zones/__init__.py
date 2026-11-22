@@ -109,7 +109,8 @@ class AirZones:
         self.away = False
         self.last_step: str | None = None
         self.hold_until: datetime | None = None
-        # 29 °C is set once per step, when the AC is on.
+        # The target temperature is set once per step and when it changes, when the AC is on.
+        self.temperature = zones.TEMPERATURE
         self.temperature_due = False
         # What was last sent to the AC, and when; in memory only.
         self.expected: zones.Setting | None = None
@@ -126,6 +127,7 @@ class AirZones:
         self.away = data.get("away", False)
         self.last_step = data.get("last_step")
         self.hold_until = _time(data.get("hold_until"))
+        self.temperature = data.get("temperature", zones.TEMPERATURE)
         self.temperature_due = data.get("temperature_due", False)
 
     @callback
@@ -139,6 +141,7 @@ class AirZones:
                 "away": self.away,
                 "last_step": self.last_step,
                 "hold_until": self.hold_until and self.hold_until.isoformat(),
+                "temperature": self.temperature,
                 "temperature_due": self.temperature_due,
             },
             1,
@@ -241,6 +244,12 @@ class AirZones:
         if away != self.away:
             self.away = away
             self._save()
+        temperature = zones.temperature(now, self.asleep_since)
+        if temperature != self.temperature:
+            _LOGGER.info("Target temperature %s °C", temperature)
+            self.temperature = temperature
+            self.temperature_due = True
+            self._save()
         self.plan = zones.plan(now, self.spots, self.aims, self.asleep_since)
         if self.hold_until is not None and now >= self.hold_until:
             self.hold_until = None
@@ -258,8 +267,8 @@ class AirZones:
             return
         target = {"entity_id": self.climate}
         if self.temperature_due:
-            if state.attributes.get("temperature") == zones.TEMPERATURE or await self._call(
-                "set_temperature", {**target, "temperature": zones.TEMPERATURE}
+            if state.attributes.get("temperature") == self.temperature or await self._call(
+                "set_temperature", {**target, "temperature": self.temperature}
             ):
                 self.temperature_due = False
                 self._save()
