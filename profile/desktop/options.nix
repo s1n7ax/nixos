@@ -137,6 +137,7 @@
           tailwindcss.enable = true;
           chakra-ui.enable = true;
           jira.enable = false;
+          digitalocean.enable = true;
           home-assistant.enable = false;
         };
       };
