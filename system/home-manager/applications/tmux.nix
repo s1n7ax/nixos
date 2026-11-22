@@ -95,6 +95,7 @@ in
 
         bind n new-window
         bind x kill-window
+        bind l last-window
       ''
       + lib.optionalString workspaces.enable workspaceConfig;
     };
