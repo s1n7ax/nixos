@@ -11,6 +11,8 @@
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
+    # homelab-hub, rendered by sops-nix, see profile/desktop/configuration.nix.
+    includes = [ "~/.ssh/homelab-hub.conf" ];
     settings = {
       # Names, not IPs: homelab advertises homelab.local via Avahi, the Mac
       # advertises macbook.local via Bonjour. Static DHCP reservations on the

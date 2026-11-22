@@ -21,6 +21,23 @@
       mode = "0444";
       path = "/home/${config.settings.username}/.ssh/riyamandiya-staging.pub";
     };
+    "ssh/do/homelab_hub/host" = { };
+  };
+
+  # homelab-hub droplet. Its IP lives in nix-secrets, so the Host block is
+  # rendered outside the store and pulled into ~/.ssh/config via Include
+  # (see profile/desktop/home.nix).
+  sops.templates."ssh-homelab-hub" = {
+    owner = config.settings.username;
+    mode = "0400";
+    path = "/home/${config.settings.username}/.ssh/homelab-hub.conf";
+    content = ''
+      Host homelab-hub
+        HostName ${config.sops.placeholder."ssh/do/homelab_hub/host"}
+        User s1n7ax
+        IdentityFile ~/.ssh/id_ed25519
+        IdentitiesOnly yes
+    '';
   };
 
   programs = {
