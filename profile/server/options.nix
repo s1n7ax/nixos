@@ -24,6 +24,7 @@
         agent.enable = true;
       };
       mdns.enable = true;
+      tailscale.enable = true;
       monitoring.enable = true;
     };
 
@@ -48,7 +49,6 @@
     };
 
     homelab = {
-      wireguard.enable = true;
       frigate.enable = true;
       mqtt.enable = true;
       home-assistant.enable = true;

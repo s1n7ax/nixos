@@ -454,6 +454,10 @@ with lib;
       monitoring = {
         enable = mkEnableOption "Network monitoring tools";
       };
+
+      tailscale = {
+        enable = mkEnableOption "Tailscale (remote access over the hosted tailnet)";
+      };
     };
 
     readAloud = {
@@ -486,10 +490,6 @@ with lib;
     };
 
     homelab = {
-      wireguard = {
-        enable = mkEnableOption "Wireguard VPN";
-      };
-
       frigate = {
         enable = mkEnableOption "Frigate NVR";
       };
