@@ -7,6 +7,7 @@
     ./pipewire.nix
     ./polkit.nix
     ./ssh.nix
+    ./tailscale.nix
     ./downloading.nix
   ];
 }

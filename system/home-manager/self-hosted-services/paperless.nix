@@ -82,7 +82,9 @@ with lib;
         PAPERLESS_URL = "http://192.168.1.110:8000";
         # PAPERLESS_URL alone would make that one IP the whole of Django's
         # ALLOWED_HOSTS, so reaching the service from the server itself 400s.
-        PAPERLESS_ALLOWED_HOSTS = "192.168.1.110,localhost,127.0.0.1";
+        # homelab and .ts.net are its Tailscale MagicDNS names, for remote access.
+        PAPERLESS_ALLOWED_HOSTS = "192.168.1.110,localhost,127.0.0.1,homelab,.ts.net";
+        PAPERLESS_CSRF_TRUSTED_ORIGINS = "http://192.168.1.110:8000,http://homelab:8000,http://*.ts.net:8000";
         PAPERLESS_TIME_ZONE = "Asia/Colombo";
         PAPERLESS_OCR_LANGUAGE = "eng";
       };
