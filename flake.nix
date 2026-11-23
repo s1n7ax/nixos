@@ -55,6 +55,13 @@
         inherit inputs;
         pkgs-unstable = importPkgs nixpkgs-unstable darwinPlatform;
       };
+
+      # Orange Pi 5 Plus (RK3588), booting through edk2-rk3588 UEFI on its SPI flash.
+      orangepiPlatform = "aarch64-linux";
+      orangepiArgs = {
+        inherit inputs;
+        pkgs-unstable = importPkgs nixpkgs-unstable orangepiPlatform;
+      };
     in
     {
       nixosConfigurations = {
@@ -97,6 +104,28 @@
                 useUserPackages = true;
                 backupFileExtension = "hm-backup";
                 users.s1n7ax = import ./profile/server/home.nix;
+              };
+            }
+          ];
+        };
+
+        orangepi = nixpkgs.lib.nixosSystem {
+          pkgs = importPkgs nixpkgs orangepiPlatform;
+          specialArgs = orangepiArgs;
+
+          modules = [
+            ./system/options.nix
+            ./profile/orangepi/configuration.nix
+            quadlet-nix.nixosModules.quadlet
+            microvm.nixosModules.host
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                extraSpecialArgs = orangepiArgs;
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                backupFileExtension = "hm-backup";
+                users.s1n7ax = import ./profile/orangepi/home.nix;
               };
             }
           ];
