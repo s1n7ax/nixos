@@ -84,7 +84,7 @@ from .const import (
 from .core.burst import BurstWindow
 from .core.decide import SENT, Decision, decide
 from .core.geometry import Box, Size, scale_box, square_crop, thumbnail_crop
-from .core.parked import HISTORY_EVENTS, VEHICLES, Point, is_parked
+from .core.parked import HISTORY_EVENTS, VEHICLES, Point, is_parked, parking_zones
 from .core.policy import (
     DETECTION,
     DOOR,
@@ -1085,6 +1085,7 @@ class SecurityAlerts:
             start_time=start_time,
             now=time.time(),
             earlier=earlier,
+            zones=parking_zones(self.frigate.zones(camera)),
         )
 
     async def async_detection_ended(

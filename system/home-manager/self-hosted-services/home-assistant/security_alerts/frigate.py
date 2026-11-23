@@ -81,6 +81,10 @@ class FrigateClient:
             return None
         return int(width), int(height)
 
+    def zones(self, camera: str) -> Any:
+        """The camera's `zones` as Frigate's config gives them."""
+        return self._cameras().get(camera, {}).get("zones", {})
+
     def listens_for(self, camera: str, label: str) -> bool:
         return label in _listen(self._cameras().get(camera, {}))
 

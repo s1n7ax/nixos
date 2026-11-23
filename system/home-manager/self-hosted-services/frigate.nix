@@ -242,9 +242,10 @@ with lib;
               threshold: 40
             # Our own car and bikes park here. The zone's car and motorcycle
             # counts (sensor.veranda_parking_*_count) put them on the dashboard's
-            # house model. Frigate gives no clip to an object that never moved, so a
-            # parked vehicle it finds again (after a restart) neither alerts nor
-            # turns the lights on; one pulling in does both, like any detection.
+            # house model. Security alerts treat a zone named *_parking as parking:
+            # a vehicle Frigate has only ever seen inside it neither pushes nor
+            # turns the lights on, however Frigate's tracks jump between the parked
+            # ones; one seen coming up the driveway, outside it, does both.
             zones:
               veranda_parking:
                 coordinates: "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1"

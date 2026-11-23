@@ -14,10 +14,13 @@ from core.parked import (
     VEHICLES,
     Sighting,
     ended_here,
+    in_parking_zones,
+    in_zone,
     iou,
     is_parked,
     on_spots,
     parked_spot,
+    parking_zones,
     path_points,
     same_place,
     seen_for_a_while,
@@ -346,3 +349,116 @@ def test_a_box_with_only_the_top_of_a_parked_scooter_is_the_same_place():
     assert iou(whole, top) < 0.5
     assert same_place(whole, top)
     assert not same_place(whole, (200 / 640, 180 / 360, 300 / 640, 331 / 360))
+
+
+# The veranda's zones as Frigate's api/config gives them on 2026-11-24.
+VERANDA_ZONES = {
+    "veranda_parking": {
+        "enabled": True,
+        "coordinates": "0,0.44,0.64,0.075,0.96,0.29,0.874,1,0,1",
+        "objects": ["car", "motorcycle"],
+    }
+}
+PARKING = parking_zones(VERANDA_ZONES)
+
+# The scooter among five parked bikes, pushed critical at 2026-11-24 01:30:20
+# (event 1795463987.422285-jrefbd): Frigate's track hopped between it and the bike
+# in front at the bottom of the frame. Its box at the alert (640x360) and its path.
+SCOOTER_ID = "1795463987.422285-jrefbd"
+SCOOTER_START = 1795463987.422285
+SCOOTER_AT = 1795464020.8223052
+SCOOTER_BOX = (212 / 640, 147 / 360, 293 / 640, 301 / 360)
+SCOOTER_PATH = [
+    (0.5344, 0.9972),
+    (0.5297, 0.9972),
+    (0.4594, 0.9972),
+    (0.5312, 0.9972),
+    (0.4578, 0.9972),
+    (0.5328, 0.9972),
+    (0.3328, 0.8917),
+    (0.3937, 0.8361),
+]
+# The car coming up the driveway at 2026-11-23 12:42:43 (event
+# 1795417958.287807-jahfs0): first seen past the parked car, outside the zone.
+DRIVEWAY_CAR_BOX = (287 / 640, 59 / 360, 562 / 640, 254 / 360)
+DRIVEWAY_CAR_PATH = [(0.7734, 0.1167), (0.7719, 0.1194), (0.7734, 0.1778), (0.8047, 0.2361)]
+
+
+def check_zone(label="motorcycle", box=SCOOTER_BOX, path=SCOOTER_PATH, zones=PARKING):
+    """is_parked for the 01:30 detection with no earlier events; how many times it
+    asked Frigate for them."""
+    calls = []
+
+    async def earlier():
+        calls.append(True)
+        return []
+
+    parked = asyncio.run(
+        is_parked(
+            label=label,
+            box=box,
+            path=path,
+            event_id=SCOOTER_ID,
+            start_time=SCOOTER_START,
+            now=SCOOTER_AT,
+            earlier=earlier,
+            zones=zones,
+        )
+    )
+    return parked, len(calls)
+
+
+def test_the_scooter_pushed_at_01_30_only_ever_seen_in_the_parking_zone_is_parked():
+    assert not still(SCOOTER_BOX, SCOOTER_PATH)
+    assert check_zone() == (True, 0)
+
+
+def test_the_bike_found_again_at_22_14_in_the_parking_zone_is_parked():
+    # 2026-11-23 22:14:12 (event 1795450479.448002-m2gt5n): half an hour of a track
+    # hopping between two bikes along the bottom of the frame.
+    path = [(0.3109, 0.9972), (0.4562, 0.9972), (0.2922, 0.9972), (0.3016, 0.9944)] * 15
+    box = (206 / 640, 147 / 360, 298 / 640, 302 / 360)
+    assert check_zone(box=box, path=[*path, (0.3812, 0.8417)]) == (True, 0)
+
+
+def test_a_car_coming_up_the_driveway_goes_on_to_the_usual_check():
+    assert not in_parking_zones(DRIVEWAY_CAR_BOX, DRIVEWAY_CAR_PATH, PARKING)
+    assert check_zone(label="car", box=DRIVEWAY_CAR_BOX, path=DRIVEWAY_CAR_PATH) == (False, 1)
+
+
+def test_a_person_in_the_parking_zone_is_never_parked():
+    assert check_zone(label="person") == (False, 0)
+
+
+def test_without_a_parking_zone_the_usual_check_decides():
+    assert check_zone(zones=()) == (False, 1)
+    assert check_zone(zones=parking_zones({})) == (False, 1)
+
+
+def test_where_a_vehicle_stands_now_counts_as_seen():
+    # No path yet: where it stands decides, inside the zone or out in the driveway.
+    assert in_parking_zones(SCOOTER_BOX, [], PARKING)
+    assert not in_parking_zones(DRIVEWAY_CAR_BOX, [], [[(0, 0.75), (1, 0.75), (1, 1), (0, 1)]])
+
+
+def test_a_point_on_the_zones_edge_is_inside():
+    (zone,) = PARKING
+    assert in_zone((0.4, 1.0), zone)
+    assert in_zone((0.0, 0.7), zone)
+    assert not in_zone((0.4, 1.01), zone)
+    assert not in_zone((0.77, 0.13), zone)
+
+
+def test_parking_zones_are_the_enabled_ones_named_parking():
+    zones = {
+        "veranda_parking": {"coordinates": ["0,0.5", "1,0.5", "1,1", "0,1"]},
+        "gate": {"coordinates": "0,0,1,0,1,1"},
+        "old_parking": {"enabled": False, "coordinates": "0,0,1,0,1,1"},
+        "odd_parking": {"coordinates": "0,0,1,0,1"},
+        "short_parking": {"coordinates": "0,0,1,1"},
+        "text_parking": {"coordinates": "a,b,c,d,e,f"},
+        "none_parking": {},
+        "junk_parking": "x",
+    }
+    assert parking_zones(zones) == [[(0, 0.5), (1, 0.5), (1, 1), (0, 1)]]
+    assert parking_zones(None) == []
