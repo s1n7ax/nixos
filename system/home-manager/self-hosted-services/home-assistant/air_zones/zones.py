@@ -43,6 +43,8 @@ SLEEP_CONFIDENCE = 90
 GENTLE_AFTER = timedelta(hours=3)
 
 TEMPERATURE = 29
+# Late in sleep the room gets humid; a lower target makes the AC cool and dry it.
+GENTLE_TEMPERATURE = 27
 FAN_HIGH = "high"
 FAN_MEDIUM = "medium"
 HOLD = timedelta(hours=1)
@@ -134,6 +136,16 @@ def current_step(now: datetime, since: datetime | None, away: bool = False) -> S
     return Step(moment.isoformat(), spots - {MY_DESK} if away else spots, None)
 
 
+def gentle(now: datetime, since: datetime | None) -> bool:
+    """Whether s1n7ax is GENTLE_AFTER into sleep: the fan slows and the target drops."""
+    return since is not None and now >= since + GENTLE_AFTER
+
+
+def temperature(now: datetime, since: datetime | None) -> int:
+    """The AC's target temperature for this moment."""
+    return GENTLE_TEMPERATURE if gentle(now, since) else TEMPERATURE
+
+
 def plan(
     now: datetime,
     spots: frozenset[str] | set[str],
@@ -150,7 +162,7 @@ def plan(
         return None
     target = targets[int(now.timestamp() // DWELL.total_seconds()) % len(targets)]
     vertical, horizontal = aims.get(target, DEFAULT_AIMS[target])
-    fan = FAN_MEDIUM if asleep and now >= since + GENTLE_AFTER else FAN_HIGH
+    fan = FAN_MEDIUM if gentle(now, since) else FAN_HIGH
     return Plan(targets, target, vertical, horizontal, fan)
 
 

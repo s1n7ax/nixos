@@ -10,8 +10,10 @@ from zones import (
     DEFAULT_AIMS,
     FAN_HIGH,
     FAN_MEDIUM,
+    GENTLE_TEMPERATURE,
     MY_DESK,
     SPOTS,
+    TEMPERATURE,
     WIFE_DESK,
     asleep_since,
     current_step,
@@ -19,6 +21,7 @@ from zones import (
     last_moment,
     person_steers,
     plan,
+    temperature,
 )
 
 COLOMBO = timezone(timedelta(hours=5, minutes=30))
@@ -161,6 +164,29 @@ def test_without_a_sleep_signal_the_fan_goes_medium_at_0430_until_0800(now, targ
     step = current_step(now, since)
     p = plan(now, step.spots, DEFAULT_AIMS, since)
     assert (p.targets[0], p.fan) == (target, fan)
+
+
+@pytest.mark.parametrize(
+    ("now", "degrees"),
+    [
+        (at(20, 22), TEMPERATURE),
+        (at(21, 1, 30), TEMPERATURE),
+        (at(21, 4, 29), TEMPERATURE),
+        (at(21, 4, 30), GENTLE_TEMPERATURE),
+        (at(21, 7, 59), GENTLE_TEMPERATURE),
+        (at(21, 8), TEMPERATURE),
+        (at(21, 12), TEMPERATURE),
+    ],
+)
+def test_without_a_sleep_signal_the_target_is_27_from_0430_until_0800(now, degrees):
+    assert GENTLE_TEMPERATURE == 27
+    assert temperature(now, asleep_since(now, None, None)) == degrees
+
+
+def test_three_hours_into_sleep_the_target_drops():
+    since = at(21, 0, 15)
+    assert temperature(at(21, 3, 14), since) == TEMPERATURE
+    assert temperature(at(21, 3, 15), since) == GENTLE_TEMPERATURE
 
 
 def test_tuned_aims_are_used():
