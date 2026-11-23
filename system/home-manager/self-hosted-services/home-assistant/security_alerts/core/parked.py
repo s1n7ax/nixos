@@ -92,10 +92,14 @@ def _inside(point: Point, box: Box, growth: float) -> bool:
     return box[0] - dx <= point[0] <= box[2] + dx and box[1] - dy <= point[1] <= box[3] + dy
 
 
+def _standing(box: Box) -> Point:
+    """Where a vehicle in this box stands, the bottom centre of the box."""
+    return (box[0] + box[2]) / 2, box[3]
+
+
 def _stands_at(point: Point, box: Box) -> bool:
-    """Whether a path point is close to where a vehicle in this box stands, the
-    bottom centre of the box."""
-    x, y = (box[0] + box[2]) / 2, box[3]
+    """Whether a path point is close to where a vehicle in this box stands."""
+    x, y = _standing(box)
     width, height = box[2] - box[0], box[3] - box[1]
     return (
         abs(point[0] - x) <= width * STILL_WIDTH_SHARE
@@ -233,9 +237,8 @@ def in_parking_zones(box: Box, path: Iterable[Point], zones: Iterable[Zone]) -> 
     """Whether Frigate has only ever seen a vehicle inside the parking zones: every
     point of its path so far, and where it stands now."""
     zones = list(zones)
-    standing = ((box[0] + box[2]) / 2, box[3])
     return bool(zones) and all(
-        any(in_zone(point, zone) for zone in zones) for point in [*path, standing]
+        any(in_zone(point, zone) for zone in zones) for point in [*path, _standing(box)]
     )
 
 
