@@ -4,13 +4,19 @@ Frigate loses a vehicle that sits still (the light changes, someone stands in
 front of it) and later tracks it as a new event; or a long-tracked one gets its
 clip late, when its box flickers. With vehicles parked side by side, its track
 also jumps between them, so its path hops from one to the other. Either way
-nothing arrived. A vehicle is parked when it has not moved since Frigate first
-saw it and was first seen a while ago; or when an earlier vehicle event on the
-same camera ended in the same place, and every point of its path is where it
-stands now or where an earlier vehicle stood still.
+nothing arrived.
 
-Boxes are (x1, y1, x2, y2) and points (x, y), both as fractions of the frame.
-Frigate's path points are the bottom centre of the box.
+Where a camera has a parking zone (a Frigate zone named `..._parking`), a vehicle
+Frigate has only ever seen inside it is parked, however its track jumped: one
+that arrived was seen on its way in, outside the zone. Elsewhere, a vehicle is
+parked when it has not moved since Frigate first saw it and was first seen a
+while ago; or when an earlier vehicle event on the same camera ended in the same
+place, and every point of its path is where it stands now or where an earlier
+vehicle stood still.
+
+Boxes are (x1, y1, x2, y2), points (x, y) and zones lists of points, all as
+fractions of the frame. Frigate's path points, and its test of whether an object
+is in a zone, are the bottom centre of the box.
 """
 
 from __future__ import annotations
@@ -22,8 +28,14 @@ from typing import Any
 from .geometry import Box
 
 Point = tuple[float, float]
+Zone = list[Point]
 
 VEHICLES = frozenset({"bicycle", "bus", "car", "motorcycle", "truck"})
+# A Frigate zone whose name ends in this is where vehicles park.
+PARKING_ZONE_SUFFIX = "parking"
+# How close to a zone's edge a point still counts as inside it: Frigate counts
+# the edge, and a box touching the frame's bottom stands on a zone's bottom edge.
+ZONE_EDGE = 1e-6
 # A vehicle still in its first place this long after Frigate first saw it was
 # already standing there.
 SEEN_FOR_SECONDS = 60
@@ -80,10 +92,14 @@ def _inside(point: Point, box: Box, growth: float) -> bool:
     return box[0] - dx <= point[0] <= box[2] + dx and box[1] - dy <= point[1] <= box[3] + dy
 
 
+def _standing(box: Box) -> Point:
+    """Where a vehicle in this box stands, the bottom centre of the box."""
+    return (box[0] + box[2]) / 2, box[3]
+
+
 def _stands_at(point: Point, box: Box) -> bool:
-    """Whether a path point is close to where a vehicle in this box stands, the
-    bottom centre of the box."""
-    x, y = (box[0] + box[2]) / 2, box[3]
+    """Whether a path point is close to where a vehicle in this box stands."""
+    x, y = _standing(box)
     width, height = box[2] - box[0], box[3] - box[1]
     return (
         abs(point[0] - x) <= width * STILL_WIDTH_SHARE
@@ -167,6 +183,65 @@ def path_points(path_data: Any) -> list[Point]:
     return points
 
 
+def _zone(coordinates: Any) -> Zone | None:
+    """A zone from Frigate's `coordinates`, "x1,y1,x2,y2,..." or a list of "x,y";
+    None when malformed."""
+    if isinstance(coordinates, list) and all(isinstance(c, str) for c in coordinates):
+        coordinates = ",".join(coordinates)
+    if not isinstance(coordinates, str):
+        return None
+    try:
+        values = [float(v) for v in coordinates.split(",")]
+    except ValueError:
+        return None
+    if len(values) % 2 or len(values) < 6:
+        return None
+    return list(zip(values[::2], values[1::2], strict=True))
+
+
+def parking_zones(zones: Any) -> list[Zone]:
+    """The enabled parking zones among a camera's `zones` from Frigate's config."""
+    found = []
+    for name, zone in zones.items() if isinstance(zones, dict) else ():
+        if not str(name).endswith(PARKING_ZONE_SUFFIX) or not isinstance(zone, dict):
+            continue
+        if zone.get("enabled", True) and (polygon := _zone(zone.get("coordinates"))):
+            found.append(polygon)
+    return found
+
+
+def _on_edge(point: Point, a: Point, b: Point) -> bool:
+    (x, y), (x1, y1), (x2, y2) = point, a, b
+    cross = (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)
+    return (
+        abs(cross) <= ZONE_EDGE
+        and min(x1, x2) - ZONE_EDGE <= x <= max(x1, x2) + ZONE_EDGE
+        and min(y1, y2) - ZONE_EDGE <= y <= max(y1, y2) + ZONE_EDGE
+    )
+
+
+def in_zone(point: Point, zone: Zone) -> bool:
+    """Whether a point is inside a zone or on its edge."""
+    x, y = point
+    inside = False
+    for a, b in zip(zone, zone[1:] + zone[:1], strict=True):
+        if _on_edge(point, a, b):
+            return True
+        (x1, y1), (x2, y2) = a, b
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def in_parking_zones(box: Box, path: Iterable[Point], zones: Iterable[Zone]) -> bool:
+    """Whether Frigate has only ever seen a vehicle inside the parking zones: every
+    point of its path so far, and where it stands now."""
+    zones = list(zones)
+    return bool(zones) and all(
+        any(in_zone(point, zone) for zone in zones) for point in [*path, _standing(box)]
+    )
+
+
 def sightings(events: Iterable[Any], event_id: str, start_time: float) -> list[Sighting]:
     """The events from Frigate's `api/events` that began before this one, as sightings.
 
@@ -203,17 +278,21 @@ async def is_parked(
     start_time: float,
     now: float,
     earlier: Callable[[], Awaitable[Iterable[Any] | None]],
+    zones: Iterable[Zone] = (),
 ) -> bool:
     """Whether a detection is a parked vehicle that Frigate found again.
 
-    `box` is where it is now, as fractions of the frame. `earlier` fetches the
-    camera's newest vehicle events from Frigate's `api/events`, or None when they
-    cannot be read; the detection then alerts as usual. It is not called for a
-    vehicle that stood still for a while.
+    `box` is where it is now, as fractions of the frame, and `zones` the camera's
+    parking zones. `earlier` fetches the camera's newest vehicle events from
+    Frigate's `api/events`, or None when they cannot be read; the detection then
+    alerts as usual. It is not called for a vehicle only ever seen in a parking
+    zone, or one that stood still for a while.
     """
     if label not in VEHICLES or box is None:
         return False
     path = list(path)
+    if in_parking_zones(box, path, zones):
+        return True
     if still(box, path) and seen_for_a_while(start_time, now):
         return True
     events = await earlier()
