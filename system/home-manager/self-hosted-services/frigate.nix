@@ -107,6 +107,12 @@ with lib;
 
         audio:
           enabled: true
+          # Frigate's default list minus speech: speech is never pushed, acted
+          # on or kept, so nothing should hear it.
+          listen:
+            - bark
+            - fire_alarm
+            - yell
 
         ffmpeg:
           hwaccel_args: preset-vaapi
