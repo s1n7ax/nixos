@@ -567,16 +567,9 @@ move() {
 # on the last one. fzf runs execute() and reload() through a shell, which is
 # bash here rather than the user's.
 switch() {
-  local lines keys=(a r s t) row=1 active i target
-  local binds=()
+  local lines keys=(a r s t) binds=() row i target
   mapfile -t lines < <(list)
-  i=0
-  while read -r _ active; do
-    ((++i))
-    if ((active)); then
-      row=$i
-    fi
-  done < <(tmux list-windows -t "=$session" -F '#{window_index} #{window_active}')
+  row=$(tmux list-windows -t "=$session" -F '#{window_active}' | sed -n '/^1$/=')
   for i in "${!keys[@]}"; do
     if ((i < ${#lines[@]})); then
       binds+=(--bind "${keys[i]}:pos($((i + 1)))+accept")
@@ -585,7 +578,7 @@ switch() {
     fi
   done
   target=$(printf '%s\n' "${lines[@]}" | fzf --reverse --disabled --sync --prompt='workspace> ' \
-    --with-shell "$BASH -c" --delimiter=: --bind "start:pos($row)" "${binds[@]}" \
+    --with-shell "$BASH -c" --delimiter=: --bind "start:pos(${row:-1})" "${binds[@]}" \
     --bind "shift-up:execute-silent('$self' move {1} -1)+up+reload-sync('$self' list)" \
     --bind "shift-down:execute-silent('$self' move {1} 1)+down+reload-sync('$self' list)" \
     --bind "/:enable-search+unbind(a,r,s,t,/,shift-up,shift-down)+change-prompt(filter> )") || return 0
