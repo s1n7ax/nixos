@@ -584,6 +584,93 @@ pass "a folder with characters tmux cannot have in a session name keeps its sess
 
 reset
 
+# --- The workspace menu --------------------------------------------------------
+
+# The workspace's window name, by the focus of the session.
+focused() {
+  tmux display-message -p -t =main: '#{window_name}'
+}
+
+# Opens the workspace menu in a session of its own and waits for it to show.
+# The command runs as it is, not through the fake default shell.
+menu() {
+  rm -f "$t/menu-done"
+  tmux new-session -d -s menu -x 80 -y 20 -- bash -c "tmux-workspace switch; touch '$t/menu-done'; sleep 600"
+  wait_for 'tmux capture-pane -p -t =menu: | grep -q "workspace>"' "the menu to show"
+}
+
+menu_closed() {
+  wait_for '[[ -e $t/menu-done ]]' "the menu to close"
+  tmux kill-session -t =menu
+}
+
+rm -f "$state"
+mkdir -p "$HOME/m1" "$HOME/m2"
+tmux-workspace start
+tmux-workspace add local '~/m1'
+tmux-workspace add local '~/m2'
+wait_for '[[ $(names) == "~ m1 m2" ]]' "three local workspaces"
+
+menu
+tmux send-keys -t =menu: Enter
+menu_closed
+[[ $(focused) == m2 ]] || fail "Enter right after opening the menu on m2 switched to $(focused)"
+pass "the menu opens on the focused workspace"
+
+menu
+tmux send-keys -t =menu: r
+menu_closed
+[[ $(focused) == m1 ]] || fail "r switched to $(focused), not the second workspace"
+menu
+tmux send-keys -t =menu: a
+menu_closed
+[[ $(focused) == "~" ]] || fail "a switched to $(focused), not the first workspace"
+menu
+tmux send-keys -t =menu: s
+menu_closed
+[[ $(focused) == m2 ]] || fail "s switched to $(focused), not the third workspace"
+pass "a, r and s switch to the first, second and third workspace and close the menu"
+
+menu
+tmux send-keys -t =menu: t
+sleep 1
+[[ ! -e $t/menu-done ]] || fail "t closed the menu with only three workspaces"
+tmux send-keys -t =menu: Escape
+menu_closed
+[[ $(focused) == m2 ]] || fail "t or Escape switched to $(focused)"
+pass "a key with no workspace does nothing, and Escape closes the menu without switching"
+
+tmux select-window -t "$(window_id '~')"
+menu
+tmux send-keys -t =menu: S-Down
+wait_for '[[ $(names) == "m1 ~ m2" ]]' "Shift+Down to move ~ down"
+tmux send-keys -t =menu: S-Down
+wait_for '[[ $(names) == "m1 m2 ~" ]]' "Shift+Down to move ~ down again"
+tmux send-keys -t =menu: S-Down
+sleep 1
+[[ $(names) == "m1 m2 ~" ]] || fail "Shift+Down on the last workspace changed the order: '$(names)'"
+tmux send-keys -t =menu: S-Up
+wait_for '[[ $(names) == "m1 ~ m2" ]]' "Shift+Up to move ~ back up"
+tmux send-keys -t =menu: Enter
+menu_closed
+[[ $(focused) == "~" ]] || fail "the highlight did not follow the moved workspace: Enter switched to $(focused)"
+wait_for '[[ $(saved) == "local:~/m1 local:~ local:~/m2" ]]' "the new order to be saved"
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+[[ $(names) == "m1 ~ m2" ]] || fail "a restart lost the order: '$(names)'"
+pass "Shift+Up and Shift+Down move the highlighted workspace, and the order is kept across restarts"
+
+menu
+tmux send-keys -t =menu: / m 2
+wait_for 'tmux capture-pane -p -t =menu: | grep -q "filter> m2"' "the filter to take m2"
+tmux send-keys -t =menu: Enter
+menu_closed
+[[ $(focused) == m2 ]] || fail "filtering for m2 switched to $(focused)"
+pass "/ turns filtering on"
+
+reset
+
 # --- Project listing -----------------------------------------------------------------
 
 mkdir -p "$HOME/Workspace/nixos/.git" "$HOME/a/b/deep/.git" "$HOME/a/b/c/too-deep/.git" \

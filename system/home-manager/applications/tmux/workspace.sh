@@ -14,6 +14,9 @@
 #   tmux-workspace pick [<host>...]    pick a machine, then a project, and open it
 #   tmux-workspace switch              pick an open workspace and switch to it
 #   tmux-workspace list                list the open workspaces as switch shows them
+#   tmux-workspace move <index> <offset>
+#                                      move the workspace at window <index> by
+#                                      <offset> places, keeping the focus
 #
 # <dir> is relative to the home directory, written "~" or "~/<path>", so one
 # entry works on hosts whose home paths differ. A folder outside home is
@@ -50,7 +53,7 @@ state=$state_dir/$session
 self=$(readlink -f "$0")
 
 usage() {
-  echo "usage: tmux-workspace attach|start|save|switch|list|pick [<host>...]|add <host> <dir>|run <host> <dir> <session>|close <window-id>|projects <host>" >&2
+  echo "usage: tmux-workspace attach|start|save|switch|list|pick [<host>...]|add <host> <dir>|run <host> <dir> <session>|close <window-id>|projects <host>|move <index> <offset>" >&2
   exit 2
 }
 
@@ -541,9 +544,45 @@ list() {
   done < <(tmux list-windows -t "=$session" -F '#{window_index} #{?@ws_host,#{@ws_host} #{@ws_dir},- #{window_name}}')
 }
 
+# Swaps the workspace at window index $1 with the one $2 places away, if there
+# is one there, and saves the new order. The focused window stays focused.
+move() {
+  [[ $1 =~ ^[0-9]+$ && $2 =~ ^-?[0-9]+$ ]] || usage
+  tmux swap-window -d -s "=$session:$1" -t "=$session:$(($1 + $2))" 2>/dev/null || return 0
+  save
+}
+
+# The workspace menu: opens on the focused workspace, and a, r, s and t (the
+# home row) switch to the first four rows at once. Shift+Up and Shift+Down
+# move the highlighted workspace, and the highlight with it. Plain letters
+# no longer filter, so / turns filtering on, and the letter keys off.
+#
+# A key with no workspace is bound to ignore: pos() past the last row lands
+# on the last one. fzf runs execute() and reload() through a shell, which is
+# bash here rather than the user's.
 switch() {
-  local target
-  target=$(list | fzf --reverse --prompt='workspace> ') || return 0
+  local lines keys=(a r s t) row=1 active i target
+  local binds=()
+  mapfile -t lines < <(list)
+  i=0
+  while read -r _ active; do
+    ((++i))
+    if ((active)); then
+      row=$i
+    fi
+  done < <(tmux list-windows -t "=$session" -F '#{window_index} #{window_active}')
+  for i in "${!keys[@]}"; do
+    if ((i < ${#lines[@]})); then
+      binds+=(--bind "${keys[i]}:pos($((i + 1)))+accept")
+    else
+      binds+=(--bind "${keys[i]}:ignore")
+    fi
+  done
+  target=$(printf '%s\n' "${lines[@]}" | fzf --reverse --disabled --sync --prompt='workspace> ' \
+    --with-shell "$BASH -c" --delimiter=: --bind "start:pos($row)" "${binds[@]}" \
+    --bind "shift-up:execute-silent('$self' move {1} -1)+up+reload-sync('$self' list)" \
+    --bind "shift-down:execute-silent('$self' move {1} 1)+down+reload-sync('$self' list)" \
+    --bind "/:enable-search+unbind(a,r,s,t,/,shift-up,shift-down)+change-prompt(filter> )") || return 0
   tmux select-window -t "=$session:${target%%:*}"
 }
 
@@ -562,6 +601,10 @@ run)
 close | projects)
   (($# == 2)) || usage
   "$1" "$2"
+  ;;
+move)
+  (($# == 3)) || usage
+  move "$2" "$3"
   ;;
 pick)
   shift
