@@ -661,6 +661,19 @@ tmux-workspace start
 [[ $(names) == "m1 ~ m2" ]] || fail "a restart lost the order: '$(names)'"
 pass "Shift+Up and Shift+Down move the highlighted workspace, and the order is kept across restarts"
 
+mkdir -p "$HOME/0x"
+tmux-workspace add local '~/0x'
+tmux select-window -t "$(window_id m1)"
+menu
+tmux send-keys -t =menu: S-Up
+sleep 1
+[[ $(names) == "m1 ~ m2 0x" ]] || fail "Shift+Up on the first workspace swapped it with one named 0...: '$(names)'"
+tmux send-keys -t =menu: t
+menu_closed
+[[ $(focused) == 0x ]] || fail "t switched to $(focused), not the fourth workspace"
+tmux-workspace close "$(window_id 0x)"
+pass "Shift+Up on the first workspace leaves the order alone, and t switches to the fourth"
+
 menu
 tmux send-keys -t =menu: / m 2
 wait_for 'tmux capture-pane -p -t =menu: | grep -q "filter> m2"' "the filter to take m2"

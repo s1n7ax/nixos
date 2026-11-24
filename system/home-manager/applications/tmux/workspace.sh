@@ -546,9 +546,15 @@ list() {
 
 # Swaps the workspace at window index $1 with the one $2 places away, if there
 # is one there, and saves the new order. The focused window stays focused.
+# Both indexes are looked up first: tmux takes a number that is no window's
+# index for the start of a window name, so "0" could swap with "0x-proj".
 move() {
+  local indexes target
   [[ $1 =~ ^[0-9]+$ && $2 =~ ^-?[0-9]+$ ]] || usage
-  tmux swap-window -d -s "=$session:$1" -t "=$session:$(($1 + $2))" 2>/dev/null || return 0
+  target=$(($1 + $2))
+  indexes=$(tmux list-windows -t "=$session" -F '#{window_index}' 2>/dev/null) || return 0
+  grep -qxF "$1" <<<"$indexes" && grep -qxF "$target" <<<"$indexes" || return 0
+  tmux swap-window -d -s "=$session:$1" -t "=$session:$target"
   save
 }
 
