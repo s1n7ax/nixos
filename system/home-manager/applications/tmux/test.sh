@@ -748,9 +748,33 @@ w=$(first_window)
 [[ $(pane_count "$w") == 2 ]] || fail "an exited pane came back after a restart"
 pass "exit in a pane closes it and it does not come back"
 
+for _ in 1 2 3 4 5; do
+  tmux-workspace split h "$(panes "$w" | tail -1 | cut -d' ' -f1)"
+done
+wait_for '(($(pane_count "$w") == 7))' "seven panes side by side"
+wait_for '[[ $(grep -c . "$state") == 8 ]]' "the seven panes and their layout to be saved"
+layout=$(arrangement "$w")
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+w=$(first_window)
+[[ $(pane_count "$w") == 7 && $(arrangement "$w") == "$layout" ]] ||
+  fail "a restart did not bring back seven panes side by side: $(arrangement "$w"), was $layout"
+pass "a restart brings back more panes than fit in a window's default size"
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+printf 'local\t-\t~/sp\n' >"$state"
+tmux-workspace start
+
 tmux-workspace add homelab '~/Workspace/nixos'
 wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 1))' "a homelab shell"
 w=$(window_id homelab:nixos)
+touch "$t/down-homelab"
+tmux-workspace split h "$(panes "$w" | cut -d' ' -f1)"
+[[ $(pane_count "$w") == 1 ]] || fail "a split opened a pane while its host was unreachable"
+rm "$t/down-homelab"
+pass "a split of a remote workspace opens nothing while its host cannot be reached"
+
 tmux-workspace split h "$(panes "$w" | cut -d' ' -f1)"
 wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 2))' "a second homelab shell in the workspace's folder"
 wait_for '[[ $(sessions homelab) == "~/Workspace/nixos ~/Workspace/nixos+2" ]]' "the split pane to get a session of its own"

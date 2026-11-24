@@ -220,12 +220,13 @@ remote_sessions() {
 # first one of that folder still running on the host with no pane open on it
 # (a closed workspace, which comes back this way), or else the first one
 # neither open nor running, a new one, unless the host could not be asked.
-# With $3 set (a new pane), it is always a new one.
+# With $3 set (a new pane), it is always a new one, and it fails when the
+# host cannot be asked, as a running one could not be told from a new one.
 free_session() {
   local host=$1 base open running name n=1
   base=$(session_base "$2")
   open=$(tmux list-panes -s -t "=$session" -F '#{@ws_host} #{@ws_session}' 2>/dev/null) || true
-  running=$(remote_sessions "$host") || true
+  running=$(remote_sessions "$host") || [[ -z ${3:-} ]] || return 1
   while [[ -z ${3:-} ]] && read -r name; do
     if [[ $name == "$base" || $name == "$base"+* ]] && ! grep -qxF "$host $name" <<<"$open"; then
       echo "$name"
@@ -312,7 +313,8 @@ read_entry() {
 # new-session wins adds the other workspaces. A workspace's panes are opened
 # and given their layout before it starts saving (see watch). Each pane is
 # split from the one before, so the panes keep the order their layout gives
-# them.
+# them, after tiling the ones so far: the window is the default size until a
+# client attaches, and halving the newest pane each time runs out of rows.
 #
 # A remote workspace remembered without a session (a state file from before
 # workspaces had one) gets the first session of its folder that no other line
@@ -349,6 +351,7 @@ start() {
       ;;
     +)
       if [[ -n $pane ]]; then
+        tmux select-layout -t "$id" tiled
         pane=$(open_pane "$pane" "$ws_host" "$dir" "$remote" -d) || pane=$id
       fi
       continue
@@ -402,8 +405,10 @@ close() {
 
 # Opens a pane below (v) or right of (h) the pane $2, focused, running a
 # shell on its workspace's host in the folder its shell last reported, or
-# else the one it was opened in; a remote one in a new session. A window that
-# is no workspace gets a plain split in the pane's folder.
+# else the one it was opened in; a remote one in a new session, so not while
+# the host cannot be reached. The window is watched, as one opened before
+# workspaces had panes is not. A window that is no workspace gets a plain
+# split in the pane's folder.
 split() {
   local pane=$2 host dir url remote=-
   host=$(tmux display-message -p -t "$pane" '#{@ws_host}') || return 0
@@ -416,10 +421,12 @@ split() {
   if [[ -z $dir ]]; then
     dir=$(tmux display-message -p -t "$pane" '#{@ws_dir}')
   fi
-  if [[ $host != local ]]; then
-    remote=$(free_session "$host" "$dir" new)
+  if [[ $host != local ]] && ! remote=$(free_session "$host" "$dir" new); then
+    tmux display-message -t "$pane" "Could not reach $host to split this workspace"
+    return 0
   fi
   open_pane "$pane" "$host" "$dir" "$remote" "-$1" >/dev/null
+  watch "$pane"
   save
 }
 
