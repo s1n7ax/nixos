@@ -185,12 +185,13 @@ screen() {
   tmux capture-pane -p -t "$1"
 }
 
+# The saved panes, without the layouts.
 saved() {
-  cut -f1,3 "$state" | paste -sd ' ' | tr '\t' ':'
+  grep -v '^=' "$state" | cut -f1,3 | paste -sd ' ' | tr '\t' ':'
 }
 
 saved_sessions() {
-  cut -f1,2 "$state" | paste -sd ' ' | tr '\t' ':'
+  grep -v '^=' "$state" | cut -f1,2 | paste -sd ' ' | tr '\t' ':'
 }
 
 # The workspace sessions running on host $1.
@@ -681,6 +682,97 @@ tmux send-keys -t =menu: Enter
 menu_closed
 [[ $(focused) == m2 ]] || fail "filtering for m2 switched to $(focused)"
 pass "/ turns filtering on"
+
+reset
+
+# --- Splitting ----------------------------------------------------------------
+
+# The panes of window $1, in order: id, position and size.
+panes() {
+  tmux list-panes -t "$1" -F '#{pane_id} #{pane_left},#{pane_top} #{pane_width}x#{pane_height}'
+}
+
+first_window() {
+  tmux list-windows -t =main -F '#{window_id}' | head -1
+}
+
+pane_count() {
+  tmux list-panes -t "$1" | grep -c .
+}
+
+# The positions and sizes of window $1's panes, without their ids.
+arrangement() {
+  panes "$1" | cut -d' ' -f2- | paste -sd ' '
+}
+
+mkdir -p "$HOME/sp" "$HOME/sp-other"
+printf 'local\t-\t~/sp\n' >"$state"
+tmux-workspace start
+wait_for '(($(started "local $HOME/sp") == 1))' "a local shell in ~/sp"
+w=$(window_id sp)
+first=$(panes "$w" | cut -d' ' -f1)
+tmux-workspace split v "$first"
+wait_for '(($(started "local $HOME/sp") == 2))' "a second local shell in ~/sp"
+below=$(panes "$w" | sed -n 2p)
+[[ ${below#* } == 0,* && ${below#* } != 0,0* ]] || fail "split v did not open a pane below: $(panes "$w" | paste -sd '|')"
+[[ $(tmux display-message -p -t "$w" '#{pane_id}') == "${below%% *}" ]] || fail "split v did not focus the new pane"
+tmux-workspace split h "${below%% *}"
+wait_for '(($(started "local $HOME/sp") == 3))' "a third local shell in ~/sp"
+right=$(panes "$w" | sed -n 3p)
+[[ ${right#* } != 0,* ]] || fail "split h did not open a pane to the right: $(panes "$w" | paste -sd '|')"
+pass "split v and split h open a focused pane below and to the right, in the workspace's folder"
+
+tmux send-keys -t "${right%% *}" "cd $HOME/sp-other" Enter
+wait_for '[[ $(saved) == "local:~/sp +:~/sp +:~/sp-other" ]]' "the panes and the new folder to be saved"
+grep -q '^=	' "$state" || fail "no layout was saved: $(paste -sd '|' "$state")"
+layout=$(arrangement "$w")
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+w=$(first_window)
+[[ -n $w && $(pane_count "$w") == 3 ]] || fail "a restart did not bring back three panes: '$(names)'"
+[[ $(arrangement "$w") == "$layout" ]] || fail "a restart changed the layout: '$(arrangement "$w")', was '$layout'"
+[[ $(tmux list-panes -t "$w" -F '#{@ws_dir}' | paste -sd ' ') == "~/sp ~/sp ~/sp-other" ]] ||
+  fail "a restart put the folders in other panes: $(tmux list-panes -t "$w" -F '#{@ws_dir}' | paste -sd ' ')"
+wait_for '(($(started "local $HOME/sp-other") == 1))' "the moved pane to come back in its folder"
+[[ $(started "local $HOME/sp") == 5 ]] || fail "a restart opened $(($(started "local $HOME/sp") - 3)) shells in ~/sp, not two"
+pass "a restart brings back a workspace's panes, their layout and each one's folder"
+
+tmux send-keys -t "$(panes "$w" | sed -n 2p | cut -d' ' -f1)" 0 Enter
+wait_for '(($(pane_count "$w") == 2))' "the pane to close after exit"
+wait_for '[[ $(saved) == "local:~/sp +:~/sp-other" ]]' "exit to forget the pane"
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+w=$(first_window)
+[[ $(pane_count "$w") == 2 ]] || fail "an exited pane came back after a restart"
+pass "exit in a pane closes it and it does not come back"
+
+tmux-workspace add homelab '~/Workspace/nixos'
+wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 1))' "a homelab shell"
+w=$(window_id homelab:nixos)
+tmux-workspace split h "$(panes "$w" | cut -d' ' -f1)"
+wait_for '(($(started "homelab $t/remote/homelab/Workspace/nixos") == 2))' "a second homelab shell in the workspace's folder"
+wait_for '[[ $(sessions homelab) == "~/Workspace/nixos ~/Workspace/nixos+2" ]]' "the split pane to get a session of its own"
+pass "a split of a remote workspace opens a shell on its host, in its folder, in a session of its own"
+
+split_pane=$(panes "$w" | sed -n 2p | cut -d' ' -f1)
+tmux send-keys -t "$split_pane" busy Enter
+wait_for '(($(jobs_running) == 1))' "a busy job in the remote split pane"
+drop homelab
+wait_for '(($(attached homelab "~/Workspace/nixos+2") == 0))' "the split pane's connection to drop"
+wait_for '(($(attached homelab "~/Workspace/nixos+2") == 1))' "the split pane to reconnect"
+[[ $(jobs_running) == 1 && $(started "homelab $t/remote/homelab/Workspace/nixos") == 2 ]] ||
+  fail "a dropped connection ended or restarted the split pane's shell"
+tmux kill-server
+wait_for wrappers_gone "workspace shells to end after kill-server"
+tmux-workspace start
+w=$(window_id homelab:nixos)
+[[ $(pane_count "$w") == 2 ]] || fail "a restart did not bring back the remote split"
+wait_for '(($(attached homelab "~/Workspace/nixos+2") == 1))' "the remote split to attach to its session again"
+[[ $(jobs_running) == 1 && $(started "homelab $t/remote/homelab/Workspace/nixos") == 2 ]] ||
+  fail "a restart ended or restarted the remote split's shell"
+pass "a remote split pane keeps running through a dropped connection and a restart"
 
 reset
 

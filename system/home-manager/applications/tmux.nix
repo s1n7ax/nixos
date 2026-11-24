@@ -10,14 +10,17 @@ let
   /**
     Workspace settings and keys (see tmux/workspace.sh). The keys come after
     the shared keys, so n and x open and close workspaces instead of plain
-    windows, and every way of reordering saves the new order. kill-window and
-    the default x would leave a closed workspace remembered.
+    windows, s and v split a workspace into panes on its host, and every way
+    of reordering saves the new order. kill-window and the default x would
+    leave a closed workspace remembered.
   */
   workspaceConfig = ''
     bind p display-popup -E -w 60% -h 60% "${tmux-workspace} pick ${lib.escapeShellArgs workspaces.hosts}"
     bind w display-popup -E -w 40% -h 50% "${tmux-workspace} switch"
     bind n run-shell -b "${tmux-workspace} add local '~'"
     bind x run-shell -b "${tmux-workspace} close #{window_id}"
+    bind s run-shell -b "${tmux-workspace} split v #{pane_id}"
+    bind v run-shell -b "${tmux-workspace} split h #{pane_id}"
     bind -r '<' swap-window -d -t - \; run-shell -b "${tmux-workspace} save"
     bind -r '>' swap-window -d -t + \; run-shell -b "${tmux-workspace} save"
     bind -n MouseDrag1Status swap-window -d -t= \; run-shell -b "${tmux-workspace} save"
@@ -95,6 +98,8 @@ in
 
         bind n new-window
         bind x kill-window
+        bind s split-window -v -c "#{pane_current_path}"
+        bind v split-window -h -c "#{pane_current_path}"
         bind l last-window
       ''
       + lib.optionalString workspaces.enable workspaceConfig;
