@@ -13,7 +13,7 @@
 let
   username = config.settings.username;
 
-  host = "192.168.1.170";
+  host = "192.168.1.77";
   # Home Assistant runs as a rootless podman container publishing 8124.
   haUrl = "http://127.0.0.1:8124";
   notify = "mobile_app_pixel_9_pro_xl";

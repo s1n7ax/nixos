@@ -94,7 +94,7 @@ with lib;
         base_topic: zigbee2mqtt
         server: mqtt://mqtt:1883
       serial:
-        port: tcp://192.168.1.170:6638
+        port: tcp://192.168.1.77:6638
         baudrate: 115200
         adapter: ember
         rtscts: false
