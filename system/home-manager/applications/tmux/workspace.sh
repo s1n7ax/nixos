@@ -45,9 +45,9 @@
 # focused pane's folder, and a pane that is not focused saves its new folder
 # with the next save.
 #
-# Only that rename hook saves; the unlink hooks never do: tmux unlinks every
-# window while it shuts down, and saving then would write an empty list right
-# before a reboot.
+# Only the rename and layout hooks save; the unlink hooks never do: tmux
+# unlinks every window while it shuts down, and saving then would write an
+# empty list right before a reboot.
 
 # $tools (this script's pinned tools, set by package.nix) come first only for
 # the script itself. The tmux server and the workspace shells get the user's
