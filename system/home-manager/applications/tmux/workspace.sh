@@ -17,6 +17,8 @@
 #   tmux-workspace move <index> <offset>
 #                                      move the workspace at window <index> by
 #                                      <offset> places, keeping the focus
+#   tmux-workspace split v|h <pane-id> open a pane below (v) or right of (h)
+#                                      the pane, on its host, in its folder
 #
 # <dir> is relative to the home directory, written "~" or "~/<path>", so one
 # entry works on hosts whose home paths differ. A folder outside home is
@@ -36,9 +38,16 @@
 # workspace there. tmux runs the rename hook on its next event (the status
 # clock, output or a key), so a save can lag a rename by seconds.
 #
-# Only that rename hook saves; the unlink hooks never do: tmux unlinks every
-# window while it shuts down, and saving then would write an empty list right
-# before a reboot.
+# A workspace may be split into panes, each a shell of its own on the
+# workspace's host, a remote one in a session of its own. The panes, their
+# folders and their layout are remembered with the workspace: a layout change
+# (a split, a pane closing, a resize) saves too. The window is named after the
+# focused pane's folder, and a pane that is not focused saves its new folder
+# with the next save.
+#
+# Only the rename and layout hooks save; the unlink hooks never do: tmux
+# unlinks every window while it shuts down, and saving then would write an
+# empty list right before a reboot.
 
 # $tools (this script's pinned tools, set by package.nix) come first only for
 # the script itself. The tmux server and the workspace shells get the user's
@@ -53,7 +62,7 @@ state=$state_dir/$session
 self=$(readlink -f "$0")
 
 usage() {
-  echo "usage: tmux-workspace attach|start|save|switch|list|pick [<host>...]|add <host> <dir>|run <host> <dir> <session>|close <window-id>|projects <host>|move <index> <offset>" >&2
+  echo "usage: tmux-workspace attach|start|save|switch|list|pick [<host>...]|add <host> <dir>|run <host> <dir> <session>|close <window-id>|projects <host>|move <index> <offset>|split v|h <pane-id>" >&2
   exit 2
 }
 
@@ -111,18 +120,38 @@ name_format() {
 }
 
 # Runs a tmux command that creates a workspace window (new-session or
-# new-window, with its own flags) and prints the window's id.
+# new-window, with its own flags) and prints the window's id. The window saves
+# nothing until watch is run on it. The host is a window option; the folder
+# and session are options of the pane (see open_pane), which inherits the
+# window's, as a window from before workspaces had panes has them.
 create_window() {
   local host=$1 dir=$2 remote=$3 id
   shift 3
   id=$(PATH=$user_path "$tmux_bin" "$@" -d -P -F '#{window_id}' -n "$(window_name "$host" "$dir")" -c "$HOME" \
     -- "$self" run "$host" "$dir" "$remote") || return 1
-  tmux set-option -w -t "$id" @ws_host "$host" \; set-option -w -t "$id" @ws_dir "$dir" \; \
-    set-option -w -t "$id" @ws_session "$remote" \; \
+  tmux set-option -w -t "$id" @ws_host "$host" \; set-option -p -t "$id" @ws_dir "$dir" \; \
+    set-option -p -t "$id" @ws_session "$remote" \; \
     set-option -w -t "$id" automatic-rename-format "$(name_format "$host")" \; \
-    set-option -w -t "$id" automatic-rename on \; \
-    set-hook -w -t "$id" window-renamed "run-shell -b '$self save'"
+    set-option -w -t "$id" automatic-rename on
   echo "$id"
+}
+
+# Splits the pane $1 with split-window's flags $5... into a new pane running
+# the shell of a workspace on host $2 in the folder $3, attached to the
+# session $4, and prints the pane's id.
+open_pane() {
+  local target=$1 host=$2 dir=$3 remote=$4 id
+  shift 4
+  id=$(PATH=$user_path "$tmux_bin" split-window "$@" -t "$target" -P -F '#{pane_id}' -c "$HOME" \
+    -- "$self" run "$host" "$dir" "$remote") || return 1
+  tmux set-option -p -t "$id" @ws_dir "$dir" \; set-option -p -t "$id" @ws_session "$remote"
+  echo "$id"
+}
+
+# Makes the workspace window $1 save when it is renamed or its layout changes.
+watch() {
+  tmux set-hook -w -t "$1" window-renamed "run-shell -b '$self save'" \; \
+    set-hook -w -t "$1" window-layout-changed "run-shell -b '$self save'"
 }
 
 # The <dir> of the folder the shell of a workspace on $1 last reported, from
@@ -188,23 +217,24 @@ remote_sessions() {
 }
 
 # The session a new workspace in the folder $2 on host $1 attaches to: the
-# first one of that folder still running on the host with no workspace open
-# on it (a closed workspace, which comes back this way), or else the first
-# one no workspace is open on: by then every running one of the folder is
-# open, so it is a new one, unless the host could not be asked.
+# first one of that folder still running on the host with no pane open on it
+# (a closed workspace, which comes back this way), or else the first one
+# neither open nor running, a new one, unless the host could not be asked.
+# With $3 set (a new pane), it is always a new one, and it fails when the
+# host cannot be asked, as a running one could not be told from a new one.
 free_session() {
   local host=$1 base open running name n=1
   base=$(session_base "$2")
-  open=$(tmux list-windows -t "=$session" -F '#{@ws_host} #{@ws_session}' 2>/dev/null) || true
-  running=$(remote_sessions "$host") || true
-  while read -r name; do
+  open=$(tmux list-panes -s -t "=$session" -F '#{@ws_host} #{@ws_session}' 2>/dev/null) || true
+  running=$(remote_sessions "$host") || [[ -z ${3:-} ]] || return 1
+  while [[ -z ${3:-} ]] && read -r name; do
     if [[ $name == "$base" || $name == "$base"+* ]] && ! grep -qxF "$host $name" <<<"$open"; then
       echo "$name"
       return 0
     fi
   done <<<"$running"
   name=$base
-  while grep -qxF "$host $name" <<<"$open"; do
+  while grep -qxF "$host $name" <<<"$open" || grep -qxF "$name" <<<"$running"; do
     name=$base+$((++n))
   done
   echo "$name"
@@ -212,36 +242,58 @@ free_session() {
 
 # Writes the session's workspaces to the state file, leaving out windows
 # whose @ws_host was cleared (closing ones), as it first is for the window
-# given as $1. Clearing it before saving keeps the window out of every save
-# from now on, including one a rename hook started before the window is gone.
-# Writes nothing when tmux or the session is gone. A workspace is saved in the
-# folder its shell last reported, which also becomes its @ws_dir, or else the
-# one it was opened in.
+# given as $1, and panes marked @ws_gone (whose shell exited, see
+# forget_self). Clearing or marking before saving keeps them out of every save
+# from now on, including one a hook started before they are gone. Writes
+# nothing when tmux or the session is gone. A pane is saved in the folder its
+# shell last reported, which also becomes its @ws_dir, or else the one it was
+# opened in.
 # Fields are space separated because tmux prints a tab as "_" without a UTF-8
-# locale; the folder comes last, so spaces inside it survive. A line of the
-# state file is "<host> <session> <dir>", tab separated.
+# locale; the folder comes last, so spaces inside it survive. The state file
+# has, tab separated, a "<host> <session> <dir>" line for each workspace and
+# its first pane, a "+ <session> <dir>" line for each of its other panes, and
+# then, when it has several, a "= <layout>" line. A layout that still has a
+# gone pane is left out; the pane closing changes it, which saves again.
 save() {
-  local windows id host remote dir url reported
+  local panes window id host gone remote layout dir url reported last='' last_layout='' count=0 whole=1
   if [[ -n ${1:-} ]]; then
     tmux set-option -w -u -t "$1" @ws_host
   fi
   mkdir -p "$state_dir"
   (
     flock 9
-    windows=$(tmux list-windows -t "=$session" \
-      -F '#{window_id} #{?@ws_host,#{@ws_host},-} #{?@ws_session,#{@ws_session},-} #{@ws_dir}' 2>/dev/null) || exit 0
+    panes=$(tmux list-panes -s -t "=$session" \
+      -F '#{window_id} #{pane_id} #{?@ws_host,#{@ws_host},-} #{?@ws_gone,1,-} #{?@ws_session,#{@ws_session},-} #{window_layout} #{@ws_dir}' 2>/dev/null) || exit 0
     tmp=$(mktemp "$state.XXXXXX")
-    while read -r id host remote dir; do
-      if [[ $host != - ]]; then
-        url=$(tmux display-message -p -t "$id" "$(url_format "$host")" 2>/dev/null) || true
-        reported=$(reported_dir "$host" "$url")
-        if [[ -n $reported && $reported != "$dir" ]]; then
-          dir=$reported
-          tmux set-option -w -t "$id" @ws_dir "$dir" 2>/dev/null || true
+    while read -r window id host gone remote layout dir; do
+      if [[ $window != "$last" ]]; then
+        if ((count > 1 && whole)); then
+          printf '=\t%s\n' "$last_layout"
         fi
-        printf '%s\t%s\t%s\n' "$host" "$remote" "$dir"
+        last=$window count=0 whole=1
       fi
-    done <<<"$windows" >"$tmp"
+      last_layout=$layout
+      if [[ $host == - ]]; then
+        continue
+      fi
+      if [[ $gone != - ]]; then
+        whole=0
+        continue
+      fi
+      url=$(tmux display-message -p -t "$id" "$(url_format "$host")" 2>/dev/null) || true
+      reported=$(reported_dir "$host" "$url")
+      if [[ -n $reported && $reported != "$dir" ]]; then
+        dir=$reported
+        tmux set-option -p -t "$id" @ws_dir "$dir" 2>/dev/null || true
+      fi
+      if ((count++)); then
+        host=+
+      fi
+      printf '%s\t%s\t%s\n' "$host" "$remote" "$dir"
+    done <<<"$panes" >"$tmp"
+    if ((count > 1 && whole)); then
+      printf '=\t%s\n' "$last_layout" >>"$tmp"
+    fi
     mv -f "$tmp" "$state"
   ) 9>"$state.lock"
 }
@@ -258,13 +310,17 @@ read_entry() {
 
 # Rebuilds the session from the state file when it is missing. Of several
 # starts racing (kitty windows opening at once), only the one whose
-# new-session wins adds the other workspaces.
+# new-session wins adds the other workspaces. A workspace's panes are opened
+# and given their layout before it starts saving (see watch). Each pane is
+# split from the one before, so the panes keep the order their layout gives
+# them, after tiling the ones so far: the window is the default size until a
+# client attaches, and halving the newest pane each time runs out of rows.
 #
 # A remote workspace remembered without a session (a state file from before
 # workspaces had one) gets the first session of its folder that no other line
 # has, without asking the host.
 start() {
-  local entries=() entry host remote dir n first=1
+  local entries=() entry host remote dir n id='' pane='' ws_host='' first=1
   local -A taken=()
   if tmux has-session -t "=$session" 2>/dev/null; then
     return 0
@@ -277,10 +333,34 @@ start() {
   fi
   for entry in "${entries[@]}"; do
     read_entry "$entry"
+    case $host in
+    =) continue ;;
+    +) host=$ws_host ;;
+    *) ws_host=$host ;;
+    esac
     taken["$host $remote"]=1
   done
   for entry in "${entries[@]}"; do
     read_entry "$entry"
+    case $host in
+    =)
+      if [[ -n $id ]]; then
+        tmux select-layout -t "$id" "$dir" 2>/dev/null || true
+      fi
+      continue
+      ;;
+    +)
+      if [[ -n $pane ]]; then
+        tmux select-layout -t "$id" tiled
+        pane=$(open_pane "$pane" "$ws_host" "$dir" "$remote" -d) || pane=$id
+      fi
+      continue
+      ;;
+    esac
+    if [[ -n $id ]]; then
+      watch "$id"
+    fi
+    ws_host=$host
     if [[ $host != local && $remote == - ]]; then
       remote=$(session_base "$dir") n=1
       while [[ -n ${taken["$host $remote"]:-} ]]; do
@@ -289,12 +369,16 @@ start() {
       taken["$host $remote"]=1
     fi
     if ((first)); then
-      create_window "$host" "$dir" "$remote" new-session -s "$session" >/dev/null 2>&1 || return 0
+      id=$(create_window "$host" "$dir" "$remote" new-session -s "$session" 2>/dev/null) || return 0
       first=0
     else
-      open_window "$host" "$dir" "$remote" >/dev/null
+      id=$(open_window "$host" "$dir" "$remote") || id=''
     fi
+    pane=$id
   done
+  if [[ -n $id ]]; then
+    watch "$id"
+  fi
   save
 }
 
@@ -309,6 +393,7 @@ add() {
     remote=$(free_session "$1" "$2")
   fi
   id=$(open_window "$1" "$2" "$remote")
+  watch "$id"
   tmux select-window -t "$id"
   save
 }
@@ -316,6 +401,33 @@ add() {
 close() {
   save "$1"
   tmux kill-window -t "$1"
+}
+
+# Opens a pane below (v) or right of (h) the pane $2, focused, running a
+# shell on its workspace's host in the folder its shell last reported, or
+# else the one it was opened in; a remote one in a new session, so not while
+# the host cannot be reached. The window is watched, as one opened before
+# workspaces had panes is not. A window that is no workspace gets a plain
+# split in the pane's folder.
+split() {
+  local pane=$2 host dir url remote=-
+  host=$(tmux display-message -p -t "$pane" '#{@ws_host}') || return 0
+  if [[ -z $host ]]; then
+    tmux split-window "-$1" -t "$pane" -c '#{pane_current_path}'
+    return 0
+  fi
+  url=$(tmux display-message -p -t "$pane" "$(url_format "$host")")
+  dir=$(reported_dir "$host" "$url")
+  if [[ -z $dir ]]; then
+    dir=$(tmux display-message -p -t "$pane" '#{@ws_dir}')
+  fi
+  if [[ $host != local ]] && ! remote=$(free_session "$host" "$dir" new); then
+    tmux display-message -t "$pane" "Could not reach $host to split this workspace"
+    return 0
+  fi
+  open_pane "$pane" "$host" "$dir" "$remote" "-$1" >/dev/null
+  watch "$pane"
+  save
 }
 
 # What a remote workspace runs on its host, as sh code without a single quote
@@ -430,9 +542,10 @@ remote_command() {
 # reconnected, to its session when the host still has it, while ssh fails to
 # connect or loses the connection (exit 255).
 #
-# When the shell ends on its own (`exit`), the workspace is forgotten. When
-# tmux killed the window or itself, on_hangup ends this script first, and the
-# pane lookup in forget_self fails as a second guard, so nothing is written.
+# When the shell ends on its own (`exit`), its pane is forgotten, and with
+# the last one the workspace. When tmux killed the pane, the window or itself,
+# on_hangup ends this script first, and marking the pane in forget_self fails
+# as a second guard, so nothing is written.
 # Ctrl-C only cuts the reconnect wait short.
 run() {
   local host=$1 dir=$2 remote=$3 rel status shell_pid=
@@ -497,9 +610,8 @@ on_hangup() {
 }
 
 forget_self() {
-  local id
-  id=$(tmux display-message -p -t "${TMUX_PANE:?}" '#{window_id}' 2>/dev/null) || return 0
-  save "$id"
+  tmux set-option -p -t "${TMUX_PANE:?}" @ws_gone 1 2>/dev/null || return 0
+  save
 }
 
 # Lists "~" and every git repository up to three levels under home, as
@@ -604,6 +716,10 @@ close | projects)
 move)
   (($# == 3)) || usage
   move "$2" "$3"
+  ;;
+split)
+  (($# == 3)) && [[ $2 == [vh] ]] || usage
+  split "$2" "$3"
   ;;
 pick)
   shift
