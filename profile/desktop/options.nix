@@ -23,6 +23,7 @@
       cursor.enable = true;
       styles.enable = true;
       zathura.enable = true;
+      top-bar.enable = true;
       # The only thing on the desktop that reaches the tailnet (doc/adr/0003).
       remote-agent.enable = true;
     };

@@ -18,6 +18,7 @@
     ./tmux.nix
     ./read-aloud
     ./remote-agent
+    ./top-bar
 
     # dev modules that still carry non-package config (sessionVariables, programs.*, …)
     ./dev/javascript.nix

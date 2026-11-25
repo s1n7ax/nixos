@@ -188,6 +188,15 @@
         # fake tailscale and Chrome.
         remote-agent = pkgs.callPackage ./system/home-manager/applications/remote-agent/check.nix { };
 
+        # The top bar's Bluetooth and Wi-Fi menus; building them shellchecks them.
+        top-bar-menus =
+          let
+            menus = pkgs.callPackage ./system/home-manager/applications/top-bar/package.nix { };
+          in
+          pkgs.linkFarmFromDrvs "top-bar-menus" [
+            menus.bluetooth-menu
+            menus.wifi-menu
+          ];
       };
     };
 
