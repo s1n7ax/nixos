@@ -17,6 +17,7 @@
     ./zellij.nix
     ./tmux.nix
     ./read-aloud
+    ./remote-agent
 
     # dev modules that still carry non-package config (sessionVariables, programs.*, …)
     ./dev/javascript.nix
