@@ -43,6 +43,15 @@ let
       value = "send_text normal,application \\x1b[${toString (48 + n)};5u";
     }) (lib.range 1 9)
   );
+  /**
+    Sends Shift+Enter as CSI u while tmux is attached, for the same reason as
+    ctrl_number_keys: otherwise kitty sends a plain Enter, and Claude Code in
+    tmux sends the prompt instead of adding a new line. tmux hands the key on
+    only to apps that ask for extended keys; the rest still get Enter.
+  */
+  shift_enter_key = {
+    "--when-focus-on var:in_tmux shift+enter" = "send_text normal,application \\x1b[13;2u";
+  };
 in
 lib.mkIf config.features.terminal.kitty.enable {
   programs.kitty = {
@@ -76,6 +85,7 @@ lib.mkIf config.features.terminal.kitty.enable {
       "alt+s>m" = "goto_session ${mac_session}";
       "alt+s>e" = "goto_session ${nix_session}";
     }
-    // ctrl_number_keys;
+    // ctrl_number_keys
+    // shift_enter_key;
   };
 }
