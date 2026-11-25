@@ -198,13 +198,13 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL, str(FRONTEND_DIR), cache_headers=True)]
     )
-    # Hidden: no sidebar title. Opened by tapping a notification.
+    # Hidden: no sidebar title. Opened by tapping a notification, so only the admin needs it.
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=REVIEW_PATH.lstrip("/"),
         webcomponent_name=PANEL_COMPONENT,
         module_url=f"{FRONTEND_URL}/{PANEL_FILE}?v={version}",
-        require_admin=False,
+        require_admin=True,
     )
     await _async_load_cards(
         hass,
