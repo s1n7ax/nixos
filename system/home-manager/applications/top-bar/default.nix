@@ -64,8 +64,11 @@ in
 
         "hyprland/workspaces" = {
           format = "{icon}";
+          # active is the focused workspace; visible the one shown on each
+          # other monitor.
           format-icons = {
             active = "●";
+            visible = "●";
             default = "○";
           };
         };
@@ -149,7 +152,8 @@ in
           background: transparent;
         }
 
-        #workspaces button.active {
+        #workspaces button.active,
+        #workspaces button.visible {
           color: #cba6f7;
         }
 

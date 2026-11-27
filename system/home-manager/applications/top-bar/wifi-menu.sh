@@ -56,15 +56,29 @@ networks() {
     awk -F '\t' '!seen[$4]++'
 }
 
+# nmcli -g escapes ':' and '\' like -t.
+unescape() {
+  sed 's/\\:/:/g; s/\\\\/\\/g'
+}
+
+# The saved Wi-Fi profile for an SSID, by its SSID rather than its name (a
+# profile can be renamed, or named "<ssid> 1"); prints the profile's name.
 saved() {
-  nmcli -t -f NAME,TYPE connection show 2>/dev/null |
-    grep -Fxq -- "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/:/\\:/g'):802-11-wireless"
+  local name
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    if [ "$(nmcli -g 802-11-wireless.ssid connection show id "$name" 2>/dev/null | unescape)" = "$1" ]; then
+      printf '%s\n' "$name"
+      return 0
+    fi
+  done < <(nmcli -g NAME,TYPE connection show 2>/dev/null | sed -n 's/:802-11-wireless$//p' | unescape)
+  return 1
 }
 
 join() {
-  local ssid=$1 security=$2 password out
-  if saved "$ssid"; then
-    if out=$(nmcli --wait 30 connection up id "$ssid" 2>&1); then
+  local ssid=$1 security=$2 password out profile
+  if profile=$(saved "$ssid"); then
+    if out=$(nmcli --wait 30 connection up id "$profile" 2>&1); then
       notify "Connected to $ssid"
     else
       notify -u critical "Could not join $ssid" "$(printf '%s\n' "$out" | tail -n 1)"
