@@ -125,7 +125,11 @@ cmd_connect() {
   mkdir -p "$state_dir"
   # One connect at a time; a second one waits and then finds it connected.
   exec 9>"$lock_file"
-  flock -w $((connect_timeout + 10)) 9 || die "another connect is still running"
+  # Returns rather than exits, so `open` still opens the window.
+  if ! flock -w $((connect_timeout + 10)) 9; then
+    printf 'remote-agent: another connect is still running\n' >&2
+    return 1
+  fi
   if [ "$(backend_state)" = Running ]; then
     rm -f "$failed_file"
     refresh_bar
