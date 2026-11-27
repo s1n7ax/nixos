@@ -195,6 +195,29 @@ with lib;
       zathura = {
         enable = mkEnableOption "Zathura document viewer";
       };
+
+      top-bar = {
+        enable = mkEnableOption "the top bar (Waybar) on every monitor: workspaces, the time, Bluetooth, Wi-Fi and volume, plus the Tailscale item with `features.desktop.remote-agent`";
+      };
+
+      remote-agent = {
+        enable = mkEnableOption "the remote-agent app: a Chrome app window for the remote-agent board that reaches the tailnet through a user-level, userspace tailscaled; nothing else on the machine reaches the tailnet (doc/adr/0003)";
+        url = mkOption {
+          type = types.str;
+          default = "https://remote-agent.tail73fb28.ts.net";
+          description = "Address of the remote-agent board the app opens.";
+        };
+        hostname = mkOption {
+          type = types.str;
+          default = "desktop";
+          description = "This machine's node name on the tailnet.";
+        };
+        proxyPort = mkOption {
+          type = types.port;
+          default = 1055;
+          description = "Port of the user tailscaled's SOCKS5 proxy on 127.0.0.1, the app's only way into the tailnet.";
+        };
+      };
     };
 
     security = {

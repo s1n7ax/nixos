@@ -183,6 +183,20 @@
 
         # The tmux workspace session, run against a real tmux server and a fake ssh.
         tmux-workspace = pkgs.callPackage ./system/home-manager/applications/tmux/check.nix { };
+
+        # The remote-agent app's tailnet control and launcher, run against a
+        # fake tailscale and Chrome.
+        remote-agent = pkgs.callPackage ./system/home-manager/applications/remote-agent/check.nix { };
+
+        # The top bar's Bluetooth and Wi-Fi menus; building them shellchecks them.
+        top-bar-menus =
+          let
+            menus = pkgs.callPackage ./system/home-manager/applications/top-bar/package.nix { };
+          in
+          pkgs.linkFarmFromDrvs "top-bar-menus" [
+            menus.bluetooth-menu
+            menus.wifi-menu
+          ];
       };
     };
 
