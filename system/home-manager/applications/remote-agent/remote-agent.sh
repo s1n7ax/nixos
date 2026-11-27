@@ -130,7 +130,8 @@ cmd_connect() {
     printf 'remote-agent: another connect is still running\n' >&2
     return 1
   fi
-  if [ "$(backend_state)" = Running ]; then
+  backend=$(backend_state)
+  if [ "$backend" = Running ]; then
     rm -f "$failed_file"
     refresh_bar
     return 0
@@ -139,7 +140,6 @@ cmd_connect() {
   echo "$$" >"$connecting_file"
   refresh_bar
 
-  backend=$(backend_state)
   case $backend in
     Unreachable)
       fail "The remote-agent tailscaled is not running (systemctl --user status remote-agent-tailscaled)."
